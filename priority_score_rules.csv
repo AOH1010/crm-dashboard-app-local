@@ -1,0 +1,61 @@
+rule_group,condition_label,field_name,match_type,match_value,score_delta,funnel_stage,priority_order,is_active,notes
+stage,Báo giá,relation_name,eq,Báo giá,30,proposal,10,1,Lead nóng
+stage,Gửi hợp đồng,relation_name,eq,Gửi hợp đồng,30,proposal,11,1,Lead rất nóng
+stage,Đặt cọc,relation_name,eq,Đặt cọc,30,proposal,12,1,Gần chốt
+stage,Hẹn demo,relation_name,eq,Hẹn demo,24,demo,20,1,Rất đáng ưu tiên
+stage,Demo,relation_name,eq,Demo,24,demo,21,1,Rất đáng ưu tiên
+stage,Khách hàng dùng Thử,relation_name,eq,Khách hàng dùng Thử,24,demo,22,1,Có intent rõ
+stage,Quan tâm,relation_name,eq,Quan tâm,18,qualified,30,1,Lead tốt
+stage,KH Hẹn Tư Vấn Sau,relation_name,eq,KH Hẹn Tư Vấn Sau,18,qualified,31,1,Cần follow-up
+stage,Liên hệ lần 2,relation_name,eq,Liên hệ lần 2,14,contacting,40,1,Đã follow-up
+stage,Liên hệ lần 1,relation_name,eq,Liên hệ lần 1,10,contacting,41,1,Early stage
+stage,Mới,relation_name,eq,Mới,10,new,42,1,Mới vào phễu
+stage,Nhu cầu xa,relation_name,eq,Nhu cầu xa,4,inactive,50,1,Có thể nurture
+stage,Kí hợp đồng,relation_name,eq,Kí hợp đồng,20,customer,60,1,Dùng cho up_sell
+stage,Đã tái ký,relation_name,eq,Đã tái ký,20,customer,61,1,Existing customer
+stage,Không tiếp cận được,relation_name,eq,Không tiếp cận được,0,lost,90,1,Chặn điểm
+stage,Sai Thông Tin,relation_name,eq,Sai Thông Tin,0,lost,91,1,Chặn điểm
+stage,Thất bại,relation_name,eq,Thất bại,0,lost,92,1,Chặn điểm
+stage,Rác,relation_name,eq,Rác,0,lost,93,1,Chặn điểm
+recency,0-7 ngày,last_touch_at,range_days,0-7,20,,100,1,Tín hiệu rất mới
+recency,8-30 ngày,last_touch_at,range_days,8-30,14,,101,1,Tín hiệu còn mới
+recency,31-90 ngày,last_touch_at,range_days,31-90,8,,102,1,Tín hiệu đã giảm nhiệt
+recency,Trên 90 ngày,last_touch_at,range_days,90+,0,,103,1,Cũ hoặc thiếu cập nhật
+engagement,Keyword demo,interaction_clean,contains,demo,4,,200,1,Keyword mạnh
+engagement,Keyword báo giá,interaction_clean,contains,báo giá,4,,201,1,Keyword mạnh
+engagement,Hẹn hoặc gọi lại,interaction_clean,contains,hẹn|gọi lại|liên hệ lại,3,,202,1,Có cam kết follow-up
+engagement,Keyword quan tâm,interaction_clean,contains,quan tâm,2,,203,1,Lead có nhu cầu
+engagement,Xin tài liệu,interaction_clean,contains,xin tài liệu|brochure|profile,2,,204,1,Có hành vi tìm hiểu
+engagement,Add Zalo,interaction_clean,contains,add zalo|zalo,1,,205,1,Mở thêm kênh liên hệ
+engagement,Không nghe máy,interaction_clean,contains,không nghe máy,-3,,206,1,Tín hiệu cản trở
+engagement,Từ chối hoặc không có nhu cầu,interaction_clean,contains,từ chối|không làm|không có nhu cầu,-5,,207,1,Tín hiệu tiêu cực
+engagement,Sai thông tin trong interaction,interaction_clean,contains,sai thông tin,-8,,208,1,Tín hiệu loại trừ mạnh
+customer_value,Có từ 2 đơn đã duyệt,approved_order_count,range_count,2+,16,,300,1,Khách mua nhiều hơn 1 lần
+customer_value,Có 1 đơn đã duyệt,approved_order_count,range_count,1,12,,301,1,Đã từng mua
+customer_value,Chỉ có đơn chờ duyệt,order_status_profile,eq,only_pending,4,,302,1,Đang ở giữa giao dịch
+customer_value,Chỉ có đơn đã hủy,order_status_profile,eq,only_cancelled,2,,303,1,Có lịch sử giao dịch nhưng yếu
+customer_value,Không có order,approved_order_count,range_count,0,0,,304,1,Lead mới hoàn toàn
+customer_value,Doanh thu top 25%,approved_revenue_quartile,eq,top_25,4,,305,1,Nhóm doanh thu cao nhất
+customer_value,Doanh thu top 25-50%,approved_revenue_quartile,eq,q25_50,2,,306,1,Nhóm doanh thu khá
+industry,Nội thất,industry_name,eq,Nội thất,10,,400,1,Core fit
+industry,Gạch,industry_name,eq,Gạch,10,,401,1,Core fit
+industry,Xây dựng,industry_name,eq,Xây dựng,9,,402,1,Fit mạnh
+industry,Kiến trúc sư,industry_name,eq,Kiến trúc sư,9,,403,1,Fit mạnh
+industry,Nhà cung cấp hoặc đại lý,industry_name,eq,Nhà cung cấp/đại lý,8,,404,1,Fit tốt
+industry,Vật liệu xây dựng,industry_name,eq,Vật liệu xây dựng,8,,405,1,Fit tốt
+industry,Blank ngành,industry_name,eq,blank,3,,406,1,Thiếu dữ liệu ngành nhưng giữ trung tính
+industry,Ngành khác,industry_group,eq,other,0,,407,1,Nhóm còn lại
+source,Phễu Marketing Lead mua,account_source_full_name,eq,Phễu Marketing > Lead mua,3,,500,1,Nguồn có ý định mua cao
+source,Website,account_source_full_name,eq,Website,9,,501,1,Inbound tốt
+source,Vietbuild,account_source_full_name,eq,Vietbuild,9,,502,1,Event fit ngành
+source,Affiliate JEGA,account_source_full_name,eq,AFFILIATE - JEGA,8,,503,1,Referral tốt
+source,Aihouse,account_source_full_name,eq,Aihouse,5,,504,1,Nguồn tốt cần tinh chỉnh thêm
+source,Facebook loại 1,account_source_full_name,eq,Facebook_loại 1,10,,505,1,Nguồn medium
+source,Facebook loại 2,account_source_full_name,eq,Facebook_loại 2,5,,506,1,Nguồn medium lower
+source,Zalo,account_source_full_name,eq,Zalo,8,,507,1,Nguồn medium
+source,Sale tự kiếm,account_source_full_name,eq,Sale tự kiếm,5,508,1,Phụ thuộc chất lượng vận hành
+source,Blank nguồn,account_source_full_name,eq,blank,0,,509,1,Thiếu dữ liệu nguồn
+override,Chặn lead xấu theo relation_name,relation_name,in,Rác|Thất bại|Sai Thông Tin,-20,,600,1,Chặn mạnh các lead cần loại trừ
+override,Boost lead nóng mới cập nhật,priority_context,composite,relation_name_in=Demo|Hẹn demo|Báo giá;updated_within_days=7,8,,601,1,Boost lead nóng mới cập nhật
+override,Blank ngành nhưng vẫn là lead nóng,priority_context,composite,industry_name=blank;source_in=Phễu Marketing > Lead mua|Website|Vietbuild;relation_name_in=Demo|Hẹn demo|Báo giá|Quan tâm,2,,602,1,Không để blank ngành làm hụt lead nóng
+override,Đã có order nhưng chưa map được sản phẩm sở hữu,priority_context,composite,approved_order_count_gte=1;owned_product_names_norm=blank,-3,,603,1,Cần rà alias sản phẩm
