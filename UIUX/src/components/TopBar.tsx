@@ -1,5 +1,6 @@
 import React from "react";
 import { Search, Bell, HelpCircle } from "lucide-react";
+import SyncAdminPanel from "./SyncAdminPanel";
 
 export default function TopBar() {
   return (
@@ -14,6 +15,9 @@ export default function TopBar() {
       </div>
       
       <div className="flex items-center gap-6">
+        <div className="relative">
+          <SyncAdminPanel />
+        </div>
         <button className="relative text-slate-500 hover:bg-slate-100 p-2 rounded-lg transition-all">
           <Bell className="w-5 h-5" />
           <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-background"></span>

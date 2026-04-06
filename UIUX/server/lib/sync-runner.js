@@ -11,10 +11,13 @@ const projectRoot = path.resolve(uiuxDir, "..");
 const pythonExecutable = process.env.PYTHON_EXECUTABLE || (process.platform === "win32" ? "python" : "python3");
 const logTailLimit = 200;
 const syncAdminToken = String(process.env.SYNC_ADMIN_TOKEN || "").trim();
-const syncLookbackHours = parseInteger(process.env.SYNC_LOOKBACK_HOURS, 24);
+const syncLookbackHours = parseInteger(process.env.SYNC_LOOKBACK_HOURS, 6);
 const syncStaffPageSize = parseInteger(process.env.SYNC_STAFF_PAGE_SIZE, 100);
+const autoCustomerLimitPages = parseInteger(process.env.SYNC_CUSTOMER_AUTO_LIMIT_PAGES, 50);
+const autoCustomerPageSize = parseInteger(process.env.SYNC_CUSTOMER_AUTO_PAGE_SIZE, 100);
+const autoCustomerWorkers = parseInteger(process.env.SYNC_CUSTOMER_AUTO_WORKERS, 4);
 const syncBootMode = String(process.env.SYNC_ON_BOOT || "").trim().toLowerCase();
-const defaultMode = String(process.env.SYNC_DEFAULT_MODE || "incremental").trim().toLowerCase();
+const defaultMode = String(process.env.SYNC_DEFAULT_MODE || "auto").trim().toLowerCase();
 const syncIntervalMinutes = parseInteger(process.env.SYNC_INTERVAL_MINUTES, 0);
 const crmDbPath = path.resolve(process.env.CRM_DB_PATH || path.join(projectRoot, "data", "crm.db"));
 
@@ -96,45 +99,105 @@ function readSyncTable() {
 
 function buildMode(mode) {
   const normalized = String(mode || defaultMode || "incremental").trim().toLowerCase();
-  if (normalized === "full") {
+  if (normalized === "incremental") {
+    return "auto";
+  }
+  if (normalized === "manual-full") {
     return "full";
   }
-  return "incremental";
+  if ([
+    "auto",
+    "full",
+    "customers-auto",
+    "orders-auto",
+    "customers-full",
+    "orders-full",
+  ].includes(normalized)) {
+    return normalized;
+  }
+  return "auto";
+}
+
+function buildCustomerAutoStep() {
+  return {
+    label: "customers-auto",
+    command: pythonExecutable,
+    args: [
+      path.join(projectRoot, "tasks", "01_scrap", "scrape_getfly.py"),
+      "--lookback-hours", String(Math.max(0, syncLookbackHours)),
+      "--limit-pages", String(Math.max(1, autoCustomerLimitPages)),
+      "--page-size", String(Math.max(1, autoCustomerPageSize)),
+      "--workers", String(Math.max(1, autoCustomerWorkers)),
+      "--skip-comments",
+      "--prefer-recent-first",
+    ],
+  };
+}
+
+function buildCustomerFullStep() {
+  return {
+    label: "customers-full",
+    command: pythonExecutable,
+    args: [path.join(projectRoot, "tasks", "01_scrap", "scrape_getfly.py"), "--full-sync"],
+  };
+}
+
+function buildOrdersAutoStep() {
+  return {
+    label: "orders-auto",
+    command: pythonExecutable,
+    args: [
+      path.join(projectRoot, "tasks", "01_scrap", "scrape_orders.py"),
+      "--lookback-hours", String(Math.max(0, syncLookbackHours)),
+    ],
+  };
+}
+
+function buildOrdersFullStep() {
+  return {
+    label: "orders-full",
+    command: pythonExecutable,
+    args: [path.join(projectRoot, "tasks", "01_scrap", "scrape_orders.py"), "--full-sync"],
+  };
 }
 
 function buildSteps(mode) {
-  const steps = [
-    {
-      label: "staffs",
-      command: pythonExecutable,
-      args: [path.join(projectRoot, "tasks", "01_scrap", "scrape_staff_group.py"), "--page-size", String(syncStaffPageSize)],
-    },
-    {
-      label: "customers",
-      command: pythonExecutable,
-      args: [path.join(projectRoot, "tasks", "01_scrap", "scrape_getfly.py")],
-    },
-    {
-      label: "orders",
-      command: pythonExecutable,
-      args: [path.join(projectRoot, "tasks", "01_scrap", "scrape_orders.py")],
-    },
-    {
-      label: "dashboard-db",
-      command: "node",
-      args: ["--experimental-sqlite", path.join(projectRoot, "UIUX", "server", "build-dashboard-sales-db.js")],
-    },
-  ];
+  const rebuildDashboardStep = {
+    label: "dashboard-db",
+    command: "node",
+    args: ["--experimental-sqlite", path.join(projectRoot, "UIUX", "server", "build-dashboard-sales-db.js")],
+  };
 
   if (mode === "full") {
-    steps[1].args.push("--full-sync");
-    steps[2].args.push("--full-sync");
-  } else {
-    steps[1].args.push("--lookback-hours", String(Math.max(0, syncLookbackHours)));
-    steps[2].args.push("--lookback-hours", String(Math.max(0, syncLookbackHours)));
+    return [
+      {
+        label: "staffs",
+        command: pythonExecutable,
+        args: [path.join(projectRoot, "tasks", "01_scrap", "scrape_staff_group.py"), "--page-size", String(syncStaffPageSize)],
+      },
+      buildCustomerFullStep(),
+      buildOrdersFullStep(),
+      rebuildDashboardStep,
+    ];
   }
 
-  return steps;
+  if (mode === "customers-full") {
+    return [buildCustomerFullStep(), rebuildDashboardStep];
+  }
+
+  if (mode === "orders-full") {
+    return [buildOrdersFullStep(), rebuildDashboardStep];
+  }
+
+  if (mode === "customers-auto") {
+    return [buildCustomerAutoStep(), rebuildDashboardStep];
+  }
+
+  if (mode === "orders-auto") {
+    return [buildOrdersAutoStep(), rebuildDashboardStep];
+  }
+
+  return [buildCustomerAutoStep(), buildOrdersAutoStep(), rebuildDashboardStep];
 }
 
 function runStep(step) {
@@ -219,6 +282,8 @@ export function getSyncStatus() {
     last_mode: state.lastMode,
     last_trigger: state.lastTrigger,
     last_error: state.lastError,
+    default_mode: buildMode(defaultMode),
+    interval_minutes: syncIntervalMinutes,
     sync_state_rows: readSyncTable(),
     log_tail: state.logTail,
   };
@@ -271,11 +336,19 @@ export function triggerSync({ mode = defaultMode, trigger = "manual" } = {}) {
 }
 
 export function shouldSyncOnBoot() {
-  return syncBootMode === "true" || syncBootMode === "incremental" || syncBootMode === "full";
+  return syncBootMode === "true"
+    || syncBootMode === "incremental"
+    || syncBootMode === "full"
+    || syncBootMode === "auto"
+    || syncBootMode === "customers-auto"
+    || syncBootMode === "orders-auto";
 }
 
 export function getBootSyncMode() {
-  return syncBootMode === "full" ? "full" : defaultMode;
+  if (syncBootMode === "true" || !syncBootMode) {
+    return buildMode(defaultMode);
+  }
+  return buildMode(syncBootMode);
 }
 
 export function startSyncScheduler() {

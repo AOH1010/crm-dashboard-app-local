@@ -288,7 +288,7 @@ def get_comments(account_id):
     return COMMENT_SEPARATOR.join(all_comments)
 
 
-def build_customer_row(account, source_map, old_data_map):
+def build_customer_row(account, source_map, old_data_map, skip_comments=False):
     source_ids = account.get("account_source_details", []) or []
     first_source = source_ids[0] if source_ids else {}
     source_full_name = source_map.get(first_source.get("id"), "") if isinstance(first_source, dict) else ""
@@ -322,13 +322,16 @@ def build_customer_row(account, source_map, old_data_map):
     if not is_changed:
         return None
 
-    latest_interaction = get_comments(account.get("id"))
-    if not latest_interaction and previous_row:
-        latest_interaction = previous_row.get("latest_interaction") or ""
+    if skip_comments:
+        latest_interaction = previous_row.get("latest_interaction") if previous_row else ""
+    else:
+        latest_interaction = get_comments(account.get("id"))
+        if not latest_interaction and previous_row:
+            latest_interaction = previous_row.get("latest_interaction") or ""
 
     return {
         "status": "inserted" if is_new else "updated",
-        "comment_refreshed": 1,
+        "comment_refreshed": 0 if skip_comments else 1,
         "row": (
             account_code,
             account.get("account_name", ""),
@@ -370,9 +373,9 @@ def save_to_db(items):
     conn.close()
 
 
-def process_batch(records, source_map, old_data_map, max_workers):
+def process_batch(records, source_map, old_data_map, max_workers, skip_comments=False):
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        results = list(executor.map(lambda acc: build_customer_row(acc, source_map, old_data_map), records))
+        results = list(executor.map(lambda acc: build_customer_row(acc, source_map, old_data_map, skip_comments=skip_comments), records))
     save_to_db(results)
     inserted = sum(1 for item in results if item and item["status"] == "inserted")
     updated = sum(1 for item in results if item and item["status"] == "updated")
@@ -391,12 +394,18 @@ def fetch_accounts_page(params):
     url = f"{GETFLY_BASE_URL.rstrip('/')}/api/v6/accounts"
     response = session.get(url, headers=HEADERS, params=params, timeout=30)
     if response.status_code != 200:
-        return {"data": [], "has_more": False, "status_code": response.status_code}
+        return {
+            "data": [],
+            "has_more": False,
+            "status_code": response.status_code,
+            "message": response.text,
+        }
     payload = response.json()
     return {
         "data": payload.get("data", []),
         "has_more": payload.get("has_more", False),
         "status_code": response.status_code,
+        "message": payload.get("message", ""),
     }
 
 
@@ -471,6 +480,8 @@ def scrape_getfly(
     page_size=100,
     sleep_ms=20,
     lookback_hours=0,
+    skip_comments=False,
+    prefer_recent_first=False,
 ):
     print("--- BAT DAU TRICH XUAT DU LIEU GETFLY ---")
     require_getfly_config()
@@ -492,6 +503,8 @@ def scrape_getfly(
         "limit": page_size,
         "offset": 0,
     }
+    if prefer_recent_first:
+        params["sort"] = "updated_at:desc"
 
     if account_code:
         params["filtering[account_code:eq]"] = account_code
@@ -499,7 +512,9 @@ def scrape_getfly(
         params["filtering[updated_at:gte]"] = run_filter["filter_value"]
 
     print(run_filter["message"])
-    print(f"workers={workers} | page_size={page_size} | sleep_ms={sleep_ms} | lookback_hours={lookback_hours}")
+    print(
+        f"workers={workers} | page_size={page_size} | sleep_ms={sleep_ms} | lookback_hours={lookback_hours} | skip_comments={skip_comments} | prefer_recent_first={prefer_recent_first}"
+    )
 
     manages_checkpoint = run_filter["mode"] != "single"
     if manages_checkpoint:
@@ -519,6 +534,13 @@ def scrape_getfly(
                 break
 
             page = fetch_accounts_page(params)
+            if page["status_code"] != 200:
+                if prefer_recent_first and params.get("sort") == "updated_at:desc":
+                    print("Getfly khong ho tro sort updated_at:desc. Fallback ve thu tu mac dinh cua API.")
+                    params.pop("sort", None)
+                    prefer_recent_first = False
+                    continue
+                raise RuntimeError(f"Getfly accounts API loi {page['status_code']}: {page.get('message', '')}")
             records = page["data"]
             if not records:
                 finished_successfully = True
@@ -529,7 +551,7 @@ def scrape_getfly(
                 if record_updated_dt and (max_seen_updated_at is None or record_updated_dt > max_seen_updated_at):
                     max_seen_updated_at = record_updated_dt
 
-            batch_stats = process_batch(records, source_map, old_data_map, workers)
+            batch_stats = process_batch(records, source_map, old_data_map, workers, skip_comments=skip_comments)
             for key in totals:
                 totals[key] += batch_stats[key]
 
@@ -575,6 +597,8 @@ if __name__ == "__main__":
     parser.add_argument("--page-size", type=int, default=100, help="So khach hang moi trang khi goi Getfly")
     parser.add_argument("--sleep-ms", type=int, default=20, help="Thoi gian nghi giua cac trang, tinh bang milliseconds")
     parser.add_argument("--lookback-hours", type=int, default=0, help="Lui checkpoint de quet de phong bo sot, tinh bang gio")
+    parser.add_argument("--skip-comments", action="store_true", help="Khong tai comments, giu latest_interaction da co")
+    parser.add_argument("--prefer-recent-first", action="store_true", help="Thu sort updated_at desc neu Getfly ho tro")
     args = parser.parse_args()
     scrape_getfly(
         limit_pages=args.limit_pages,
@@ -586,5 +610,7 @@ if __name__ == "__main__":
         page_size=max(1, args.page_size),
         sleep_ms=max(0, args.sleep_ms),
         lookback_hours=max(0, args.lookback_hours),
+        skip_comments=args.skip_comments,
+        prefer_recent_first=args.prefer_recent_first,
     )
 

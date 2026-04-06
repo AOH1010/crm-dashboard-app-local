@@ -42,10 +42,13 @@ GETFLY_API_KEY=...
 GETFLY_BASE_URL=https://jega.getflycrm.com/
 PREBUILD_DASHBOARD_DB=true
 SYNC_ADMIN_TOKEN=mot_chuoi_bi_mat_rat_dai
-SYNC_DEFAULT_MODE=incremental
-SYNC_LOOKBACK_HOURS=24
-SYNC_ON_BOOT=incremental
-SYNC_INTERVAL_MINUTES=30
+SYNC_DEFAULT_MODE=auto
+SYNC_LOOKBACK_HOURS=6
+SYNC_ON_BOOT=auto
+SYNC_INTERVAL_MINUTES=360
+SYNC_CUSTOMER_AUTO_LIMIT_PAGES=50
+SYNC_CUSTOMER_AUTO_PAGE_SIZE=100
+SYNC_CUSTOMER_AUTO_WORKERS=4
 CRM_DATA_DIR=/app/data
 CRM_DB_PATH=/app/data/crm.db
 DASHBOARD_DB_PATH=/app/data/dashboard_sales.db
@@ -127,6 +130,12 @@ Sau khi muc 2 da xong:
 - ban khong can commit data moi len Git
 - Railway backend se tu cap nhat `crm.db` trong volume
 - backend se tu chay sync luc boot va theo chu ky `SYNC_INTERVAL_MINUTES`
+- auto mode chi scrape customer incremental nhe:
+  - lookback 6 gio
+  - toi da 50 pages
+  - bo qua comments
+- orders incremental van tu dong chay cung chu ky
+- full scrape customer/orders duoc kich tay qua UI admin hoac endpoint
 - UI se thay data moi o lan refetch tiep theo
 
 Repo chi can push khi:
