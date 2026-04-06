@@ -46,6 +46,18 @@ app.get("/api/health", (_, res) => {
   res.json({ ok: true });
 });
 
+app.get("/api/debug/env-status", (_req, res) => {
+  const apiKey = process.env.GEMINI_API_KEY || "";
+  const model = process.env.CRM_AGENT_MODEL || "";
+  res.json({
+    ok: true,
+    has_gemini_api_key: apiKey.length > 0,
+    gemini_api_key_length: apiKey.length,
+    crm_agent_model: model || null,
+    prebuild_dashboard_db: process.env.PREBUILD_DASHBOARD_DB || null,
+  });
+});
+
 app.get("/api/sales/dashboard", (req, res) => {
   try {
     ensureDashboardSalesDb();
@@ -137,6 +149,13 @@ if (shouldPrebuildDashboardDb) {
     console.error("[dashboard-api] failed to prebuild dashboard DB", error);
   }
 }
+
+console.log("[dashboard-api] env status", {
+  hasGeminiApiKey: Boolean(process.env.GEMINI_API_KEY),
+  geminiApiKeyLength: String(process.env.GEMINI_API_KEY || "").length,
+  crmAgentModel: process.env.CRM_AGENT_MODEL || null,
+  prebuildDashboardDb: process.env.PREBUILD_DASHBOARD_DB || null,
+});
 
 app.listen(port, host, () => {
   console.log(`[dashboard-api] listening on http://${host}:${port}`);
