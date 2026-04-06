@@ -157,10 +157,10 @@ Hien agent:
 - Backend da ho tro 2 provider:
   - `gemini`
   - `nvidia`
-- Local hien uu tien `NVIDIA_API_KEY` + `CRM_AGENT_PROVIDER=nvidia`
-- Model local dang dung:
-  - `google/gemma-4-31b-it`
-- Neu Railway muon doi sang NVIDIA thay cho Gemini, can set:
+- Default hien tai uu tien:
+  - `CRM_AGENT_PROVIDER=gemini`
+  - `CRM_AGENT_MODEL=gemini-2.5-flash-lite`
+- Neu muon doi sang NVIDIA, can set ro:
   - `CRM_AGENT_PROVIDER=nvidia`
   - `CRM_AGENT_MODEL=google/gemma-4-31b-it`
   - `NVIDIA_API_KEY=...`
@@ -263,8 +263,9 @@ Neu muon tao du lieu moi bang scrape:
 ## 14. Deployment note moi
 
 - Push code len GitHub se trigger redeploy cho Vercel/Railway neu service dang linked vao repo
-- Rieng Railway muon chuyen AI provider sang NVIDIA thi phai doi env trong dashboard truoc khi restart/redeploy
+- Railway/Vercel se redeploy theo Git neu service linked voi repo
+- Provider/model thuc te cua backend van phu thuoc env trong Railway dashboard
 - Sau khi redeploy, check:
   - `/api/debug/env-status`
-  - `crm_agent_provider` phai la `nvidia`
-  - `crm_agent_model` phai la `google/gemma-4-31b-it`
+  - `crm_agent_provider` phai la `gemini`
+  - `crm_agent_model` phai la `gemini-2.5-flash-lite`

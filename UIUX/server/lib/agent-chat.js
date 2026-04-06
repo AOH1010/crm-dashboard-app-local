@@ -76,13 +76,12 @@ let sellerNameCache = null;
 let sellerNameCacheSignature = null;
 
 function getDefaultProvider() {
-  return String(process.env.CRM_AGENT_PROVIDER || "").trim().toLowerCase()
-    || (process.env.NVIDIA_API_KEY ? "nvidia" : "gemini");
+  return String(process.env.CRM_AGENT_PROVIDER || "").trim().toLowerCase() || "gemini";
 }
 
 function getDefaultModel() {
   return process.env.CRM_AGENT_MODEL
-    || (getDefaultProvider() === "nvidia" ? "google/gemma-4-31b-it" : "gemini-2.5-flash");
+    || (getDefaultProvider() === "nvidia" ? "google/gemma-4-31b-it" : "gemini-2.5-flash-lite");
 }
 
 function createEmptyUsage() {
