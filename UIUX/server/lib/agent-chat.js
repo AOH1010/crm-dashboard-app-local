@@ -81,7 +81,7 @@ function getDefaultProvider() {
 
 function getDefaultModel() {
   return process.env.CRM_AGENT_MODEL
-    || (getDefaultProvider() === "nvidia" ? "google/gemma-4-31b-it" : "gemini-2.5-flash-lite");
+    || (getDefaultProvider() === "nvidia" ? "google/gemma-4-31b-it" : "gemini-2.5-flash");
 }
 
 function createEmptyUsage() {

@@ -159,7 +159,7 @@ Hien agent:
   - `nvidia`
 - Default hien tai uu tien:
   - `CRM_AGENT_PROVIDER=gemini`
-  - `CRM_AGENT_MODEL=gemini-2.5-flash-lite`
+  - `CRM_AGENT_MODEL=gemini-2.5-flash`
 - Neu muon doi sang NVIDIA, can set ro:
   - `CRM_AGENT_PROVIDER=nvidia`
   - `CRM_AGENT_MODEL=google/gemma-4-31b-it`
@@ -268,4 +268,4 @@ Neu muon tao du lieu moi bang scrape:
 - Sau khi redeploy, check:
   - `/api/debug/env-status`
   - `crm_agent_provider` phai la `gemini`
-  - `crm_agent_model` phai la `gemini-2.5-flash-lite`
+  - `crm_agent_model` phai la `gemini-2.5-flash`

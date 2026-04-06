@@ -21,8 +21,8 @@ interface MarkdownTextBlock {
 type MarkdownBlock = MarkdownTableBlock | MarkdownTextBlock;
 
 const USD_TO_VND = 26500;
-const INPUT_COST_PER_MILLION_TOKENS_USD = 0.1;
-const OUTPUT_COST_PER_MILLION_TOKENS_USD = 0.4;
+const INPUT_COST_PER_MILLION_TOKENS_USD = 0.3;
+const OUTPUT_COST_PER_MILLION_TOKENS_USD = 2.5;
 
 const QUICK_PROMPTS: Record<string, string[]> = {
   dashboard: [
