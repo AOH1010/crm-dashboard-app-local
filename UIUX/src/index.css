@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  --font-headline: "Be Vietnam Pro", sans-serif;
+  --font-body: "Be Vietnam Pro", sans-serif;
+  --font-label: "Be Vietnam Pro", sans-serif;
+  
+  /* Primary header size standardization */
+  --font-size-h-page: 2.25rem; /* 36px */
+  --font-size-h-bento: 1.35rem; /* 22px roughly */
+
+  --color-primary: #3c6600;
+  --color-on-primary: #d9ffac;
+  --color-primary-container: #adf45e;
+  --color-on-primary-container: #345a00;
+  --color-secondary: #5b5b60;
+  --color-on-secondary: #f3f2f7;
+  --color-secondary-container: #e3e2e7;
+  --color-on-secondary-container: #515156;
+  --color-tertiary: #615e00;
+  --color-on-tertiary: #fff864;
+  --color-tertiary-container: #fdf661;
+  --color-on-tertiary-container: #605c00;
+  --color-error: #b02500;
+  --color-on-error: #ffefec;
+  --color-error-container: #f95630;
+  --color-on-error-container: #520c00;
+  --color-background: #f6f6f8;
+  --color-on-background: #2d2f31;
+  --color-surface: #f6f6f8;
+  --color-on-surface: #2d2f31;
+  --color-surface-variant: #dbdde0;
+  --color-on-surface-variant: #5a5c5d;
+  --color-outline: #757779;
+  --color-outline-variant: #acadaf;
+  --color-inverse-surface: #0c0e10;
+  --color-inverse-on-surface: #9c9d9f;
+  --color-inverse-primary: #adf45e;
+  --color-surface-dim: #d2d4d8;
+  --color-surface-bright: #f6f6f8;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f0f1f3;
+  --color-surface-container: #e7e8ea;
+  --color-surface-container-high: #e1e2e5;
+  --color-surface-container-highest: #dbdde0;
+}
+
+@layer base {
+  * {
+    font-family: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif !important;
+    letter-spacing: -0.015em;
+  }
+  body {
+    color: var(--color-on-surface);
+    background-color: var(--color-background);
+    font-family: "Be Vietnam Pro", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .glass-panel {
+    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

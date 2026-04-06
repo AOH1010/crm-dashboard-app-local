@@ -1,5 +1,20 @@
-.env
+.agent/
+.stitch/
 __pycache__/
 *.pyc
-data/
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
 jega products/
+Decko - CRM Dashboard.jfif
+data/*.db
+data/*.db-*
+data/*.db.*
+data/dashboard_sales.db
+data/dashboard_sales.db-*
+data/dashboard_sales.db.*

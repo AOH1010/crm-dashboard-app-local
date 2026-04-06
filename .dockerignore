@@ -1,0 +1,22 @@
+.git
+.gitignore
+.agent
+.stitch
+__pycache__
+node_modules
+UIUX/node_modules
+UIUX/dist
+UIUX/.dev-runtime.log
+UIUX/.dev-stdout.log
+UIUX/.dev-stderr.log
+UIUX/dev.out.log
+UIUX/dev.err.log
+UIUX/server-test.out.log
+UIUX/server-test.err.log
+tasks
+getfly-skill
+nocodb-skill-publish
+jega products
+*.jfif
+*.md
+analyze_image.py

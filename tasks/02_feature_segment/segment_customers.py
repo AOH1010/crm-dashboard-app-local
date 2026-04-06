@@ -1,15 +1,14 @@
-import argparse
+﻿import argparse
 import csv
 import json
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
-
-BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_FEATURE_DB = BASE_DIR / "data" / "features.db"
-DEFAULT_RULES_CSV = BASE_DIR / "shortlist_rules.csv"
+TASK_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = TASK_DIR.parents[1]
+DEFAULT_FEATURE_DB = PROJECT_ROOT / "data" / "features.db"
+DEFAULT_RULES_CSV = TASK_DIR / "rules" / "shortlist_rules.csv"
 ALLOWED_SHORTLISTS = {"newsale", "upsell"}
 
 
@@ -408,3 +407,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

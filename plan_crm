@@ -1,0 +1,82 @@
+# Kế hoạch v1 cho nhóm tab Bán Hàng
+
+## Summary
+- Phạm vi lượt này là plan chi tiết cho 4 tab sales đang có dữ liệu triển khai được: `Dashboard`, `Conversion`, `Leads`, `Team`. Tab `Renew` giữ placeholder vì nguồn tái ký sẽ lấy ở data khác.
+- Nguồn chuẩn là [`data/crm.db`](/f:/Antigravity/CRM/data/crm.db): hiện có `50,891` customers, `1,567` orders, `72` staffs; đủ để làm dashboard sales v1.
+- [`data/features.db`](/f:/Antigravity/CRM/data/features.db) hữu ích cho funnel/touch/activity, nhưng chưa được dùng làm nguồn revenue chính vì pipeline derive hiện đang sai phần aggregate order do lỗi encoding trong [`tasks/02_feature_segment/build_customer_features.py`](/f:/Antigravity/CRM/tasks/02_feature_segment/build_customer_features.py).
+- Ràng buộc dữ liệu cần thiết kế quanh nó: province có dữ liệu `33,696/50,891`, industry có dữ liệu `18,407/50,891`, interaction log chỉ có khoảng `11,939` khách. Những widget phụ thuộc mạnh vào các trường này phải có `coverage` hoặc đổi nội dung.
+- Tab “Doanh số” sẽ lấy `Team` làm tab chính; file `RevenueView.tsx` hiện không nối vào app nên không dùng làm hướng triển khai.
+
+## Key Changes
+### Data layer
+- Dùng `crm.db` làm source-of-truth cho doanh thu, đơn hàng, seller/team.
+- Sửa pipeline `build_customer_features.py` để nhận diện đúng `Đã duyệt`, `Chờ duyệt`, `Đã hủy`, `Đã thu`; sau đó mới tái dùng `approved_order_count`, `approved_revenue`, `total_paid_amount`, `order_status_profile`.
+- Giữ `features.db` cho các trường semantic: `funnel_stage`, `last_touch_at`, `last_actor`, `interaction_count`, `priority_score`.
+- Thêm bước build mart riêng cho dashboard sau ingest:
+  - `scrape_getfly.py`
+  - `scrape_orders.py`
+  - `build_customer_features.py` đã sửa
+  - `build_sales_marts.py`
+- Mart cần chuẩn hóa các dimension dùng chung: `province`, `industry`, `source_group`, `owner`, `team`, `product_name`; kèm alias cho product và guardrail cho tên staff trùng.
+- Sinh các mart/bảng tổng hợp cho: `sales_dashboard_kpis`, `sales_revenue_series`, `sales_funnel`, `sales_source_conversion`, `sales_geo_metrics`, `sales_team_metrics`, `sales_recent_activity`, `dashboard_meta(as_of)`.
+
+### API / interface
+- Bổ sung local Express API trong `UIUX` để React đọc dữ liệu từ SQLite/marts; frontend không đọc DB trực tiếp.
+- Bộ filter chuẩn cho các tab sales: `from`, `to`, `team`, `owner`, `source_group`, `industry_group`, `province`, `product`, `customer_scope=all|purchased`, `grain=day|week|month`.
+- Các endpoint v1:
+  - `GET /api/meta/filters`
+  - `GET /api/sales/dashboard`
+  - `GET /api/sales/conversion`
+  - `GET /api/sales/leads`
+  - `GET /api/sales/team`
+- Mọi response trả về `as_of`, `applied_filters`, `coverage`, và payload đã shape sẵn cho chart/table.
+- Frontend refetch khi đổi filter và auto-refresh mỗi 5 phút.
+
+### View-by-view
+- `Dashboard`
+  - Giữ layout tổng quan nhưng thay KPI tái ký bằng `Approved Orders` cho v1.
+  - KPI v1: `Approved Revenue`, `Won Customers`, `Approved Orders`, `Today Approved Revenue/Orders`.
+  - Chart doanh thu: ngày nếu range <= 31 ngày, tháng nếu dài hơn; luôn có compare với kỳ trước.
+  - Khối phải: top 5 seller theo approved revenue, toggle `seller/team`.
+  - Bảng dưới: recent orders gồm `customer`, `order_date`, `amount`, `seller`, `team`, `status`.
+- `Conversion`
+  - Giữ cohort, source chart, funnel.
+  - Funnel chuẩn hóa thành `Lead -> Contacted -> Demo -> Proposal -> Won`; `Lost/Inactive` tách ra thành side metrics.
+  - Cohort định nghĩa theo `tuần tạo lead` và `tuần chuyển đổi đơn approved đầu tiên` từ `T0-T8`.
+  - Source chart dùng `source_group` đã normalize, hiển thị đồng thời `lead volume` và `won rate`.
+- `Leads`
+  - Giữ bản đồ Việt Nam với toggle `all` và `purchased`.
+  - Bubble size = số khách; màu = approved revenue ở mode `purchased`, hoặc won-customer count ở mode `all`.
+  - Panel phải đổi thành `industry mix + top industries table`.
+  - Industry blank hiện rõ là `Chưa rõ`; province blank không vẽ lên map nhưng luôn báo coverage.
+- `Team`
+  - Đây là tab doanh số chính; không triển khai rating năng lực.
+  - Khối trên: approved revenue theo seller, approved revenue theo team, filter theo product/team/owner/date.
+  - Bảng dưới đổi thành `owner book health`: `owner`, `team`, `assigned leads`, `touched in 30d`, `hot pipeline`, `won customers`, `recent note snippet`.
+  - Activity feed lấy từ `latest_interaction`, `last_touch_at`, `last_actor`.
+- `Renew`
+  - Giữ placeholder.
+  - Chỉ chốt trước interface/filter shape; chưa làm data/query cho đến khi có nguồn renewal riêng.
+
+## Tests and Acceptance
+- Data QA:
+  - Approved order count trong marts phải khớp raw orders: `1521`.
+  - Approved revenue tổng trong marts phải khớp tổng approved revenue ở `orders`.
+  - `order_status_profile` sau rebuild phải có `has_approved` khi dữ liệu đúng.
+  - Tổng theo seller và tổng theo team phải reconcile với raw orders.
+- API QA:
+  - Mỗi endpoint chạy được cả khi không filter và khi filter chồng nhiều chiều.
+  - `as_of`, `coverage`, `applied_filters` luôn có mặt và đúng format.
+- View QA:
+  - 4 tab sales bỏ hoàn toàn mock arrays cứng.
+  - Dashboard, Conversion, Leads, Team đổi số ngay khi đổi filter.
+  - Leads map không nuốt mất khách thiếu tỉnh; phải báo số record bị loại khỏi map.
+  - Team totals, seller totals và recent activity không lệch nhau trên cùng bộ filter.
+
+## Assumptions and Defaults
+- Scope hiện tại chỉ là plan chi tiết cho nhóm `Bán Hàng`; `Vận Hành`, `Active User`, `Renew` sẽ lên kế hoạch sau với data source khác.
+- `crm.db` là nguồn chuẩn; `features.db` chỉ được dùng lại sau khi sửa bug aggregate order.
+- Mặc định filter:
+  - `Dashboard`, `Conversion`, `Team`: `30 ngày gần nhất`
+  - `Leads`: `all-time`, `customer_scope=all`
+- `Chưa rõ` là bucket hợp lệ cho industry; dữ liệu thiếu province không bị ẩn khỏi tổng quan, chỉ không được vẽ lên bản đồ.

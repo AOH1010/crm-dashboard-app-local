@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import csv
 import hashlib
 import html
@@ -11,13 +11,11 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
-
-
-BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_SOURCE_DB = BASE_DIR / "data" / "crm.db"
-DEFAULT_FEATURE_DB = BASE_DIR / "data" / "features.db"
-DEFAULT_RULES_CSV = BASE_DIR / "priority_score_rules.csv"
-
+TASK_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = TASK_DIR.parents[1]
+DEFAULT_SOURCE_DB = PROJECT_ROOT / "data" / "crm.db"
+DEFAULT_FEATURE_DB = PROJECT_ROOT / "data" / "features.db"
+DEFAULT_RULES_CSV = TASK_DIR / "rules" / "priority_score_rules.csv"
 INTERACTION_RE = re.compile(r"^\[(?P<ts>[^\]]+)\]\s*(?P<actor>[^:]+):\s*(?P<content>.*)$")
 TAG_RE = re.compile(r"<[^>]+>")
 SPACE_RE = re.compile(r"\s+")
@@ -122,8 +120,8 @@ def normalize_dimension(value: Any, blank_token: str = "blank") -> str:
 def normalize_industry(value: Any) -> str:
     text = normalize_dimension(value)
     aliases = {
-        "Nhà cung cấp/đại lí": "Nhà cung cấp/đại lý",
-        "Thi công xây dựng": "Xây dựng",
+        "NhÃ  cung cáº¥p/Ä‘áº¡i lÃ­": "NhÃ  cung cáº¥p/Ä‘áº¡i lÃ½",
+        "Thi cÃ´ng xÃ¢y dá»±ng": "XÃ¢y dá»±ng",
     }
     return aliases.get(text, text)
 
@@ -132,12 +130,12 @@ def derive_industry_group(industry_name_norm: str) -> str:
     if industry_name_norm == "blank":
         return "blank"
     core_fit = {
-        "Nội thất",
-        "Gạch",
-        "Xây dựng",
-        "Kiến trúc sư",
-        "Nhà cung cấp/đại lý",
-        "Vật liệu xây dựng",
+        "Ná»™i tháº¥t",
+        "Gáº¡ch",
+        "XÃ¢y dá»±ng",
+        "Kiáº¿n trÃºc sÆ°",
+        "NhÃ  cung cáº¥p/Ä‘áº¡i lÃ½",
+        "Váº­t liá»‡u xÃ¢y dá»±ng",
     }
     return industry_name_norm if industry_name_norm in core_fit else "other"
 
@@ -146,15 +144,15 @@ def derive_source_group(source_name: str) -> str:
     label = normalize_label(source_name)
     if not label:
         return "blank"
-    if "website" in label or "phễu marketing" in label or "chat gpt" in label:
+    if "website" in label or "phá»…u marketing" in label or "chat gpt" in label:
         return "inbound"
-    if "affiliate" in label or "giới thiệu" in label:
+    if "affiliate" in label or "giá»›i thiá»‡u" in label:
         return "referral"
     if "vietbuild" in label or "event" in label:
         return "event"
     if "facebook" in label or "zalo" in label or "tiktok" in label:
         return "social"
-    if "sale tự kiếm" in label or "đi thị trường" in label:
+    if "sale tá»± kiáº¿m" in label or "Ä‘i thá»‹ trÆ°á»ng" in label:
         return "outbound"
     return "other"
 
@@ -201,13 +199,13 @@ def extract_interactions(raw_text: Any) -> tuple[list[dict[str, Any]], str]:
 def extract_keywords(text: str) -> list[str]:
     patterns = {
         "demo": r"\bdemo\b",
-        "báo giá": r"báo giá",
-        "quan tâm": r"quan tâm",
-        "gia hạn": r"gia hạn",
-        "tái ký": r"tái ký|tái kí",
-        "không nghe máy": r"không nghe máy",
+        "bÃ¡o giÃ¡": r"bÃ¡o giÃ¡",
+        "quan tÃ¢m": r"quan tÃ¢m",
+        "gia háº¡n": r"gia háº¡n",
+        "tÃ¡i kÃ½": r"tÃ¡i kÃ½|tÃ¡i kÃ­",
+        "khÃ´ng nghe mÃ¡y": r"khÃ´ng nghe mÃ¡y",
         "add zalo": r"add zalo|zalo",
-        "gọi lại": r"gọi lại|liên hệ lại|hẹn",
+        "gá»i láº¡i": r"gá»i láº¡i|liÃªn há»‡ láº¡i|háº¹n",
     }
     lowered = normalize_label(text)
     return [label for label, pattern in patterns.items() if re.search(pattern, lowered)]
@@ -286,17 +284,17 @@ def build_order_aggregates(source_db: Path) -> dict[str, dict[str, Any]]:
         if order_dt and (item["last_order_date"] is None or order_dt > item["last_order_date"]):
             item["last_order_date"] = order_dt
 
-        if status_label == "Đã duyệt":
+        if status_label == "ÄÃ£ duyá»‡t":
             item["approved_order_count"] += 1
             item["approved_revenue"] += amount
             for product_name in parse_products_json(row["products_json"]):
                 item["owned_products"].add(product_name)
-        elif status_label == "Đã hủy":
+        elif status_label == "ÄÃ£ há»§y":
             item["cancelled_order_count"] += 1
-        elif status_label == "Chờ duyệt":
+        elif status_label == "Chá» duyá»‡t":
             item["pending_order_count"] += 1
 
-        if payment_status == "Đã thu":
+        if payment_status == "ÄÃ£ thu":
             item["total_paid_amount"] += amount
 
     for item in aggregates.values():
@@ -533,10 +531,10 @@ def apply_rules(row: dict[str, Any], rules: list[Rule], reference_date: date) ->
 
 def derive_customer_segment(funnel_stage: str, approved_order_count: int, relation_name: str) -> str:
     if normalize_label(relation_name) in {
-        normalize_label("Rác"),
-        normalize_label("Sai Thông Tin"),
-        normalize_label("Thất bại"),
-        normalize_label("Không tiếp cận được"),
+        normalize_label("RÃ¡c"),
+        normalize_label("Sai ThÃ´ng Tin"),
+        normalize_label("Tháº¥t báº¡i"),
+        normalize_label("KhÃ´ng tiáº¿p cáº­n Ä‘Æ°á»£c"),
     }:
         return "lost_or_invalid"
     if approved_order_count > 0:
@@ -1167,3 +1165,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
