@@ -360,11 +360,11 @@ export default function TeamView() {
       <section className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 shadow-ambient">
         {cacheSavedAt ? (
           <span>
-            Showing browser cache saved at <strong>{formatDateTime(cacheSavedAt)}</strong>. Click <strong>Load live data</strong> in the top bar to refresh this view from the server.
+            Dang hien cache local duoc luu luc <strong>{formatDateTime(cacheSavedAt)}</strong>. Bam <strong>Load live data</strong> tren top bar de cap nhat man Team tu server.
           </span>
         ) : (
           <span>
-            No local cache for this filter yet. Click <strong>Load live data</strong> in the top bar to fetch the latest snapshot.
+            Chua co cache local cho bo loc nay. Bam <strong>Load live data</strong> tren top bar de lay snapshot moi tu server.
           </span>
         )}
       </section>
