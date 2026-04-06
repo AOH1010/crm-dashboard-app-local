@@ -1,14 +1,16 @@
-import React, { useEffect, useState, useTransition } from "react";
+import React, { useEffect, useRef, useState, useTransition } from "react";
 import {
   CalendarRange,
   ChevronDown,
   Filter,
   Grid3X3,
+  RefreshCcw,
   TrendingUp,
   X,
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { fetchConversion, type CohortGrain, type ConversionResponse } from "@/src/lib/conversionApi";
+import { readViewCache, writeViewCache } from "@/src/lib/viewCache";
 
 function getTodayKey() {
   const now = new Date();
@@ -28,6 +30,16 @@ function formatNumber(value: number) {
 
 function formatPercent(value: number) {
   return `${value.toFixed(1)}%`;
+}
+
+function buildConversionCacheKey(params: {
+  from: string;
+  to: string;
+  cohortGrain: CohortGrain;
+  sourceGroups: string[] | null;
+}) {
+  const sourceKey = params.sourceGroups === null ? "all" : [...params.sourceGroups].sort().join("|") || "none";
+  return `crm_cache_conversion:${params.from}:${params.to}:${params.cohortGrain}:${sourceKey}`;
 }
 
 function getCellBackground(rate: number | null) {
@@ -58,43 +70,66 @@ export default function ConversionView() {
   const [conversion, setConversion] = useState<ConversionResponse | null>(null);
   const [selectedSourceGroups, setSelectedSourceGroups] = useState<string[] | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cacheSavedAt, setCacheSavedAt] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [, startTransition] = useTransition();
+  const skipFirstFetchRef = useRef(true);
 
   const availableSourceGroups = conversion?.source_group_options || ["Marketing Ads", "Marketing Other", "Event", "Affiliate", "Sale", "Other"];
   const activeSourceGroups = selectedSourceGroups === null ? availableSourceGroups : selectedSourceGroups;
 
+  const loadConversion = async (params: {
+    from: string;
+    to: string;
+    cohortGrain: CohortGrain;
+    sourceGroups: string[] | null;
+  }) => {
+    setIsRefreshing(true);
+    try {
+      const payload = await fetchConversion(params);
+      const cached = writeViewCache(buildConversionCacheKey(params), payload);
+      setConversion(payload);
+      setCacheSavedAt(cached.savedAt);
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to load conversion data.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    let cancelled = false;
+    const cached = readViewCache<ConversionResponse>(
+      buildConversionCacheKey({
+        from: fromDate,
+        to: toDate,
+        cohortGrain,
+        sourceGroups: selectedSourceGroups,
+      }),
+    );
 
-    async function loadConversion() {
-      try {
-        const payload = await fetchConversion({
-          from: fromDate,
-          to: toDate,
-          cohortGrain,
-          sourceGroups: selectedSourceGroups,
-        });
-
-        if (!cancelled) {
-          setConversion(payload);
-          setErrorMessage(null);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setErrorMessage(error instanceof Error ? error.message : "Failed to load conversion data.");
-        }
-      }
+    if (cached) {
+      setConversion(cached.data);
+      setCacheSavedAt(cached.savedAt);
+      return;
     }
 
-    void loadConversion();
-    const intervalId = window.setInterval(() => {
-      void loadConversion();
-    }, 60000);
+    setConversion(null);
+    setCacheSavedAt(null);
+  }, [fromDate, toDate, cohortGrain, selectedSourceGroups]);
 
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-    };
+  useEffect(() => {
+    if (skipFirstFetchRef.current) {
+      skipFirstFetchRef.current = false;
+      return;
+    }
+
+    void loadConversion({
+      from: fromDate,
+      to: toDate,
+      cohortGrain,
+      sourceGroups: selectedSourceGroups,
+    });
   }, [fromDate, toDate, cohortGrain, selectedSourceGroups]);
 
   const sourceButtonLabel = selectedSourceGroups === null || activeSourceGroups.length === availableSourceGroups.length
@@ -146,6 +181,15 @@ export default function ConversionView() {
     });
   };
 
+  const handleRefreshNow = () => {
+    void loadConversion({
+      from: fromDate,
+      to: toDate,
+      cohortGrain,
+      sourceGroups: selectedSourceGroups,
+    });
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -159,6 +203,16 @@ export default function ConversionView() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleRefreshNow}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-[#1C1D21] shadow-ambient transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCcw className={cn("h-4 w-4 text-[#3c6600]", isRefreshing && "animate-spin")} />
+            {isRefreshing ? "Loading..." : "Load live data"}
+          </button>
+
           <button
             type="button"
             onClick={resetToCurrentMonth}
@@ -183,6 +237,20 @@ export default function ConversionView() {
           </button>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 shadow-ambient">
+        {cacheSavedAt ? (
+          <span>
+            Dang hien cache luu luc <strong>{new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(cacheSavedAt))}</strong>.
+            {" "}
+            Khi ban doi filter hoac bam <strong>Load live data</strong>, backend moi bi danh thuc.
+          </span>
+        ) : (
+          <span>
+            Chua co cache local cho man Conversion nay. Bam <strong>Load live data</strong> de lay du lieu tu server.
+          </span>
+        )}
+      </section>
 
       {showDateFilters ? (
         <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-ambient">

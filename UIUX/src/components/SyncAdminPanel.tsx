@@ -250,7 +250,7 @@ export default function SyncAdminPanel() {
             {status?.running ? (
               <div className="mt-3 flex items-center gap-2 rounded-xl bg-primary-container/30 px-3 py-2 text-[11px] font-bold text-on-surface">
                 <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                Sync dang chay. UI se tu cap nhat sau khi backend xong va frontend refetch.
+                Sync dang chay. Sau khi backend xong, bam Load live data o man hinh can xem de cap nhat cache.
               </div>
             ) : null}
 

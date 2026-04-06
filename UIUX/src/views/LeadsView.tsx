@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { RefreshCcw } from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -20,6 +21,7 @@ import {
   ZoomableGroup,
 } from "react-simple-maps";
 import { fetchLeads, type LeadsResponse } from "@/src/lib/leadsApi";
+import { readViewCache, writeViewCache } from "@/src/lib/viewCache";
 
 type LeadsMode = "customers" | "leads";
 type ProvinceGeometry = { type?: string; coordinates?: unknown };
@@ -29,6 +31,7 @@ type ProvinceFeatureCollection = { type?: string; features?: ProvinceFeature[]; 
 const GEO_URL = "/vn-provinces.json";
 const INDUSTRY_COLORS = ["#B8FF68", "#7ED343", "#3C6600", "#1C1D21", "#6B7280", "#E5E7EB"];
 const HEAT_COLORS = ["#EEF7E0", "#DAF0B8", "#C3E889", "#A8DD57", "#86CC38", "#60AC23", "#3F7F10", "#295408"];
+const LEADS_CACHE_KEY = "crm_cache_leads";
 
 function foldText(value: string) {
   return String(value || "")
@@ -183,6 +186,8 @@ export default function LeadsView() {
   const [mode, setMode] = useState<LeadsMode>("customers");
   const [data, setData] = useState<LeadsResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cacheSavedAt, setCacheSavedAt] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [mapGeoJson, setMapGeoJson] = useState<ProvinceFeatureCollection | null>(null);
   const [provinceNamesByKey, setProvinceNamesByKey] = useState<Record<string, string>>({});
   const [provinceCenterByKey, setProvinceCenterByKey] = useState<Record<string, [number, number]>>({});
@@ -198,32 +203,27 @@ export default function LeadsView() {
   const [, startTransition] = useTransition();
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadLeads() {
-      try {
-        const payload = await fetchLeads();
-        if (!cancelled) {
-          setData(payload);
-          setErrorMessage(null);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setErrorMessage(error instanceof Error ? error.message : "Failed to load leads data.");
-        }
-      }
+    const cached = readViewCache<LeadsResponse>(LEADS_CACHE_KEY);
+    if (cached) {
+      setData(cached.data);
+      setCacheSavedAt(cached.savedAt);
     }
-
-    void loadLeads();
-    const intervalId = window.setInterval(() => {
-      void loadLeads();
-    }, 60000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-    };
   }, []);
+
+  const handleRefreshNow = async () => {
+    setIsRefreshing(true);
+    try {
+      const payload = await fetchLeads();
+      const cached = writeViewCache(LEADS_CACHE_KEY, payload);
+      setData(payload);
+      setCacheSavedAt(cached.savedAt);
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to load leads data.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -407,7 +407,31 @@ export default function LeadsView() {
             Vietnam heatmap by province with customer conversion insights by industry and segment group.
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => void handleRefreshNow()}
+          disabled={isRefreshing}
+          className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-[#1C1D21] shadow-ambient transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <RefreshCcw className={cn("h-4 w-4 text-[#3c6600]", isRefreshing && "animate-spin")} />
+          {isRefreshing ? "Loading..." : "Load live data"}
+        </button>
       </div>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 shadow-ambient">
+        {cacheSavedAt ? (
+          <span>
+            Dang hien cache luu luc <strong>{new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(cacheSavedAt))}</strong>.
+            {" "}
+            Bam <strong>Load live data</strong> khi ban muon danh thuc backend va cap nhat so moi.
+          </span>
+        ) : (
+          <span>
+            Chua co cache local cho man Leads. Bam <strong>Load live data</strong> de lay snapshot moi tu server.
+          </span>
+        )}
+      </section>
 
       {errorMessage ? (
         <section className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-700">

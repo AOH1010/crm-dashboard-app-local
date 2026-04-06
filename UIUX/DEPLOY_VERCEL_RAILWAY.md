@@ -1,39 +1,34 @@
-# Deploy Vercel + Railway
+# Deploy Vercel + Railway (Sleep + GitHub Cron)
 
-Muc tieu hien tai:
-- `Vercel` chi chay frontend React/Vite.
-- `Railway` chay backend API va giu `crm.db` trong volume persistent.
-- Crawler khong con dua DB moi len Git.
-- Backend co the tu sync dinh ky tren chinh Railway service.
-- Tuy chon: Railway trigger service co the goi backend neu ban muon tach scheduler ra rieng.
+Muc tieu moi:
+- `Vercel` chi host frontend React/Vite.
+- `Railway` host backend API + volume SQLite, nhung bat `Serverless` de co the ngu khi khong co request.
+- `GitHub Actions` danh thuc Railway moi 6 gio de chay `auto sync`.
+- Frontend chay `cache-first`: mo web len se doc cache local truoc, khong auto wake backend.
 
-## Kien truc muc 2
+## Kien truc cuoi cung
 
-- `Vercel`: giao dien web.
-- `Railway service 1`: backend API, AI agent, SQLite volume, va scheduler dinh ky.
-- `Railway service 2` la tuy chon: cron trigger, chi goi `POST /api/admin/sync`.
-- `crm.db`: nam trong volume `/app/data`.
-- `dashboard_sales.db`: duoc backend build lai tren cung volume sau moi lan sync.
+- `Vercel`: UI.
+- `Railway`: backend API, AI agent, SQLite volume tai `/app/data`.
+- `GitHub Actions`: cron ngoai, goi `POST /api/admin/sync` moi 6 gio.
+- `crm.db`: luu tren Railway volume.
+- `dashboard_sales.db`: rebuild tren cung volume sau moi lan sync.
 
 Luot chay:
-1. Volume trong thi backend tu seed `crm.db` tu `data/crm.db.gz`.
-2. Backend nghe `/api/admin/sync` va tu chay crawler Python tren chinh host Railway.
-3. Crawler cap nhat `crm.db`, sau do build lai `dashboard_sales.db`.
-4. Frontend refetch du lieu moi tu backend.
+1. Railway volume trong thi backend tu seed `crm.db` tu `data/crm.db.gz`.
+2. GitHub Actions goi backend `/api/admin/sync` theo lich 6 gio.
+3. Backend chay `auto sync`:
+   - customers incremental nhe: `lookback 6h`, `50 pages`, bo qua comments
+   - orders incremental
+4. Backend rebuild `dashboard_sales.db`.
+5. Luc nguoi dung mo web, UI doc cache local truoc.
+6. Chi khi nguoi dung bam `Load live data` hoac doi filter, frontend moi goi backend.
 
-## 1. Railway backend service
+## 1. Railway backend
 
-Repo da co san:
-- `Dockerfile` cai Node + Python.
-- `railway/start-backend.mjs` de seed volume neu can.
-- `UIUX/server/lib/sync-runner.js` de trigger sync.
+Dung service backend hien tai `crm-dashboard-app`.
 
-Trong Railway:
-1. Dung service backend hien tai `crm-dashboard-app`.
-2. Attach volume vao mount path: `/app/data`
-3. O `Settings`, co the de `Custom Start Command` trong. Docker mac dinh se vao che do backend.
-
-4. Set variables cho backend:
+Can giu cac variables:
 
 ```env
 GEMINI_API_KEY=...
@@ -44,8 +39,6 @@ PREBUILD_DASHBOARD_DB=true
 SYNC_ADMIN_TOKEN=mot_chuoi_bi_mat_rat_dai
 SYNC_DEFAULT_MODE=auto
 SYNC_LOOKBACK_HOURS=6
-SYNC_ON_BOOT=auto
-SYNC_INTERVAL_MINUTES=360
 SYNC_CUSTOMER_AUTO_LIMIT_PAGES=50
 SYNC_CUSTOMER_AUTO_PAGE_SIZE=100
 SYNC_CUSTOMER_AUTO_WORKERS=4
@@ -54,7 +47,18 @@ CRM_DB_PATH=/app/data/crm.db
 DASHBOARD_DB_PATH=/app/data/dashboard_sales.db
 ```
 
-5. Redeploy backend.
+Tat scheduler trong chinh backend de service co the ngu:
+
+```env
+SYNC_ON_BOOT=false
+SYNC_INTERVAL_MINUTES=0
+```
+
+Trong Railway:
+1. Attach volume vao `/app/data`
+2. `Custom Start Command`: de trong, hoac `npm --prefix UIUX run start`
+3. Bat `Serverless` cho service
+4. Redeploy
 
 Kiem tra:
 
@@ -63,96 +67,113 @@ https://your-backend.up.railway.app/api/health
 https://your-backend.up.railway.app/api/debug/env-status
 ```
 
-## 2. Trigger sync service tren Railway
+`/api/debug/env-status` nen cho thay:
+- `sync_enabled: true`
+- `prebuild_dashboard_db: "true"`
 
-Muc nay la tuy chon. Neu `SYNC_INTERVAL_MINUTES` da du, ban co the bo qua hoan toan.
+## 2. GitHub Actions cron 6 gio
 
-Tao them mot service moi tu cung repo, vi du `crm-sync-trigger`.
+Repo da co san workflow:
 
-Service nay:
-- khong can public domain
-- khong can volume
-- dung cung image, chi can set `APP_ROLE=sync-trigger`
+```text
+.github/workflows/railway-sync.yml
+```
 
-Variables:
+Workflow nay:
+- chay moi 6 gio
+- co nut `Run workflow` de ban bam tay trong GitHub
+- goi `POST /api/admin/sync` voi mode mac dinh `auto`
 
-```env
+Can them 2 secrets trong GitHub repo:
+
+1. `Settings`
+2. `Secrets and variables`
+3. `Actions`
+4. Them:
+
+```text
 SYNC_TRIGGER_URL=https://your-backend.up.railway.app/api/admin/sync
-SYNC_ADMIN_TOKEN=giong_backend
-SYNC_TRIGGER_MODE=incremental
-SYNC_TRIGGER_SOURCE=railway-cron
-APP_ROLE=sync-trigger
+SYNC_ADMIN_TOKEN=gia_tri_giong_tren_Railway
 ```
 
-Sau do bat `Cron` cho service nay theo lich ban muon.
+Sau khi save secrets:
+- workflow se tu chay moi 6 gio
+- ban cung co the vao tab `Actions` va bam tay `Run workflow`
 
-Vi du:
-- moi 30 phut: `*/30 * * * *`
-- moi 1 gio: `0 * * * *`
+## 3. Frontend cache-first tren Vercel
 
-## 3. Endpoint quan tri sync
+Frontend da duoc doi hanh vi:
+- `Dashboard`, `Leads`, `Conversion` doc cache `localStorage` truoc
+- khong con polling moi 60 giay
+- mo web len khong tu dong goi backend nua
+- nut `Load live data` se wake Railway khi ban can snapshot moi
 
-Backend da co san 2 endpoint moi:
+Lan dau tren trinh duyet moi:
+- neu chua co cache, man hinh se bao chua co snapshot local
+- luc do bam `Load live data` de tao cache dau tien
 
-- `GET /api/admin/sync/status`
-- `POST /api/admin/sync`
+Sau moi lan sync backend:
+- mo lai web van thay cache cu
+- bam `Load live data` o man hinh can xem de nap du lieu moi
 
-Request trigger:
+## 4. Manual sync tu UI
 
-```bash
-curl -X POST "https://your-backend.up.railway.app/api/admin/sync" \
-  -H "Authorization: Bearer YOUR_SYNC_ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"mode\":\"incremental\",\"trigger\":\"manual\"}"
-```
+Panel `Data Sync` van giu nguyen cho admin:
+- `Auto sync now`
+- `Full customers`
+- `Full orders`
+- `Full all`
 
-Request status:
+Panel nay can `SYNC_ADMIN_TOKEN` de kich tay.
 
-```bash
-curl "https://your-backend.up.railway.app/api/admin/sync/status" \
-  -H "Authorization: Bearer YOUR_SYNC_ADMIN_TOKEN"
-```
+Auto cron 6 gio khong can ban mo web, khong can token trong browser.
 
-## 4. Deploy frontend Vercel
+## 5. Deploy frontend Vercel
 
-Frontend van giong truoc:
+Sau khi pull code moi:
 
 ```powershell
 cd "d:\Project\CRM 1\UIUX"
-npx vercel env add VITE_API_BASE_URL production --value "https://your-backend.up.railway.app" --yes
 npx vercel --prod
 ```
 
-## 5. Hanh vi cap nhat du lieu
+Neu chua set:
 
-Sau khi muc 2 da xong:
-- ban khong can nen lai `crm.db.gz` moi lan crawl
-- ban khong can commit data moi len Git
-- Railway backend se tu cap nhat `crm.db` trong volume
-- backend se tu chay sync luc boot va theo chu ky `SYNC_INTERVAL_MINUTES`
-- auto mode chi scrape customer incremental nhe:
-  - lookback 6 gio
-  - toi da 50 pages
-  - bo qua comments
-- orders incremental van tu dong chay cung chu ky
-- full scrape customer/orders duoc kich tay qua UI admin hoac endpoint
-- UI se thay data moi o lan refetch tiep theo
+```powershell
+npx vercel env add VITE_API_BASE_URL production --value "https://your-backend.up.railway.app" --yes
+```
 
-Repo chi can push khi:
-- sua giao dien
-- sua backend
-- sua crawler
+## 6. Cach van hanh thuc te
 
-## 6. Muc do gan real-time
+Hang ngay:
+- GitHub Actions tu dong scrape moi 6 gio
+- Railway backend ngu khi khong co request
+- mo web len xem cache local
+- khi can so moi, bam `Load live data`
 
-Hien tai frontend dang refetch du lieu moi moi 60 giay o cac view chinh.
+Khi can scrape day du:
+- vao web
+- mo `Data Sync`
+- nhap `SYNC_ADMIN_TOKEN`
+- bam `Full customers`, `Full orders`, hoac `Full all`
 
-Do tre thuc te se la:
-- thoi gian crawler lay du lieu tu Getfly
-- thoi gian build lai `dashboard_sales.db`
-- toi da khoang 60 giay de frontend tu refetch
+## 7. Uoc tinh do tre
 
-Neu can nhanh hon nua:
-- giam cron interval
-- giam front-end polling
-- hoac them WebSocket/SSE o buoc sau
+Do tre cap nhat du lieu se la:
+- toi da gan 6 gio cho lich cron tiep theo
+- cong them thoi gian crawl thuc te
+- cong them luc nguoi dung bam `Load live data`
+
+Neu muon nhanh hon:
+- giam cron tu 6 gio xuong 3 gio
+- hoac bam `Auto sync now` thu cong
+
+## 8. Bao mat
+
+Ban da tung de lo `GEMINI_API_KEY` va co the ca `GETFLY_API_KEY` trong qua trinh setup.
+
+Nen lam ngay:
+1. Rotate `GEMINI_API_KEY`
+2. Rotate `GETFLY_API_KEY`
+3. Cap nhat lai Railway variables
+4. Cap nhat lai bat ky noi nao dang dung key cu

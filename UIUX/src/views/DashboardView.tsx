@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useTransition } from "react";
+import React, { useEffect, useRef, useState, useTransition } from "react";
 import {
   Area,
   AreaChart,
@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { fetchDashboard, type DashboardGrain, type DashboardResponse } from "@/src/lib/dashboardApi";
+import { readViewCache, writeViewCache } from "@/src/lib/viewCache";
 
 interface DashboardViewProps {
   onNavigate: (id: string) => void;
@@ -79,6 +80,10 @@ function formatDateTime(value: string) {
   }).format(date);
 }
 
+function buildDashboardCacheKey(params: { from: string; to: string; grain: DashboardGrain }) {
+  return `crm_cache_dashboard:${params.from}:${params.to}:${params.grain}`;
+}
+
 function getStatusTone(statusLabel: string) {
   const text = statusLabel.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   if (text.includes("huy")) {
@@ -108,39 +113,60 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cacheSavedAt, setCacheSavedAt] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const skipFirstFetchRef = useRef(true);
+
+  const loadDashboard = async (params: {
+    from: string;
+    to: string;
+    grain: DashboardGrain;
+  }) => {
+    setIsRefreshing(true);
+    try {
+      const payload = await fetchDashboard(params);
+      const cached = writeViewCache(buildDashboardCacheKey(params), payload);
+      setDashboard(payload);
+      setCacheSavedAt(cached.savedAt);
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to load dashboard data.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    let cancelled = false;
+    const cached = readViewCache<DashboardResponse>(
+      buildDashboardCacheKey({
+        from: fromDate,
+        to: toDate,
+        grain,
+      }),
+    );
 
-    async function loadDashboard() {
-      try {
-        const payload = await fetchDashboard({
-          from: fromDate,
-          to: toDate,
-          grain,
-        });
-
-        if (!cancelled) {
-          setDashboard(payload);
-          setErrorMessage(null);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setErrorMessage(error instanceof Error ? error.message : "Failed to load dashboard data.");
-        }
-      }
+    if (cached) {
+      setDashboard(cached.data);
+      setCacheSavedAt(cached.savedAt);
+      return;
     }
 
-    void loadDashboard();
-    const intervalId = window.setInterval(() => {
-      void loadDashboard();
-    }, 60000);
+    setDashboard(null);
+    setCacheSavedAt(null);
+  }, [fromDate, toDate, grain]);
 
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-    };
+  useEffect(() => {
+    if (skipFirstFetchRef.current) {
+      skipFirstFetchRef.current = false;
+      return;
+    }
+
+    void loadDashboard({
+      from: fromDate,
+      to: toDate,
+      grain,
+    });
   }, [fromDate, toDate, grain]);
 
   const revenuePoints = dashboard?.revenue_series.points || [];
@@ -172,6 +198,14 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
     });
   };
 
+  const handleRefreshNow = () => {
+    void loadDashboard({
+      from: fromDate,
+      to: toDate,
+      grain,
+    });
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -185,6 +219,16 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleRefreshNow}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-[#1C1D21] shadow-ambient transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCcw className={cn("h-4 w-4 text-[#3c6600]", isRefreshing && "animate-spin")} />
+            {isRefreshing ? "Loading..." : "Load live data"}
+          </button>
+
           <button
             type="button"
             onClick={handleResetToCurrentMonth}
@@ -209,6 +253,22 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
           </button>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 shadow-ambient">
+        {cacheSavedAt ? (
+          <span>
+            Dang hien cache luu luc <strong>{formatDateTime(cacheSavedAt)}</strong>. Railway chi bi danh thuc khi ban bam
+            {" "}
+            <strong>Load live data</strong>
+            {" "}
+            hoac doi bo loc.
+          </span>
+        ) : (
+          <span>
+            Chua co cache local cho bo loc nay. Bam <strong>Load live data</strong> neu ban muon lay du lieu moi tu server.
+          </span>
+        )}
+      </section>
 
       {showFilters ? (
         <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-ambient">
@@ -384,10 +444,10 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
             <div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/60 px-6 py-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-xl font-bold text-[#1C1D21]">Latest Orders Feed</h2>
-                <p className="text-sm text-gray-500">Realtime list, independent from KPI filters. Refresh target: every 5 minutes.</p>
+                <p className="text-sm text-gray-500">Loaded from local cache until you request a live refresh.</p>
               </div>
               <div className="rounded-full bg-[#B8FF68]/20 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#3c6600]">
-                {isPending ? "Refreshing..." : "Live"}
+                {isRefreshing ? "Refreshing..." : isPending ? "Applying..." : "Cached"}
               </div>
             </div>
 
