@@ -15,6 +15,7 @@ const syncLookbackHours = parseInteger(process.env.SYNC_LOOKBACK_HOURS, 24);
 const syncStaffPageSize = parseInteger(process.env.SYNC_STAFF_PAGE_SIZE, 100);
 const syncBootMode = String(process.env.SYNC_ON_BOOT || "").trim().toLowerCase();
 const defaultMode = String(process.env.SYNC_DEFAULT_MODE || "incremental").trim().toLowerCase();
+const syncIntervalMinutes = parseInteger(process.env.SYNC_INTERVAL_MINUTES, 0);
 const crmDbPath = path.resolve(process.env.CRM_DB_PATH || path.join(projectRoot, "data", "crm.db"));
 
 const state = {
@@ -31,6 +32,7 @@ const state = {
 };
 
 let activeRunPromise = null;
+let syncIntervalHandle = null;
 
 function parseInteger(value, fallback) {
   const parsed = Number.parseInt(String(value || ""), 10);
@@ -266,4 +268,32 @@ export function shouldSyncOnBoot() {
 
 export function getBootSyncMode() {
   return syncBootMode === "full" ? "full" : defaultMode;
+}
+
+export function startSyncScheduler() {
+  if (syncIntervalHandle || syncIntervalMinutes <= 0) {
+    return {
+      enabled: syncIntervalMinutes > 0,
+      intervalMinutes: syncIntervalMinutes,
+      started: false,
+    };
+  }
+
+  const intervalMs = syncIntervalMinutes * 60 * 1000;
+  syncIntervalHandle = setInterval(() => {
+    const result = triggerSync({
+      mode: defaultMode,
+      trigger: "interval",
+    });
+    if (result.alreadyRunning) {
+      logLine("[sync]", `interval skipped because run ${result.runId} is already active`);
+    }
+  }, intervalMs);
+  syncIntervalHandle.unref?.();
+
+  return {
+    enabled: true,
+    intervalMinutes: syncIntervalMinutes,
+    started: true,
+  };
 }

@@ -4,13 +4,14 @@ Muc tieu hien tai:
 - `Vercel` chi chay frontend React/Vite.
 - `Railway` chay backend API va giu `crm.db` trong volume persistent.
 - Crawler khong con dua DB moi len Git.
-- Railway cron/trigger se goi backend tu sync Getfly truc tiep vao volume.
+- Backend co the tu sync dinh ky tren chinh Railway service.
+- Tuy chon: Railway trigger service co the goi backend neu ban muon tach scheduler ra rieng.
 
 ## Kien truc muc 2
 
 - `Vercel`: giao dien web.
-- `Railway service 1`: backend API, AI agent, SQLite volume.
-- `Railway service 2`: cron trigger, chi goi `POST /api/admin/sync`.
+- `Railway service 1`: backend API, AI agent, SQLite volume, va scheduler dinh ky.
+- `Railway service 2` la tuy chon: cron trigger, chi goi `POST /api/admin/sync`.
 - `crm.db`: nam trong volume `/app/data`.
 - `dashboard_sales.db`: duoc backend build lai tren cung volume sau moi lan sync.
 
@@ -43,6 +44,8 @@ PREBUILD_DASHBOARD_DB=true
 SYNC_ADMIN_TOKEN=mot_chuoi_bi_mat_rat_dai
 SYNC_DEFAULT_MODE=incremental
 SYNC_LOOKBACK_HOURS=24
+SYNC_ON_BOOT=incremental
+SYNC_INTERVAL_MINUTES=30
 CRM_DATA_DIR=/app/data
 CRM_DB_PATH=/app/data/crm.db
 DASHBOARD_DB_PATH=/app/data/dashboard_sales.db
@@ -58,6 +61,8 @@ https://your-backend.up.railway.app/api/debug/env-status
 ```
 
 ## 2. Trigger sync service tren Railway
+
+Muc nay la tuy chon. Neu `SYNC_INTERVAL_MINUTES` da du, ban co the bo qua hoan toan.
 
 Tao them mot service moi tu cung repo, vi du `crm-sync-trigger`.
 
@@ -121,6 +126,7 @@ Sau khi muc 2 da xong:
 - ban khong can nen lai `crm.db.gz` moi lan crawl
 - ban khong can commit data moi len Git
 - Railway backend se tu cap nhat `crm.db` trong volume
+- backend se tu chay sync luc boot va theo chu ky `SYNC_INTERVAL_MINUTES`
 - UI se thay data moi o lan refetch tiep theo
 
 Repo chi can push khi:

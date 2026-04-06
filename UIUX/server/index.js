@@ -15,6 +15,7 @@ import {
   getSyncStatus,
   isSyncEnabled,
   requireSyncAdminAuth,
+  startSyncScheduler,
   shouldSyncOnBoot,
   triggerSync,
 } from "./lib/sync-runner.js";
@@ -213,6 +214,12 @@ app.listen(port, host, () => {
       accepted: result.accepted,
       runId: result.runId,
       alreadyRunning: result.alreadyRunning,
+    });
+  }
+  const scheduler = startSyncScheduler();
+  if (scheduler.started) {
+    console.log("[dashboard-api] interval sync scheduler started", {
+      intervalMinutes: scheduler.intervalMinutes,
     });
   }
 });
