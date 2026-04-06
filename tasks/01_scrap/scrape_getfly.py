@@ -165,6 +165,15 @@ def build_old_data_map():
     return old_data_map
 
 
+def get_latest_customer_updated_at():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT MAX(updated_at_1) FROM customers WHERE TRIM(COALESCE(updated_at_1, '')) != ''")
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row and row[0] else None
+
+
 def get_sync_state(job_name):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -428,7 +437,15 @@ def get_run_filter(account_code=None, since_today=False, since_date=None, full_s
     checkpoint_raw = sync_state["last_successful_updated_at"] if sync_state else None
     checkpoint_dt = parse_getfly_datetime(checkpoint_raw)
     if checkpoint_dt is None:
-        raise RuntimeError("Chua co checkpoint auto sync. Hay chay lan dau bang --since-date YYYY-MM-DD.")
+        fallback_checkpoint_raw = get_latest_customer_updated_at()
+        checkpoint_dt = parse_getfly_datetime(fallback_checkpoint_raw)
+        if checkpoint_dt is None:
+            return {
+                "filter_value": None,
+                "message": "Khong tim thay checkpoint sync_state hay du lieu cu. Se chay full sync.",
+                "mode": "bootstrap_full_sync",
+                "checkpoint_candidate": None,
+            }
 
     if lookback_hours > 0:
         checkpoint_dt = checkpoint_dt - timedelta(hours=lookback_hours)

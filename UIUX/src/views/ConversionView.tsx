@@ -89,7 +89,7 @@ export default function ConversionView() {
     void loadConversion();
     const intervalId = window.setInterval(() => {
       void loadConversion();
-    }, 300000);
+    }, 60000);
 
     return () => {
       cancelled = true;

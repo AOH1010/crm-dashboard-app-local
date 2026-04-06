@@ -135,7 +135,7 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
     void loadDashboard();
     const intervalId = window.setInterval(() => {
       void loadDashboard();
-    }, 300000);
+    }, 60000);
 
     return () => {
       cancelled = true;

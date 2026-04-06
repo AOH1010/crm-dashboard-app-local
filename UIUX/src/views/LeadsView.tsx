@@ -217,7 +217,7 @@ export default function LeadsView() {
     void loadLeads();
     const intervalId = window.setInterval(() => {
       void loadLeads();
-    }, 300000);
+    }, 60000);
 
     return () => {
       cancelled = true;

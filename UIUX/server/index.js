@@ -9,6 +9,15 @@ import {
 } from "./lib/dashboard-sales-db.js";
 import { getConversionPayload } from "./lib/conversion-data.js";
 import { getLeadsPayload } from "./lib/leads-data.js";
+import { ensureSeededCrmDb } from "./lib/seed-db.js";
+import {
+  getBootSyncMode,
+  getSyncStatus,
+  isSyncEnabled,
+  requireSyncAdminAuth,
+  shouldSyncOnBoot,
+  triggerSync,
+} from "./lib/sync-runner.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +31,7 @@ const app = express();
 const port = Number.parseInt(process.env.PORT || process.env.DASHBOARD_API_PORT || "3001", 10);
 const host = process.env.HOST || "0.0.0.0";
 const shouldPrebuildDashboardDb = process.env.PREBUILD_DASHBOARD_DB === "true";
+const seedResult = await ensureSeededCrmDb();
 
 process.on("uncaughtException", (error) => {
   console.error("[dashboard-api] uncaughtException", error);
@@ -34,7 +44,7 @@ process.on("unhandledRejection", (error) => {
 app.use(express.json());
 app.use((_, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Authorization,Content-Type,X-Sync-Token");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   next();
 });
@@ -55,6 +65,37 @@ app.get("/api/debug/env-status", (_req, res) => {
     gemini_api_key_length: apiKey.length,
     crm_agent_model: model || null,
     prebuild_dashboard_db: process.env.PREBUILD_DASHBOARD_DB || null,
+    sync_enabled: isSyncEnabled(),
+  });
+});
+
+app.get("/api/admin/sync/status", requireSyncAdminAuth, (_req, res) => {
+  res.status(200).json(getSyncStatus());
+});
+
+app.post("/api/admin/sync", requireSyncAdminAuth, (req, res) => {
+  const requestedMode = typeof req.body?.mode === "string" ? req.body.mode : undefined;
+  const triggerSource = typeof req.body?.trigger === "string" ? req.body.trigger : "api";
+  const result = triggerSync({
+    mode: requestedMode,
+    trigger: triggerSource,
+  });
+
+  if (result.alreadyRunning) {
+    res.status(409).json({
+      ok: false,
+      already_running: true,
+      run_id: result.runId,
+      status: result.status,
+    });
+    return;
+  }
+
+  res.status(202).json({
+    ok: true,
+    accepted: true,
+    run_id: result.runId,
+    status: result.status,
   });
 });
 
@@ -155,8 +196,23 @@ console.log("[dashboard-api] env status", {
   geminiApiKeyLength: String(process.env.GEMINI_API_KEY || "").length,
   crmAgentModel: process.env.CRM_AGENT_MODEL || null,
   prebuildDashboardDb: process.env.PREBUILD_DASHBOARD_DB || null,
+  syncEnabled: isSyncEnabled(),
+  syncOnBoot: process.env.SYNC_ON_BOOT || null,
+  seededCrmDb: seedResult.seeded,
+  missingSeedArchive: Boolean(seedResult.missingSeedArchive),
 });
 
 app.listen(port, host, () => {
   console.log(`[dashboard-api] listening on http://${host}:${port}`);
+  if (shouldSyncOnBoot()) {
+    const result = triggerSync({
+      mode: getBootSyncMode(),
+      trigger: "startup",
+    });
+    console.log("[dashboard-api] startup sync requested", {
+      accepted: result.accepted,
+      runId: result.runId,
+      alreadyRunning: result.alreadyRunning,
+    });
+  }
 });
