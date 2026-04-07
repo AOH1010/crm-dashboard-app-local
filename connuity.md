@@ -1,6 +1,6 @@
 # Continuity Notes
 
-Cap nhat den commit: `93e23b0`
+Cap nhat den commit: `pending-operations-v1`
 
 ## 1. Muc tieu da dat duoc
 
@@ -191,6 +191,7 @@ Hien agent:
 
 - `tasks/01_scrap/scrape_getfly.py`
 - `tasks/01_scrap/scrape_orders.py`
+- `tasks/01_scrap/sync_operations_workbook.py`
 - `tasks/requirements.txt`
 
 ### Deploy / infra
@@ -202,7 +203,77 @@ Hien agent:
 - `UIUX/DEPLOY_VERCEL_RAILWAY.md`
 - `UIUX/.env.example`
 
-## 10. Cach tiep tuc o may tinh khac
+## 10. Operations v1 da them
+
+Nguon du lieu van hanh:
+- Google Sheet workbook do user cung cap
+- Sheet goc:
+  - `Raw Data`
+  - `Activation`
+  - `JCD hết hạn`
+- Sheet doi soat business truth:
+  - `Check_Active`
+  - `Check_Categories`
+  - `Summary`
+  - `Definition`
+
+Huong xu ly:
+1. Download workbook `.xlsx` vao file tam
+2. Parse va chuan hoa ngay thang
+3. Build `dashboard_operations.db`
+4. Xoa file workbook tam ngay sau khi xong
+
+DB moi:
+- `data/dashboard_operations.db`
+
+Bang chinh trong operations DB:
+- `operations_meta`
+- `ops_activation_accounts`
+- `ops_jcd_expired_accounts`
+- `ops_raw_daily`
+- `ops_monthly_metrics`
+- `ops_monthly_status`
+- `ops_due_accounts`
+
+API moi:
+- `/api/operations/user-map`
+- `/api/operations/active-map`
+- `/api/operations/cohort-active`
+- `/api/operations/renew`
+
+Frontend moi da dung data that:
+- `UIUX/src/views/UserMapView.tsx`
+- `UIUX/src/views/ActiveMapView.tsx`
+- `UIUX/src/views/CohortActiveUserView.tsx`
+- `UIUX/src/views/RenewView.tsx`
+- `UIUX/src/lib/operationsApi.ts`
+
+Logic business can ghi nho:
+- Root account van hanh = `Activation`
+- `Raw Data` khong map vao `Activation/JCD` thi loai khoi KPI/chart chinh
+- `Cohort Active User` co rule dong theo:
+  - metric `open/create/update/render`
+  - threshold tuy chon
+- Rule invalid:
+  - neu `open = 0` nhung `create/update/render > 0`
+  - danh dau invalid va canh bao do
+- `Renew`:
+  - batch den han lay tu `JCD hết hạn`
+  - renew thanh cong = cung username xuat hien trong `Activation` voi contract term co chu `RENEW`
+
+AI chat:
+- Da attach them operations DB vao agent
+- Agent da co the query `operations.*` tables neu DB ton tai tren backend
+
+Railway env can co de operations chay that:
+- `OPERATIONS_WORKBOOK_URL`
+- `OPERATIONS_DB_PATH=/app/data/dashboard_operations.db` (khuyen nghi)
+
+Neu `OPERATIONS_WORKBOOK_URL` khong duoc set:
+- backend van boot binh thuong
+- nhung sync se bo qua buoc build operations DB
+- cac view van hanh se khong co data that tren Railway
+## 11. Cach tiep tuc o may tinh khac
 
 Clone repo:
 

@@ -1,10 +1,20 @@
 import { fetchConversion } from "./conversionApi";
 import { fetchDashboard } from "./dashboardApi";
 import { fetchLeads } from "./leadsApi";
+import {
+  fetchOperationsActiveMap,
+  fetchOperationsCohort,
+  fetchOperationsRenew,
+  fetchOperationsUserMap,
+} from "./operationsApi";
 import { fetchTeam } from "./teamApi";
 import { writeViewCache } from "./viewCache";
 
 const LEADS_CACHE_KEY = "crm_cache_leads";
+const OPERATIONS_ACTIVE_MAP_CACHE_KEY_PREFIX = "crm_cache_ops_active_map";
+const OPERATIONS_COHORT_CACHE_KEY_PREFIX = "crm_cache_ops_cohort";
+const OPERATIONS_RENEW_CACHE_KEY_PREFIX = "crm_cache_ops_renew";
+const OPERATIONS_USER_MAP_CACHE_KEY_PREFIX = "crm_cache_ops_user_map";
 const TEAM_CACHE_KEY_PREFIX = "crm_cache_team";
 
 function getTodayKey() {
@@ -37,9 +47,27 @@ function buildTeamCacheKey(params: { from: string; to: string }) {
   return `${TEAM_CACHE_KEY_PREFIX}:${params.from}:${params.to}`;
 }
 
+function buildOperationsUserMapCacheKey(reportMonth: string) {
+  return `${OPERATIONS_USER_MAP_CACHE_KEY_PREFIX}:${reportMonth}`;
+}
+
+function buildOperationsActiveMapCacheKey(reportMonth: string, tenureBucket: string) {
+  return `${OPERATIONS_ACTIVE_MAP_CACHE_KEY_PREFIX}:${reportMonth}:${tenureBucket}`;
+}
+
+function buildOperationsCohortCacheKey(reportMonth: string, metric: string, threshold: number) {
+  return `${OPERATIONS_COHORT_CACHE_KEY_PREFIX}:${reportMonth}:${metric}:${threshold}`;
+}
+
+function buildOperationsRenewCacheKey(reportMonth: string, year: number) {
+  return `${OPERATIONS_RENEW_CACHE_KEY_PREFIX}:${reportMonth}:${year}`;
+}
+
 export async function refreshCoreViewCaches() {
   const today = getTodayKey();
   const from = startOfMonth(today);
+  const reportMonth = today;
+  const reportYear = Number.parseInt(today.slice(0, 4), 10);
 
   const results = await Promise.allSettled([
     fetchDashboard({ from, to: today, grain: "month" }).then((payload) => {
@@ -50,6 +78,28 @@ export async function refreshCoreViewCaches() {
     }),
     fetchTeam({ from, to: today }).then((payload) => {
       writeViewCache(buildTeamCacheKey({ from, to: today }), payload);
+    }),
+    fetchOperationsUserMap(reportMonth).then((payload) => {
+      writeViewCache(buildOperationsUserMapCacheKey(reportMonth), payload);
+    }),
+    fetchOperationsActiveMap({
+      reportMonth,
+      tenureBucket: "all",
+    }).then((payload) => {
+      writeViewCache(buildOperationsActiveMapCacheKey(reportMonth, "all"), payload);
+    }),
+    fetchOperationsCohort({
+      reportMonth,
+      metric: "open",
+      threshold: 1,
+    }).then((payload) => {
+      writeViewCache(buildOperationsCohortCacheKey(reportMonth, "open", 1), payload);
+    }),
+    fetchOperationsRenew({
+      reportMonth,
+      year: reportYear,
+    }).then((payload) => {
+      writeViewCache(buildOperationsRenewCacheKey(reportMonth, reportYear), payload);
     }),
     fetchConversion({
       from,

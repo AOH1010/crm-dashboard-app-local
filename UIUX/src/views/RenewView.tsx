@@ -1,132 +1,469 @@
-import React from "react";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import React, { useEffect, useMemo, useState, useTransition } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
   ResponsiveContainer,
-  Cell
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
-import { 
-  History, 
-  Search, 
-  Bell, 
-  Settings, 
+import {
   CalendarDays,
-  Verified,
-  Download,
-  Calendar,
-  ChevronRight,
-  TrendingUp,
-  ArrowUp,
-  Plus
+  CalendarRange,
+  Filter,
+  RefreshCcw,
+  RotateCcw,
+  Timer,
+  X,
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
+import { LOAD_LIVE_DATA_EVENT } from "@/src/lib/liveDataEvents";
+import { fetchOperationsRenew, type OperationsRenewResponse } from "@/src/lib/operationsApi";
+import { readViewCache, writeViewCache } from "@/src/lib/viewCache";
 
-const chartData = [
-  { month: "JAN", total: 45, success: 32 },
-  { month: "FEB", total: 38, success: 28 },
-  { month: "MAR", total: 52, success: 44 },
-  { month: "APR", total: 30, success: 22 },
-  { month: "MAY", total: 60, success: 52 },
-  { month: "JUN", total: 42, success: 35 },
-  { month: "JUL", total: 48, success: 42 },
-  { month: "AUG", total: 55, success: 48 },
-  { month: "SEP", total: 68, success: 62 },
-  { month: "OCT", total: 40, success: 28, current: true },
-  { month: "NOV", total: 32, success: 15 },
-  { month: "DEC", total: 28, success: 10 },
-];
+const RENEW_CACHE_KEY_PREFIX = "crm_cache_ops_renew";
+const numberFormatter = new Intl.NumberFormat("en-US");
 
-const customerList = [
-  { id: "CR-882193", name: "Tech Horizon Solutions", contract: "450.000.000 đ", tier: "Gói Enterprise 12M", expiry: "24/10/2023", days: "Còn 5 ngày", status: "Đang đàm phán", color: "#3c6600", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBYv-YtlYTmh3cZgend_ZtyanyvR3MOGOh0Y1QOjWHmaOeJVlzl23yhlV7N_6SEzkxKJQr-HIH6kQTe0Nm7y8jHokoGPcmjfXvnBTRw0PmRhSDlMcAkMiOMTHuT-o1c3Vcc5wvhazmBEWc1xy4SYyRSGgvzAiBSQpgM6qKblIZ1BlESpTaeEekKwNYcbnr3csshExLumwYyv4hB5y4HmPAopAuW9mLvcfHehAzRTyoHOjy1be8jFmgpqTplhw32qBDPk7eOgEI4n9hM" },
-  { id: "CR-102948", name: "Vina Retail Group", contract: "1.280.000.000 đ", tier: "Gói Custom Multi-Site", expiry: "28/10/2023", days: "Còn 9 ngày", status: "Chưa phản hồi", color: "#5b5b60", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCHjOYgv1vjy5iai5ZMFSvq8lkriefCy2q1VI7OGGwqr_mmejIMSFPzmxsisqFeNdhRAyBlK-VXeHgNIeUHGvKOqjxUQHFU6sRWJbzbwVwjpy2m62aOWXtO9BoinS2vWzqgc9K0o8qa58DF2o7lyG4GOxy2lDyjYVkgDhDDRzaad3db_fUGdooslEOijTRV7bpfOakUFp-Nq8LgLPIy9ujlcLLjhf0rE-izAA2Tsr-JPJ7uwCDf86WAOboCzFqPvxfYUUXA5s2RAzWe" },
-  { id: "CR-556122", name: "Green Energy JSC", contract: "85.000.000 đ", tier: "Gói Standard Plus", expiry: "31/10/2023", days: "Sắp đến hạn", status: "Chờ xác nhận", color: "#3c6600", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBQB_Tkl9q7PRi5TNO0M2K2L25iGb29XDUigGr1MZB8aCfvijacZOXmWvNsZuD8k436B9WemcOnIha7n4kd1aRePrBsbWQZ7rvTN8rWLgTKxdl39bLe-SFFUzYxM4grWqq52GJsUwYr5ofjLWmo-xiSl0b-aUOv1fDJDFUIHEdZ8VhvWiEUo-l9IIwaa_MT4IdUaCEWjBf99gHr_sEDSNuhyeSMgIIKBzWd5Ln8rxtARd_5zzpct1L-9iVuZrV9Wj1XsRZFlN6GURPk" },
-];
+function getTodayKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function monthInputFromDate(dateKey: string) {
+  return dateKey.slice(0, 7);
+}
+
+function dateFromMonthInput(value: string) {
+  return `${value}-01`;
+}
+
+function buildRenewCacheKey(reportMonth: string, year: number) {
+  return `${RENEW_CACHE_KEY_PREFIX}:${reportMonth}:${year}`;
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatDate(value: string | null) {
+  if (!value) {
+    return "N/A";
+  }
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatMonthLabel(dateKey: string) {
+  const date = new Date(`${dateKey.slice(0, 7)}-01T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return dateKey;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatPercent(value: number) {
+  return `${value.toFixed(1)}%`;
+}
+
+function RenewTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ dataKey?: string; value?: number; color?: string }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#1C1D21] px-4 py-3 text-white shadow-2xl">
+      <p className="text-[11px] font-black uppercase tracking-[0.24em] text-white/45">{label}</p>
+      <div className="mt-3 space-y-2 text-sm">
+        {payload.map((entry) => (
+          <div key={entry.dataKey} className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color || "#fff" }} />
+              <span className="text-white/70">{entry.dataKey === "due_count" ? "Due" : "Renewed"}</span>
+            </div>
+            <span className="font-bold text-white">{numberFormatter.format(Number(entry.value || 0))}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function getCategoryTone(category: string) {
+  switch (category) {
+    case "Best":
+      return "border-[#B8FF68]/45 bg-[#B8FF68]/12 text-[#416113]";
+    case "Value":
+      return "border-sky-200 bg-sky-50 text-sky-700";
+    case "Noise":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "Ghost":
+      return "border-rose-200 bg-rose-50 text-rose-700";
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-600";
+  }
+}
 
 export default function RenewView() {
+  const initialToday = getTodayKey();
+  const [reportMonth, setReportMonth] = useState(initialToday);
+  const [draftMonth, setDraftMonth] = useState(monthInputFromDate(initialToday));
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(Number.parseInt(initialToday.slice(0, 4), 10));
+  const [draftYear, setDraftYear] = useState(Number.parseInt(initialToday.slice(0, 4), 10));
+  const [payload, setPayload] = useState<OperationsRenewResponse | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const [cacheSavedAt, setCacheSavedAt] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  const loadRenew = async (nextReportMonth: string, nextYear: number) => {
+    try {
+      const nextPayload = await fetchOperationsRenew({
+        reportMonth: nextReportMonth,
+        year: nextYear,
+      });
+      const cached = writeViewCache(buildRenewCacheKey(nextReportMonth, nextYear), nextPayload);
+      setPayload(nextPayload);
+      setCacheSavedAt(cached.savedAt);
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to load renew data.");
+    }
+  };
+
+  useEffect(() => {
+    const cached = readViewCache<OperationsRenewResponse>(buildRenewCacheKey(reportMonth, selectedYear));
+    if (cached) {
+      setPayload(cached.data);
+      setCacheSavedAt(cached.savedAt);
+      return;
+    }
+    setPayload(null);
+    setCacheSavedAt(null);
+    void loadRenew(reportMonth, selectedYear);
+  }, [reportMonth, selectedYear]);
+
+  useEffect(() => {
+    const onLoadLiveData = () => {
+      void loadRenew(reportMonth, selectedYear);
+    };
+    window.addEventListener(LOAD_LIVE_DATA_EVENT, onLoadLiveData);
+    return () => {
+      window.removeEventListener(LOAD_LIVE_DATA_EVENT, onLoadLiveData);
+    };
+  }, [reportMonth, selectedYear]);
+
+  useEffect(() => {
+    const accounts = payload?.expiring_accounts || [];
+    if (accounts.length === 0) {
+      setSelectedAccount(null);
+      return;
+    }
+
+    if (selectedAccount && accounts.some((account) => account.account === selectedAccount)) {
+      return;
+    }
+
+    setSelectedAccount(accounts[0].account);
+  }, [payload, selectedAccount]);
+
+  const handleResetCurrentMonth = () => {
+    const today = getTodayKey();
+    const year = Number.parseInt(today.slice(0, 4), 10);
+    startTransition(() => {
+      setDraftMonth(monthInputFromDate(today));
+      setReportMonth(today);
+      setSelectedYear(year);
+      setDraftYear(year);
+      setShowFilters(false);
+    });
+  };
+
+  const handleApplyFilters = () => {
+    startTransition(() => {
+      setReportMonth(dateFromMonthInput(draftMonth));
+      setSelectedYear(draftYear);
+      setShowFilters(false);
+    });
+  };
+
+  const selectedAccountDetail = (payload?.expiring_accounts || []).find((account) => account.account === selectedAccount)
+    || payload?.expiring_accounts?.[0]
+    || null;
+
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    (payload?.chart.points || []).forEach((point) => {
+      years.add(Number.parseInt(point.month_key.slice(0, 4), 10));
+    });
+    years.add(selectedYear);
+    return [...years].sort((left, right) => right - left);
+  }, [payload, selectedYear]);
+
   return (
-    <div className="space-y-8 animate-in slide-in-from-bottom-5 duration-700 font-body">
-      {/* Header and Filter */}
-      <section className="flex flex-col md:flex-row justify-between items-end gap-6">
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 w-full font-headline">
-          <div className="bg-white p-8 rounded-[24px] shadow-ambient flex items-center justify-between border border-gray-100 group hover:translate-y-[-2px] transition-all">
-            <div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 select-none">Số KH đến hạn tái ký</p>
-              <h3 className="text-5xl font-black text-[#1C1D21] tabular-nums tracking-tighter">128</h3>
-            </div>
-            <div className="w-14 h-14 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-[#1C1D21] group-hover:bg-[#1C1D21] group-hover:text-[#B8FF68] transition-colors">
-              <TrendingUp className="w-8 h-8" />
-            </div>
-          </div>
-          <div className="bg-white p-8 rounded-[24px] shadow-ambient flex items-center justify-between border border-gray-100 group hover:translate-y-[-2px] transition-all">
-            <div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 select-none">Tỷ lệ tái ký thành công</p>
-              <div className="flex items-baseline gap-3">
-                <h3 className="text-5xl font-black text-[#1C1D21] tabular-nums tracking-tighter">84.5%</h3>
-                <span className="text-xs font-black text-[#3c6600] flex items-center bg-[#B8FF68]/20 px-2 py-0.5 rounded-lg">
-                  <ArrowUp className="w-3 h-3 mr-0.5" /> 2.1%
-                </span>
-              </div>
-            </div>
-            <div className="w-14 h-14 bg-[#B8FF68]/20 rounded-2xl flex items-center justify-center text-[#3c6600] group-hover:scale-110 transition-transform">
-              <TrendingUp className="w-8 h-8" />
-            </div>
-          </div>
+    <div className="space-y-8 pb-28">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 className="font-headline text-[length:var(--font-size-h-page)] font-bold tracking-tight text-[#1C1D21]">
+            Renew
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Track renewal due batches, renewal success, and accounts expiring soon from operations data.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm font-black text-[10px] uppercase tracking-widest">
-          <button className="px-5 py-2.5 text-gray-400 hover:text-[#1C1D21] transition-all">Q3 2023</button>
-          <button className="px-8 py-2.5 bg-[#1C1D21] text-white rounded-xl shadow-lg ring-4 ring-black/5">Tháng 10</button>
-          <button className="px-5 py-2.5 text-gray-400 hover:text-[#1C1D21] transition-all">Tháng 11</button>
-          <div className="h-4 w-[1.5px] bg-gray-100 mx-2"></div>
-          <button className="p-2.5 text-gray-400 hover:bg-gray-50 rounded-xl transition-all">
-            <Calendar className="w-5 h-5" />
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleResetCurrentMonth}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-[#1C1D21] shadow-ambient transition-colors hover:bg-gray-50"
+          >
+            <CalendarRange className="h-4 w-4 text-[#3c6600]" />
+            Current month
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowFilters((value) => !value)}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold shadow-ambient transition-colors",
+              showFilters
+                ? "border-[#B8FF68] bg-[#B8FF68]/20 text-[#1C1D21]"
+                : "border-gray-200 bg-white text-[#1C1D21] hover:bg-gray-50",
+            )}
+          >
+            <Filter className="h-4 w-4" />
+            Filter month
           </button>
         </div>
+      </div>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 shadow-ambient">
+        {cacheSavedAt ? (
+          <span>
+            Dang hien cache local duoc luu luc <strong>{formatDateTime(cacheSavedAt)}</strong>. Bam <strong>Load live data</strong> tren top bar de cap nhat Renew tu server.
+          </span>
+        ) : (
+          <span>
+            Chua co cache local cho bo loc nay. Bam <strong>Load live data</strong> tren top bar de lay snapshot moi tu server.
+          </span>
+        )}
       </section>
 
-      {/* Chart Section */}
-      <section className="bg-white p-10 rounded-[40px] shadow-ambient border border-gray-50 flex flex-col gap-10">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-[length:var(--font-size-h-bento)] font-bold text-[#1C1D21] font-headline tracking-tight">Biểu Đồ Tiến Trình Tái Ký</h2>
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">So sánh đến hạn vs hoàn tất tháng</p>
+      {showFilters ? (
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-ambient">
+          <div className="grid gap-4 lg:grid-cols-[1fr_auto_auto] lg:items-end">
+            <label className="space-y-2 text-sm font-semibold text-[#1C1D21]">
+              <span>Report month</span>
+              <input
+                type="month"
+                value={draftMonth}
+                onChange={(event) => setDraftMonth(event.target.value)}
+                className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#B8FF68]"
+              />
+            </label>
+
+            <label className="space-y-2 text-sm font-semibold text-[#1C1D21]">
+              <span>Chart year</span>
+              <select
+                value={draftYear}
+                onChange={(event) => setDraftYear(Number.parseInt(event.target.value, 10))}
+                className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#B8FF68]"
+              >
+                {availableYears.map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </label>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowFilters(false)}
+                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-50"
+              >
+                <X className="h-4 w-4" />
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyFilters}
+                className="rounded-xl bg-[#B8FF68] px-5 py-2 text-sm font-bold text-[#1C1D21] shadow-lg shadow-[#B8FF68]/20 transition-transform hover:scale-[1.01]"
+              >
+                Apply
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-3">
-              <span className="w-3.5 h-1.5 rounded-full bg-gray-200"></span>
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Đến hạn</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="w-3.5 h-1.5 rounded-full bg-[#B8FF68]"></span>
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Thành công</span>
-            </div>
+        </section>
+      ) : null}
+
+      {errorMessage ? (
+        <section className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-700">
+          {errorMessage}
+        </section>
+      ) : null}
+
+      <section className="grid gap-4 xl:grid-cols-[1fr_0.95fr]">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {[
+            {
+              label: "Due This Month",
+              value: payload?.kpis.due_count || 0,
+              helper: formatMonthLabel(payload?.applied_filters.report_month || reportMonth),
+              icon: CalendarDays,
+            },
+            {
+              label: "Renewed",
+              value: payload?.kpis.renewed_count || 0,
+              helper: "Same due batch renewed",
+              icon: RotateCcw,
+            },
+            {
+              label: "Renewal Rate",
+              value: formatPercent(payload?.kpis.renewal_rate || 0),
+              helper: "Renewed / due",
+              icon: RefreshCcw,
+            },
+            {
+              label: "Expired Pending",
+              value: payload?.kpis.expired_pending || 0,
+              helper: "Due but not renewed yet",
+              icon: Timer,
+              dark: true,
+            },
+          ].map((card) => (
+            <article
+              key={card.label}
+              className={cn(
+                "rounded-[28px] border p-6 shadow-ambient",
+                card.dark ? "border-[#1C1D21] bg-[#1C1D21] text-white" : "border-gray-100 bg-white text-[#1C1D21]",
+              )}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className={cn(
+                    "text-[11px] font-black uppercase tracking-[0.22em]",
+                    card.dark ? "text-white/40" : "text-gray-400",
+                  )}>
+                    {card.label}
+                  </p>
+                  <p className="mt-3 font-headline text-4xl font-bold tracking-tight">
+                    {typeof card.value === "number" ? numberFormatter.format(card.value) : card.value}
+                  </p>
+                </div>
+                <div className={cn(
+                  "flex h-12 w-12 items-center justify-center rounded-2xl",
+                  card.dark ? "bg-white/8 text-[#B8FF68]" : "bg-gray-50 text-[#1C1D21]",
+                )}>
+                  <card.icon className="h-5 w-5" />
+                </div>
+              </div>
+              <p className={cn("mt-6 text-sm", card.dark ? "text-white/60" : "text-gray-500")}>{card.helper}</p>
+            </article>
+          ))}
+        </div>
+
+        <aside className="rounded-[32px] border border-white/5 bg-[#1C1D21] p-7 text-white shadow-2xl">
+          <p className="text-[11px] font-black uppercase tracking-[0.28em] text-[#B8FF68]">Expiring Window</p>
+          <h2 className="mt-2 font-headline text-3xl font-bold tracking-tight">Next 10 Days</h2>
+          <p className="mt-2 text-sm text-white/55">
+            Accounts expiring from {payload?.expiring_window.from || "N/A"} to {payload?.expiring_window.to || "N/A"}.
+          </p>
+
+          <div className="mt-6 space-y-3">
+            {(payload?.expiring_accounts || []).slice(0, 5).map((account) => (
+              <button
+                key={account.account}
+                type="button"
+                onClick={() => setSelectedAccount(account.account)}
+                className={cn(
+                  "w-full rounded-[22px] border p-4 text-left transition-all",
+                  selectedAccount === account.account
+                    ? "border-[#B8FF68]/30 bg-[#B8FF68]/10"
+                    : "border-white/8 bg-white/5 hover:bg-white/8",
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-white">{account.account}</p>
+                    <p className="mt-1 text-sm text-white/55">{account.sale_owner || "Unassigned owner"}</p>
+                  </div>
+                  <span className="text-sm font-black text-[#B8FF68]">{account.days_left}d</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </aside>
+      </section>
+
+      <section className="rounded-[36px] border border-gray-100 bg-white p-8 shadow-ambient">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="font-headline text-[length:var(--font-size-h-bento)] font-bold tracking-tight text-[#1C1D21]">
+              Renewal Progress
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Due vs renewed by month for {selectedYear}. The current month bar is highlighted in black.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-gray-500">
+            {selectedYear}
           </div>
         </div>
-        
-        <div className="h-[320px] w-full mt-4">
+
+        <div className="mt-8 h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f1f3" />
-              <XAxis 
-                dataKey="month" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 10, fontWeight: 800, fill: "#9ca3af" }} 
-                dy={15}
+            <BarChart data={payload?.chart.points || []} barGap={8}>
+              <CartesianGrid stroke="#E9EDF3" strokeDasharray="4 4" vertical={false} />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 12, fontWeight: 700, fill: "#98A1B2" }}
               />
               <YAxis hide />
-              <Tooltip 
-                cursor={{ fill: 'rgba(28, 29, 33, 0.02)' }}
-                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '16px' }}
-              />
-              <Bar dataKey="total" fill="#F0F1F3" radius={[4, 4, 4, 4]} barSize={24} />
-              <Bar dataKey="success" fill="#B8FF68" radius={[4, 4, 4, 4]} barSize={24}>
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.current ? "#1C1D21" : "#B8FF68"} />
+              <Tooltip content={<RenewTooltip />} cursor={{ fill: "#F8FAFC" }} />
+              <Bar dataKey="due_count" radius={[8, 8, 8, 8]} fill="#E5E7EB" />
+              <Bar dataKey="renewed_count" radius={[8, 8, 8, 8]} fill="#B8FF68">
+                {(payload?.chart.points || []).map((point) => (
+                  <Cell
+                    key={point.month_key}
+                    fill={point.current ? "#1C1D21" : "#B8FF68"}
+                  />
                 ))}
               </Bar>
             </BarChart>
@@ -134,73 +471,120 @@ export default function RenewView() {
         </div>
       </section>
 
-      {/* List Section */}
-      <section className="space-y-6">
-        <div className="flex justify-between items-center px-2">
-          <h2 className="text-[length:var(--font-size-h-bento)] font-bold text-[#1C1D21] font-headline tracking-tight">Khách Hàng Sắp Hết Hạn</h2>
-          <button className="text-xs font-black text-[#3c6600] uppercase tracking-widest hover:translate-x-1 transition-transform inline-flex items-center group">
-            Xem tất cả <ChevronRight className="w-4 h-4 ml-1" />
-          </button>
-        </div>
-        
-        <div className="bg-white rounded-[32px] shadow-ambient border border-gray-100 overflow-hidden">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-gray-50/50">
-                <th className="px-10 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest font-headline">Khách hàng</th>
-                <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest font-headline">Giá trị hợp đồng</th>
-                <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest font-headline text-center">Ngày hết hạn</th>
-                <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest font-headline">Trạng thái</th>
-                <th className="px-10 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest font-headline text-right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {customerList.map((row, idx) => (
-                <tr key={idx} className="hover:bg-gray-50/70 transition-all group">
-                  <td className="px-10 py-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-100 group-hover:scale-105 transition-transform">
-                        <img src={row.image} alt="Logo" className="w-full h-full object-cover" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-[#1C1D21] font-headline">{row.name}</p>
-                        <p className="text-[10px] text-gray-400 font-bold tracking-widest">ID: {row.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <p className="text-sm font-black text-[#1C1D21] tabular-nums tracking-tighter">{row.contract}</p>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{row.tier}</p>
-                  </td>
-                  <td className="px-8 py-6 text-center">
-                    <p className="text-sm font-black text-[#1C1D21] tabular-nums">{row.expiry}</p>
-                    <p className={cn(
-                      "text-[10px] font-black uppercase tracking-[0.15em] mt-0.5",
-                      row.days.includes("Còn") ? "text-red-500" : "text-orange-600"
-                    )}>{row.days}</p>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: row.color }}></div>
-                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest select-none">{row.status}</span>
-                    </div>
-                  </td>
-                  <td className="px-10 py-6 text-right">
-                    <button className="px-6 py-2.5 bg-[#1C1D21] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all shadow-glow-sm active:scale-95">
-                      Gửi nhắc nhở
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <section className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
+        <article className="rounded-[36px] border border-gray-100 bg-white p-7 shadow-ambient">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h2 className="font-headline text-[length:var(--font-size-h-bento)] font-bold tracking-tight text-[#1C1D21]">
+                Expiring Accounts
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Accounts expiring soon, sorted by nearest expiry date.
+              </p>
+            </div>
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">
+              {numberFormatter.format(payload?.expiring_accounts.length || 0)} rows
+            </p>
+          </div>
 
-      {/* FAB */}
-      <button className="fixed bottom-10 right-10 w-16 h-16 bg-[#B8FF68] text-[#1C1D21] rounded-3xl shadow-2xl flex items-center justify-center hover:scale-110 active:scale-90 transition-all group z-50">
-        <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
-      </button>
+          <div className="mt-6 overflow-x-auto">
+            <table className="min-w-[960px] w-full border-separate border-spacing-y-3">
+              <thead>
+                <tr>
+                  {["Account", "Owner", "Expiry", "Days left", "Current category", "Previous category"].map((header) => (
+                    <th key={header} className="px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.22em] text-gray-400">
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(payload?.expiring_accounts || []).map((row) => (
+                  <tr
+                    key={row.account}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedAccount(row.account)}
+                  >
+                    <td className="rounded-l-[22px] border-y border-l border-gray-100 bg-[#FBFCFE] px-3 py-4">
+                      <p className="font-bold text-[#1C1D21]">{row.account}</p>
+                      <p className="mt-1 text-xs text-gray-500">{row.customer_id || "No customer ID"}</p>
+                    </td>
+                    <td className="border-y border-gray-100 bg-[#FBFCFE] px-3 py-4 text-sm text-gray-600">{row.sale_owner || "Unassigned"}</td>
+                    <td className="border-y border-gray-100 bg-[#FBFCFE] px-3 py-4 text-sm text-gray-600">{formatDate(row.expiry_date)}</td>
+                    <td className="border-y border-gray-100 bg-[#FBFCFE] px-3 py-4 text-sm font-bold text-[#1C1D21]">{row.days_left} days</td>
+                    <td className="border-y border-gray-100 bg-[#FBFCFE] px-3 py-4">
+                      <span className={cn("rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]", getCategoryTone(row.current_category))}>
+                        {row.current_category}
+                      </span>
+                    </td>
+                    <td className="rounded-r-[22px] border-y border-r border-gray-100 bg-[#FBFCFE] px-3 py-4">
+                      <span className={cn("rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]", getCategoryTone(row.previous_category))}>
+                        {row.previous_category}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <aside className="rounded-[36px] border border-white/5 bg-[#1C1D21] p-7 text-white shadow-2xl">
+          <p className="text-[11px] font-black uppercase tracking-[0.28em] text-[#B8FF68]">Selected Account</p>
+          <h2 className="mt-2 font-headline text-3xl font-bold tracking-tight">
+            {selectedAccountDetail?.account || "No account selected"}
+          </h2>
+          <p className="mt-2 text-sm text-white/55">
+            Detailed renewal context with category history over the latest 12 months.
+          </p>
+
+          {selectedAccountDetail ? (
+            <>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="rounded-[22px] bg-white/6 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/35">Owner</p>
+                  <p className="mt-2 text-sm font-semibold text-white">{selectedAccountDetail.sale_owner || "Unassigned"}</p>
+                </div>
+                <div className="rounded-[22px] bg-white/6 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/35">Type</p>
+                  <p className="mt-2 text-sm font-semibold text-white">{selectedAccountDetail.account_type || selectedAccountDetail.customer_type || "N/A"}</p>
+                </div>
+                <div className="rounded-[22px] bg-white/6 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/35">Activation</p>
+                  <p className="mt-2 text-sm font-semibold text-white">{formatDate(selectedAccountDetail.activation_date)}</p>
+                </div>
+                <div className="rounded-[22px] bg-white/6 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/35">Expiry</p>
+                  <p className="mt-2 text-sm font-semibold text-white">{formatDate(selectedAccountDetail.expiry_date)}</p>
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-[24px] border border-white/8 bg-white/5 p-4">
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/35">Contract term</p>
+                <p className="mt-2 text-sm text-white/80">{selectedAccountDetail.contract_term || "N/A"}</p>
+              </div>
+
+              <div className="mt-6">
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/35">Category history</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {selectedAccountDetail.category_history.map((item) => (
+                    <div key={item.month_key} className="rounded-2xl border border-white/8 bg-white/5 px-3 py-3">
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/35">{item.label}</p>
+                      <span className={cn("mt-2 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]", getCategoryTone(item.category))}>
+                        {item.category}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="mt-6 rounded-[24px] border border-white/8 bg-white/5 p-5 text-sm text-white/60">
+              No expiring account is available in the current 10-day window.
+            </div>
+          )}
+        </aside>
+      </section>
     </div>
   );
 }

@@ -11,6 +11,9 @@ import {
   DASHBOARD_DB_PATH,
   ensureDashboardSalesDb,
 } from "./dashboard-sales-db.js";
+import {
+  OPERATIONS_DB_PATH,
+} from "./operations-data.js";
 
 const QUERY_FUNCTION_NAME = "query_crm_data";
 const MAX_HISTORY_MESSAGES = 20;
@@ -38,6 +41,13 @@ const ALLOWED_TABLES = new Set([
   "dashboard_sales_leaderboard_monthly",
   "dashboard_recent_orders",
   "dashboard_meta",
+  "ops_activation_accounts",
+  "ops_jcd_expired_accounts",
+  "ops_raw_daily",
+  "ops_monthly_metrics",
+  "ops_monthly_status",
+  "ops_due_accounts",
+  "operations_meta",
 ]);
 
 const QUERY_TOOL_DECLARATION = {
@@ -254,6 +264,10 @@ function openAgentDatabase() {
   }
   const escapedDashboardPath = DASHBOARD_DB_PATH.replace(/'/g, "''");
   db.exec(`ATTACH DATABASE '${escapedDashboardPath}' AS dashboard`);
+  if (fs.existsSync(OPERATIONS_DB_PATH)) {
+    const escapedOperationsPath = OPERATIONS_DB_PATH.replace(/'/g, "''");
+    db.exec(`ATTACH DATABASE '${escapedOperationsPath}' AS operations`);
+  }
   return db;
 }
 
@@ -262,7 +276,10 @@ function buildSchemaHint() {
   const dashboardMtime = fs.existsSync(DASHBOARD_DB_PATH)
     ? fs.statSync(DASHBOARD_DB_PATH).mtimeMs
     : 0;
-  const nextSignature = `${crmMtime}|${dashboardMtime}`;
+  const operationsMtime = fs.existsSync(OPERATIONS_DB_PATH)
+    ? fs.statSync(OPERATIONS_DB_PATH).mtimeMs
+    : 0;
+  const nextSignature = `${crmMtime}|${dashboardMtime}|${operationsMtime}`;
 
   if (schemaCache && schemaCacheSignature === nextSignature) {
     return schemaCache;
@@ -278,6 +295,17 @@ function buildSchemaHint() {
     { dbName: "dashboard", tableName: "dashboard_recent_orders" },
     { dbName: "dashboard", tableName: "dashboard_meta" },
   ];
+  if (fs.existsSync(OPERATIONS_DB_PATH)) {
+    tableSpecs.push(
+      { dbName: "operations", tableName: "ops_activation_accounts" },
+      { dbName: "operations", tableName: "ops_jcd_expired_accounts" },
+      { dbName: "operations", tableName: "ops_raw_daily" },
+      { dbName: "operations", tableName: "ops_monthly_metrics" },
+      { dbName: "operations", tableName: "ops_monthly_status" },
+      { dbName: "operations", tableName: "ops_due_accounts" },
+      { dbName: "operations", tableName: "operations_meta" },
+    );
+  }
 
   const db = openAgentDatabase();
   try {

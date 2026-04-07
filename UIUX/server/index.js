@@ -9,6 +9,12 @@ import {
 } from "./lib/dashboard-sales-db.js";
 import { getConversionPayload } from "./lib/conversion-data.js";
 import { getLeadsPayload } from "./lib/leads-data.js";
+import {
+  buildActiveMapPayload,
+  buildCohortPayload,
+  buildRenewPayload,
+  buildUserMapPayload,
+} from "./lib/operations-data.js";
 import { getTeamPayload } from "./lib/team-data.js";
 import { ensureSeededCrmDb } from "./lib/seed-db.js";
 import {
@@ -172,6 +178,66 @@ app.get("/api/sales/team", (req, res) => {
     console.error("[team-api] failed to build payload", error instanceof Error ? error.stack : error);
     res.status(500).type("application/json").send(JSON.stringify({
       error: "Failed to load team data.",
+    }));
+  }
+});
+
+app.get("/api/operations/user-map", (req, res) => {
+  try {
+    const payload = buildUserMapPayload({
+      reportMonth: typeof req.query.report_month === "string" ? req.query.report_month : undefined,
+    });
+    res.status(200).type("application/json").send(JSON.stringify(payload));
+  } catch (error) {
+    console.error("[operations-user-map-api] failed to build payload", error instanceof Error ? error.stack : error);
+    res.status(500).type("application/json").send(JSON.stringify({
+      error: "Failed to load user map data.",
+    }));
+  }
+});
+
+app.get("/api/operations/active-map", (req, res) => {
+  try {
+    const payload = buildActiveMapPayload({
+      reportMonth: typeof req.query.report_month === "string" ? req.query.report_month : undefined,
+      tenureBucket: typeof req.query.tenure_bucket === "string" ? req.query.tenure_bucket : undefined,
+    });
+    res.status(200).type("application/json").send(JSON.stringify(payload));
+  } catch (error) {
+    console.error("[operations-active-map-api] failed to build payload", error instanceof Error ? error.stack : error);
+    res.status(500).type("application/json").send(JSON.stringify({
+      error: "Failed to load active map data.",
+    }));
+  }
+});
+
+app.get("/api/operations/cohort-active", (req, res) => {
+  try {
+    const payload = buildCohortPayload({
+      reportMonth: typeof req.query.report_month === "string" ? req.query.report_month : undefined,
+      metric: typeof req.query.metric === "string" ? req.query.metric : undefined,
+      threshold: typeof req.query.threshold === "string" ? req.query.threshold : undefined,
+    });
+    res.status(200).type("application/json").send(JSON.stringify(payload));
+  } catch (error) {
+    console.error("[operations-cohort-api] failed to build payload", error instanceof Error ? error.stack : error);
+    res.status(500).type("application/json").send(JSON.stringify({
+      error: "Failed to load cohort active data.",
+    }));
+  }
+});
+
+app.get("/api/operations/renew", (req, res) => {
+  try {
+    const payload = buildRenewPayload({
+      reportMonth: typeof req.query.report_month === "string" ? req.query.report_month : undefined,
+      year: typeof req.query.year === "string" ? req.query.year : undefined,
+    });
+    res.status(200).type("application/json").send(JSON.stringify(payload));
+  } catch (error) {
+    console.error("[operations-renew-api] failed to build payload", error instanceof Error ? error.stack : error);
+    res.status(500).type("application/json").send(JSON.stringify({
+      error: "Failed to load renew data.",
     }));
   }
 });

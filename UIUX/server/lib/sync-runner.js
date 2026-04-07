@@ -167,9 +167,16 @@ function buildSteps(mode) {
     command: "node",
     args: ["--experimental-sqlite", path.join(projectRoot, "UIUX", "server", "build-dashboard-sales-db.js")],
   };
+  const rebuildOperationsStep = {
+    label: "operations-db",
+    command: pythonExecutable,
+    args: [path.join(projectRoot, "tasks", "01_scrap", "sync_operations_workbook.py")],
+  };
+  const shouldBuildOperations = String(process.env.OPERATIONS_WORKBOOK_URL || "").trim().length > 0;
+  const withOperationsStep = (steps) => (shouldBuildOperations ? [...steps, rebuildOperationsStep] : steps);
 
   if (mode === "full") {
-    return [
+    return withOperationsStep([
       {
         label: "staffs",
         command: pythonExecutable,
@@ -178,26 +185,26 @@ function buildSteps(mode) {
       buildCustomerFullStep(),
       buildOrdersFullStep(),
       rebuildDashboardStep,
-    ];
+    ]);
   }
 
   if (mode === "customers-full") {
-    return [buildCustomerFullStep(), rebuildDashboardStep];
+    return withOperationsStep([buildCustomerFullStep(), rebuildDashboardStep]);
   }
 
   if (mode === "orders-full") {
-    return [buildOrdersFullStep(), rebuildDashboardStep];
+    return withOperationsStep([buildOrdersFullStep(), rebuildDashboardStep]);
   }
 
   if (mode === "customers-auto") {
-    return [buildCustomerAutoStep(), rebuildDashboardStep];
+    return withOperationsStep([buildCustomerAutoStep(), rebuildDashboardStep]);
   }
 
   if (mode === "orders-auto") {
-    return [buildOrdersAutoStep(), rebuildDashboardStep];
+    return withOperationsStep([buildOrdersAutoStep(), rebuildDashboardStep]);
   }
 
-  return [buildCustomerAutoStep(), buildOrdersAutoStep(), rebuildDashboardStep];
+  return withOperationsStep([buildCustomerAutoStep(), buildOrdersAutoStep(), rebuildDashboardStep]);
 }
 
 function runStep(step) {

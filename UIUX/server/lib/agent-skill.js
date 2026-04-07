@@ -1,11 +1,11 @@
 const VIEW_CONTEXT = {
   dashboard: "Sales dashboard overview with KPI, revenue trend, leaderboard, and latest orders.",
   leads: "Lead map and lead conversion by province, industry, and customer segment.",
-  renew: "Renewals and recurring revenue status.",
-  "user-map": "User/customer distribution map and activity signals.",
+  renew: "Renewal due batches, success rate, expiring accounts, and category history.",
+  "user-map": "Operations user map with Best, Value, Noise, Ghost segmentation and activity quality.",
   conversion: "Conversion funnel, source conversion, and cohort performance.",
-  "active-map": "Active user map and regional active behavior.",
-  "cohort-active": "Cohort retention and active user progression over time.",
+  "active-map": "Activation-rooted active account monitoring by tenure, status, and usage quality.",
+  "cohort-active": "Activation cohort retention using dynamic active rules from open/create/update/render metrics.",
   team: "Team performance, seller productivity, and department-level comparison.",
 };
 
@@ -17,6 +17,10 @@ const SQL_GUARDRAILS = [
   "Current view context is only a hint, not a restriction. Use any allowed table if it answers the question better.",
   "Before saying data is missing, run at least one SQL query when the user asks for a concrete metric, person, customer, seller, team, order, or month.",
   "For seller performance questions, use orders.saler_name and staffs.contact_name.",
+  "For operations questions, use operations.* tables when available.",
+  "Activation-rooted operations universe lives in operations.ops_activation_accounts.",
+  "Monthly active/category truth lives in operations.ops_monthly_metrics and operations.ops_monthly_status.",
+  "Renew due batches live in operations.ops_due_accounts.",
   "When user asks for a month without year, assume the latest year available in the database and mention that assumption briefly.",
 ];
 
@@ -53,6 +57,8 @@ export function buildSkillPrompt({ viewId, schemaHint }) {
     "",
     "Common query patterns:",
     "- Seller revenue: query orders, filter by saler_name, exclude cancelled orders, aggregate real_amount.",
+    "- Operations active/category: query operations.ops_monthly_status and operations.ops_monthly_metrics by month_end_key.",
+    "- Renew: query operations.ops_due_accounts for due_count / renewed_count by due_month_key.",
     "- Latest order date fallback: use COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)).",
     "- Staff/team lookup: staffs.contact_name joins conceptually with orders.saler_name.",
     "Known schema:",
