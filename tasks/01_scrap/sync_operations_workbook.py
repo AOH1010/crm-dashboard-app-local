@@ -1,3 +1,4 @@
+import csv
 import hashlib
 import os
 import re
@@ -6,11 +7,10 @@ import tempfile
 from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import requests
 from dotenv import load_dotenv
-from openpyxl import load_workbook
 
 load_dotenv()
 
@@ -21,13 +21,21 @@ OPERATIONS_DB_PATH = Path(
     os.environ.get("OPERATIONS_DB_PATH") or DATA_DIR / "dashboard_operations.db"
 )
 WORKBOOK_URL = (os.environ.get("OPERATIONS_WORKBOOK_URL") or "").strip()
-BUILDER_VERSION = "operations-v1"
+BUILDER_VERSION = "operations-v2-csv"
 HTTP_TIMEOUT_SECONDS = 120
 VALID_CUSTOMER_ID_PATTERN = re.compile(r"^KH\d+", re.IGNORECASE)
+SHEETS_TO_DOWNLOAD = [
+    "Activation",
+    "JCD hết hạn",
+    "Raw Data",
+    "Check_Active",
+    "Check_Categories",
+    "Definition",
+]
 
 
 def log(message: str):
-    print(f"[operations-sync] {message}")
+    print(f"[operations-sync] {message}", flush=True)
 
 
 def normalize_text(value):
@@ -42,13 +50,7 @@ def fold_text(value):
     }
     for source, target in replacements.items():
         text = text.replace(source, target)
-    return (
-        text.encode("ascii", "ignore").decode("ascii").lower().strip()
-    )
-
-
-def normalize_sheet_name(value):
-    return re.sub(r"\s+", " ", fold_text(value))
+    return text.encode("ascii", "ignore").decode("ascii").lower().strip()
 
 
 def parse_date(value):
@@ -99,7 +101,7 @@ def to_int(value):
     if value is None or value == "":
         return 0
     try:
-        return int(float(value))
+        return int(float(str(value).replace(",", ".")))
     except (TypeError, ValueError):
         return 0
 
@@ -108,7 +110,7 @@ def to_float(value):
     if value is None or value == "":
         return 0.0
     try:
-        return float(value)
+        return float(str(value).replace(",", "."))
     except (TypeError, ValueError):
         return 0.0
 
@@ -119,7 +121,7 @@ def to_bool_int(value):
     if value is None or value == "":
         return 0
     try:
-        return 1 if float(value) > 0 else 0
+        return 1 if float(str(value).replace(",", ".")) > 0 else 0
     except (TypeError, ValueError):
         return 0
 
@@ -139,44 +141,43 @@ def is_renew_contract(contract_term):
     return "RENEW" in normalize_text(contract_term).upper()
 
 
-def get_sheet(workbook, preferred_name):
-    expected = normalize_sheet_name(preferred_name)
-    for sheet_name in workbook.sheetnames:
-        if normalize_sheet_name(sheet_name) == expected:
-            return workbook[sheet_name]
-    raise KeyError(f"Worksheet not found: {preferred_name}")
-
-
-def download_workbook(url):
-    if not url:
-        raise RuntimeError("Missing OPERATIONS_WORKBOOK_URL in environment.")
-
-    parsed = urlparse(url)
+def derive_sheet_csv_url(base_url: str, sheet_name: str) -> str:
+    parsed = urlparse(base_url)
     if parsed.scheme not in {"http", "https"}:
         raise RuntimeError("OPERATIONS_WORKBOOK_URL must be an http/https URL.")
 
-    log("downloading workbook export")
+    workbook_match = re.search(r"/spreadsheets/d/([a-zA-Z0-9-_]+)", base_url)
+    if not workbook_match:
+        raise RuntimeError("Unable to extract workbook id from OPERATIONS_WORKBOOK_URL.")
+
+    workbook_id = workbook_match.group(1)
+    return (
+        f"https://docs.google.com/spreadsheets/d/{workbook_id}/gviz/tq"
+        f"?tqx=out:csv&sheet={quote(sheet_name)}"
+    )
+
+
+def download_sheet_csv(sheet_name: str, directory: Path) -> Path:
+    url = derive_sheet_csv_url(WORKBOOK_URL, sheet_name)
     response = requests.get(url, timeout=HTTP_TIMEOUT_SECONDS)
     response.raise_for_status()
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx")
-    try:
-        tmp.write(response.content)
-        tmp.flush()
-        return Path(tmp.name)
-    finally:
-        tmp.close()
+    output_path = directory / f"{fold_text(sheet_name).replace(' ', '_') or 'sheet'}.csv"
+    output_path.write_bytes(response.content)
+    return output_path
 
 
-def parse_activation_sheet(workbook):
-    sheet = get_sheet(workbook, "Activation")
+def read_csv_rows(csv_path: Path):
+    with csv_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        return list(csv.reader(handle))
+
+
+def parse_activation_rows(sheet_rows):
     rows = []
     seen_accounts = set()
-
-    for values in sheet.iter_rows(min_row=2, values_only=True):
+    for values in sheet_rows[1:]:
         account = normalize_account(values[0] if len(values) > 0 else None)
         if not account or account in seen_accounts:
             continue
-
         seen_accounts.add(account)
         row = {
             "account": account,
@@ -193,22 +194,18 @@ def parse_activation_sheet(workbook):
         row["expiry_month_end"] = format_month_end_key(values[6] if len(values) > 6 else None)
         row["is_renew_contract"] = 1 if is_renew_contract(row["contract_term"]) else 0
         rows.append(row)
-
     return rows
 
 
-def parse_jcd_sheet(workbook):
-    sheet = get_sheet(workbook, "JCD hết hạn")
+def parse_jcd_rows(sheet_rows):
     rows = []
     seen_keys = set()
-
-    for values in sheet.iter_rows(min_row=2, values_only=True):
+    for values in sheet_rows[1:]:
         account = normalize_account(values[0] if len(values) > 0 else None)
         expiry_date = format_date_key(values[2] if len(values) > 2 else None)
         key = (account, expiry_date)
         if not account or key in seen_keys:
             continue
-
         seen_keys.add(key)
         password_value = normalize_text(values[4] if len(values) > 4 else None) or None
         rows.append({
@@ -221,18 +218,16 @@ def parse_jcd_sheet(workbook):
             "activation_month_end": format_month_end_key(values[1] if len(values) > 1 else None),
             "expiry_month_end": format_month_end_key(values[2] if len(values) > 2 else None),
         })
-
     return rows
 
 
-def parse_raw_sheet(workbook):
-    sheet = get_sheet(workbook, "Raw Data")
+def parse_raw_rows(sheet_rows):
     rows = []
     latest_date = None
     unique_accounts = set()
     invalid_daily_rows = 0
 
-    for values in sheet.iter_rows(min_row=2, values_only=True):
+    for values in sheet_rows[1:]:
         day_key = format_date_key(values[0] if len(values) > 0 else None)
         account = normalize_account(values[1] if len(values) > 1 else None)
         if not day_key or not account:
@@ -274,33 +269,33 @@ def parse_raw_sheet(workbook):
     }
 
 
-def parse_month_matrix(workbook, sheet_name):
-    sheet = get_sheet(workbook, sheet_name)
+def parse_month_matrix(sheet_rows):
+    if not sheet_rows:
+        return {}, []
+    header = sheet_rows[0]
     month_keys = []
-    for cell in sheet[1][4:]:
-        month_key = format_month_end_key(cell.value)
+    for value in header[4:]:
+        month_key = format_month_end_key(value)
         if month_key:
             month_keys.append(month_key)
 
     result = defaultdict(dict)
-    for values in sheet.iter_rows(min_row=2, values_only=True):
+    for values in sheet_rows[1:]:
         account = normalize_account(values[0] if len(values) > 0 else None)
         if not account:
             continue
         for index, month_key in enumerate(month_keys, start=4):
             value = values[index] if len(values) > index else None
             result[account][month_key] = normalize_text(value) if isinstance(value, str) else value
-
     return dict(result), month_keys
 
 
-def parse_definition_thresholds(workbook):
-    sheet = get_sheet(workbook, "Definition")
+def parse_definition_thresholds(sheet_rows):
     low_open_threshold = 1.0
     high_open_threshold = 13.0
     quality_threshold = 0.35
 
-    for values in sheet.iter_rows(min_row=1, max_col=4, values_only=True):
+    for values in sheet_rows:
         label = normalize_text(values[1] if len(values) > 1 else None).lower()
         open_value = values[2] if len(values) > 2 else None
         quality_value = values[3] if len(values) > 3 else None
@@ -387,7 +382,6 @@ def build_due_accounts(activation_rows, jcd_rows):
             renew_rows_by_account[row["account"]].append(row)
 
     due_accounts = {}
-
     for row in jcd_rows:
         account = row["account"]
         due_month_key = row["expiry_month_end"]
@@ -426,7 +420,6 @@ def build_due_accounts(activation_rows, jcd_rows):
         due_month_key = row["expiry_month_end"]
         if not account or not due_month_key:
             continue
-
         key = (account, due_month_key)
         if key in due_accounts:
             continue
@@ -456,7 +449,7 @@ def build_meta_payload(raw_info, activation_rows, jcd_rows, due_accounts, latest
     raw_accounts = raw_info["unique_accounts"]
     bridged_accounts = activation_accounts | jcd_accounts
     default_report_month = format_month_end_key(raw_info["latest_date"]) if raw_info["latest_date"] else latest_status_month
-    items = {
+    return {
         "builder_version": BUILDER_VERSION,
         "built_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
         "latest_raw_date": raw_info["latest_date"] or "",
@@ -475,7 +468,6 @@ def build_meta_payload(raw_info, activation_rows, jcd_rows, due_accounts, latest
         "threshold_open_high": str(definition_thresholds["high_open_threshold"]),
         "threshold_quality": str(definition_thresholds["quality_threshold"]),
     }
-    return items
 
 
 def init_db(conn):
@@ -586,33 +578,16 @@ def insert_many(conn, sql, rows):
     conn.executemany(sql, rows)
 
 
-def write_database(
-    activation_rows,
-    jcd_rows,
-    raw_rows,
-    monthly_metrics,
-    monthly_status_rows,
-    due_accounts,
-    meta_items,
-):
+def write_database(activation_rows, jcd_rows, raw_rows, monthly_metrics, monthly_status_rows, due_accounts, meta_items):
     OPERATIONS_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     temp_db_path = OPERATIONS_DB_PATH.parent / f"{OPERATIONS_DB_PATH.name}.{os.getpid()}.{int(datetime.utcnow().timestamp())}.tmp"
-
     if temp_db_path.exists():
         temp_db_path.unlink()
 
     conn = sqlite3.connect(temp_db_path)
     try:
         init_db(conn)
-
-        insert_many(
-            conn,
-            """
-            INSERT INTO operations_meta(key, value)
-            VALUES(?, ?)
-            """,
-            list(meta_items.items()),
-        )
+        insert_many(conn, "INSERT INTO operations_meta(key, value) VALUES(?, ?)", list(meta_items.items()))
         insert_many(
             conn,
             """
@@ -624,18 +599,9 @@ def write_database(
             """,
             [
                 (
-                    row["account"],
-                    row["customer_type"],
-                    row["customer_id"],
-                    row["customer_name"],
-                    row["sale_owner"],
-                    row["activation_date"],
-                    row["activation_month_end"],
-                    row["expiry_date"],
-                    row["expiry_month_end"],
-                    row["contract_term"],
-                    row["account_type"],
-                    row["is_renew_contract"],
+                    row["account"], row["customer_type"], row["customer_id"], row["customer_name"], row["sale_owner"],
+                    row["activation_date"], row["activation_month_end"], row["expiry_date"], row["expiry_month_end"],
+                    row["contract_term"], row["account_type"], row["is_renew_contract"],
                 )
                 for row in activation_rows
             ],
@@ -650,14 +616,8 @@ def write_database(
             """,
             [
                 (
-                    row["account"],
-                    row["activation_date"],
-                    row["activation_month_end"],
-                    row["expiry_date"],
-                    row["expiry_month_end"],
-                    row["account_type"],
-                    row["password_value"],
-                    row["password_customer_id"],
+                    row["account"], row["activation_date"], row["activation_month_end"], row["expiry_date"],
+                    row["expiry_month_end"], row["account_type"], row["password_value"], row["password_customer_id"],
                 )
                 for row in jcd_rows
             ],
@@ -672,18 +632,8 @@ def write_database(
             """,
             [
                 (
-                    row["day_key"],
-                    row["account"],
-                    row["regdate"],
-                    row["organization_name"],
-                    row["open_cnt"],
-                    row["create_cnt"],
-                    row["update_cnt"],
-                    row["render_cnt"],
-                    row["month_end_key"],
-                    row["quality_flag"],
-                    row["open_flag"],
-                    row["invalid_daily"],
+                    row["day_key"], row["account"], row["regdate"], row["organization_name"], row["open_cnt"], row["create_cnt"],
+                    row["update_cnt"], row["render_cnt"], row["month_end_key"], row["quality_flag"], row["open_flag"], row["invalid_daily"],
                 )
                 for row in raw_rows
             ],
@@ -698,34 +648,17 @@ def write_database(
             """,
             [
                 (
-                    row["account"],
-                    row["month_end_key"],
-                    row["open_cnt"],
-                    row["create_cnt"],
-                    row["update_cnt"],
-                    row["render_cnt"],
-                    row["quality_numerator"],
-                    row["open_days"],
-                    row["quality_ratio"],
-                    row["invalid_daily_count"],
-                    row["latest_active_date"],
+                    row["account"], row["month_end_key"], row["open_cnt"], row["create_cnt"], row["update_cnt"], row["render_cnt"],
+                    row["quality_numerator"], row["open_days"], row["quality_ratio"], row["invalid_daily_count"], row["latest_active_date"],
                 )
                 for row in monthly_metrics
             ],
         )
         insert_many(
             conn,
-            """
-            INSERT INTO ops_monthly_status(account, month_end_key, status, category)
-            VALUES (?, ?, ?, ?)
-            """,
+            "INSERT INTO ops_monthly_status(account, month_end_key, status, category) VALUES (?, ?, ?, ?)",
             [
-                (
-                    row["account"],
-                    row["month_end_key"],
-                    row["status"],
-                    row["category"],
-                )
+                (row["account"], row["month_end_key"], row["status"], row["category"])
                 for row in monthly_status_rows
             ],
         )
@@ -740,24 +673,13 @@ def write_database(
             """,
             [
                 (
-                    row["account"],
-                    row["due_month_key"],
-                    row["due_date"],
-                    row["source"],
-                    row["customer_type"],
-                    row["customer_id"],
-                    row["customer_name"],
-                    row["sale_owner"],
-                    row["account_type"],
-                    row["renewed"],
-                    row["renew_activation_date"],
-                    row["renew_expiry_date"],
-                    row["current_expiry_date"],
+                    row["account"], row["due_month_key"], row["due_date"], row["source"], row["customer_type"], row["customer_id"],
+                    row["customer_name"], row["sale_owner"], row["account_type"], row["renewed"], row["renew_activation_date"],
+                    row["renew_expiry_date"], row["current_expiry_date"],
                 )
                 for row in due_accounts
             ],
         )
-
         conn.commit()
     finally:
         conn.close()
@@ -768,17 +690,25 @@ def write_database(
 
 
 def main():
-    workbook_path = None
+    temp_dir = None
     try:
-        workbook_path = download_workbook(WORKBOOK_URL)
-        workbook = load_workbook(workbook_path, data_only=True, read_only=False)
+        temp_dir = Path(tempfile.mkdtemp(prefix="ops-workbook-"))
 
-        activation_rows = parse_activation_sheet(workbook)
-        jcd_rows = parse_jcd_sheet(workbook)
-        raw_info = parse_raw_sheet(workbook)
-        check_active_map, month_keys = parse_month_matrix(workbook, "Check_Active")
-        check_categories_map, category_month_keys = parse_month_matrix(workbook, "Check_Categories")
-        definition_thresholds = parse_definition_thresholds(workbook)
+        sheet_paths = {}
+        for sheet_name in SHEETS_TO_DOWNLOAD:
+            sheet_paths[sheet_name] = download_sheet_csv(sheet_name, temp_dir)
+        log("downloaded workbook")
+
+        activation_rows = parse_activation_rows(read_csv_rows(sheet_paths["Activation"]))
+        jcd_rows = parse_jcd_rows(read_csv_rows(sheet_paths["JCD hết hạn"]))
+        log("parsed activation")
+
+        raw_info = parse_raw_rows(read_csv_rows(sheet_paths["Raw Data"]))
+        log("parsed raw data")
+
+        check_active_map, month_keys = parse_month_matrix(read_csv_rows(sheet_paths["Check_Active"]))
+        check_categories_map, category_month_keys = parse_month_matrix(read_csv_rows(sheet_paths["Check_Categories"]))
+        definition_thresholds = parse_definition_thresholds(read_csv_rows(sheet_paths["Definition"]))
         unified_month_keys = sorted(set(month_keys) | set(category_month_keys))
         monthly_metrics, _latest_active_map = build_monthly_metrics(raw_info["rows"])
         monthly_status_rows = build_monthly_statuses(
@@ -797,6 +727,7 @@ def main():
             definition_thresholds,
         )
 
+        log("building sqlite")
         write_database(
             activation_rows=activation_rows,
             jcd_rows=jcd_rows,
@@ -806,15 +737,20 @@ def main():
             due_accounts=due_accounts,
             meta_items=meta_items,
         )
-
+        log("completed")
         log(
             f"built operations db at {OPERATIONS_DB_PATH} "
             f"(activation={len(activation_rows)}, raw={len(raw_info['rows'])}, due={len(due_accounts)})"
         )
     finally:
-        if workbook_path and workbook_path.exists():
+        if temp_dir and temp_dir.exists():
+            for path in temp_dir.iterdir():
+                try:
+                    path.unlink()
+                except OSError:
+                    pass
             try:
-                workbook_path.unlink()
+                temp_dir.rmdir()
             except OSError:
                 pass
 

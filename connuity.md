@@ -218,10 +218,20 @@ Nguon du lieu van hanh:
   - `Definition`
 
 Huong xu ly:
-1. Download workbook `.xlsx` vao file tam
+1. Download CSV tung sheet can dung vao file tam
 2. Parse va chuan hoa ngay thang
 3. Build `dashboard_operations.db`
-4. Xoa file workbook tam ngay sau khi xong
+4. Xoa file tam ngay sau khi xong
+
+Tinh trang moi:
+- Khong con dung `openpyxl` / `.xlsx` cho operations sync
+- Dung Google Sheets CSV export theo tung sheet de giam RAM va tang toc do tren Railway
+- Log sync moi:
+  - `downloaded workbook`
+  - `parsed activation`
+  - `parsed raw data`
+  - `building sqlite`
+  - `completed`
 
 DB moi:
 - `data/dashboard_operations.db`
