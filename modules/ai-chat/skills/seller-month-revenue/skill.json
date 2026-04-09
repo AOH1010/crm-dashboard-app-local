@@ -1,0 +1,10 @@
+{
+  "id": "seller-month-revenue",
+  "description": "Return a seller revenue summary for a specific month.",
+  "priority": 100,
+  "triggers": ["doanh so", "doanh thu", "seller", "sale"],
+  "supported_views": ["dashboard", "team"],
+  "required_entities": ["seller_name", "month"],
+  "output_mode": "summary",
+  "fallback_policy": "use_llm_fallback_if_missing_entities"
+}

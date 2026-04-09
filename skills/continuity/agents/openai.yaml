@@ -1,0 +1,4 @@
+interface:
+  display_name: "Continuity"
+  short_description: "Read and update the shared repo continuity file for resume and handoff."
+  default_prompt: "Read docs/continuity.md before substantial repo work, then update it at key milestones so another agent can continue without rebuilding context."

@@ -1,7 +1,23 @@
 {
   "name": "crm-dashboard-root",
   "private": true,
+  "workspaces": [
+    "apps/frontend",
+    "apps/backend",
+    "modules/ai-chat"
+  ],
   "scripts": {
-    "build": "npm install --prefix UIUX && npm run build --prefix UIUX"
+    "dev": "node scripts/start-local-stack.mjs",
+    "stop": "node scripts/stop-local-stack.mjs",
+    "clean": "node scripts/clean-local-artifacts.mjs",
+    "test:ai-chat": "npm run test --workspace @crm/ai-chat-module",
+    "eval:ai-chat": "npm run eval --workspace @crm/ai-chat-module",
+    "dev:web": "npm run dev --workspace @crm/frontend",
+    "dev:api": "npm run dev --workspace @crm/backend",
+    "start:api": "npm run start --workspace @crm/backend",
+    "build": "npm run build --workspace @crm/frontend",
+    "build:dashboard-db": "npm run build:dashboard-db --workspace @crm/backend",
+    "lint": "npm run lint --workspace @crm/frontend",
+    "check": "powershell -ExecutionPolicy Bypass -File .\\tools\\local-development\\verify-local-environment.ps1"
   }
 }

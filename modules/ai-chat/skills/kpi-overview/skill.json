@@ -1,0 +1,10 @@
+{
+  "id": "kpi-overview",
+  "description": "Summarize KPI overview for the selected or current period.",
+  "priority": 80,
+  "triggers": ["kpi", "tong quan", "tom tat", "overview"],
+  "supported_views": ["dashboard"],
+  "required_entities": [],
+  "output_mode": "summary",
+  "fallback_policy": "use_llm_fallback_for_non_dashboard_requests"
+}

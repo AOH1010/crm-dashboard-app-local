@@ -1,0 +1,14 @@
+{
+  "name": "@crm/backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-sqlite src/index.js",
+    "start": "node --experimental-sqlite src/index.js",
+    "build:dashboard-db": "node --experimental-sqlite src/build-dashboard-sales-db.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2"
+  }
+}

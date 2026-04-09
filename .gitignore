@@ -10,6 +10,7 @@ coverage/
 *.log
 .env*
 !.env.example
+.local-development/
 jega products/
 Decko - CRM Dashboard.jfif
 data/*.db

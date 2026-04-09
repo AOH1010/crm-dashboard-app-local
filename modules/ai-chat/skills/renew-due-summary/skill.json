@@ -1,0 +1,10 @@
+{
+  "id": "renew-due-summary",
+  "description": "Summarize renewal due and renewed counts for a month.",
+  "priority": 88,
+  "triggers": ["renew", "gia han", "sap het han", "den han"],
+  "supported_views": ["renew"],
+  "required_entities": ["month"],
+  "output_mode": "summary",
+  "fallback_policy": "use_llm_fallback_if_question_needs_detail_lookup"
+}

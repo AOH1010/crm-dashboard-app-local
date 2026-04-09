@@ -1,0 +1,12 @@
+{
+  "name": "@crm/ai-chat-module",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-sqlite --test --test-concurrency=1 test/*.test.js",
+    "eval": "node --experimental-sqlite test/eval-runtime.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^1.29.0"
+  }
+}

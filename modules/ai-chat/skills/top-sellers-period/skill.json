@@ -1,0 +1,10 @@
+{
+  "id": "top-sellers-period",
+  "description": "Return a ranked seller leaderboard for a period.",
+  "priority": 90,
+  "triggers": ["top", "xep hang", "seller", "sale"],
+  "supported_views": ["dashboard", "team"],
+  "required_entities": ["period"],
+  "output_mode": "table",
+  "fallback_policy": "use_llm_fallback_if_question_is_ambiguous"
+}

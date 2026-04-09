@@ -1,0 +1,10 @@
+{
+  "id": "team-performance-summary",
+  "description": "Summarize team revenue performance for the selected or current period.",
+  "priority": 84,
+  "triggers": ["team", "nhom", "doanh thu", "doanh so", "dan dau"],
+  "supported_views": ["team", "dashboard"],
+  "required_entities": ["period"],
+  "output_mode": "table",
+  "fallback_policy": "use_llm_fallback_if_question_requires_custom_team_breakdown"
+}

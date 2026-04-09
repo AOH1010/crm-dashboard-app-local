@@ -1,0 +1,10 @@
+{
+  "id": "compare-periods",
+  "description": "Compare current period metrics with the previous period.",
+  "priority": 85,
+  "triggers": ["so sanh", "thang nay", "thang truoc", "compare"],
+  "supported_views": ["dashboard", "team", "conversion"],
+  "required_entities": ["period"],
+  "output_mode": "table",
+  "fallback_policy": "use_llm_fallback_if_compare_intent_is_not_supported"
+}

@@ -1,3 +1,0 @@
-rule_group,rule_name,shortlist_label,field_name,match_type,match_value,score_delta,priority_order,is_active,notes
-eligibility,Upsell existing customers,upsell,shortlist_context,composite,approved_order_count_gte=1;customer_segment_not_in=lost_or_invalid;priority_score_gte=40,0,10,1,Existing customers eligible for upsell
-eligibility,Newsale active pipeline,newsale,shortlist_context,composite,approved_order_count=0;customer_segment_in=hot_lead|demo_lead|active_lead;priority_score_gte=35,0,20,1,Non-customers eligible for new sale

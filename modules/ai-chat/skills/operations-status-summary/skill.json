@@ -1,0 +1,10 @@
+{
+  "id": "operations-status-summary",
+  "description": "Summarize active, inactive, and category counts for operations.",
+  "priority": 87,
+  "triggers": ["active", "inactive", "best", "ghost", "noise", "value", "operations", "hoat dong"],
+  "supported_views": ["renew", "user-map", "active-map", "cohort-active"],
+  "required_entities": ["month"],
+  "output_mode": "summary",
+  "fallback_policy": "use_llm_fallback_if_question_needs_deep_breakdown"
+}

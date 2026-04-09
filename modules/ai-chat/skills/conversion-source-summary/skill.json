@@ -1,0 +1,10 @@
+{
+  "id": "conversion-source-summary",
+  "description": "Summarize conversion performance by source group for the selected or current period.",
+  "priority": 86,
+  "triggers": ["conversion", "nguon", "source", "cao nhat", "lead"],
+  "supported_views": ["conversion", "leads"],
+  "required_entities": ["period"],
+  "output_mode": "table",
+  "fallback_policy": "use_llm_fallback_if_question_needs_deeper_funnel_explanation"
+}

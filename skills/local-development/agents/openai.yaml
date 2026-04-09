@@ -1,0 +1,3 @@
+display_name: Local Development
+short_description: Run and validate the CRM dashboard locally.
+default_prompt: Validate local prerequisites, seed the SQLite database if needed, and start the frontend plus backend on localhost using the repo scripts.

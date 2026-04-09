@@ -1,0 +1,119 @@
+{
+  "version": "v1",
+  "tables": {
+    "customers": {
+      "actual": "main.customers",
+      "domain": "sales",
+      "description": "CRM customer records and lead metadata.",
+      "columns": ["id_1", "title", "account_source_full_name", "relation_name", "latest_interaction", "created_at_1"]
+    },
+    "orders": {
+      "actual": "main.orders",
+      "domain": "sales",
+      "description": "CRM order records with seller, amount, status, and dates.",
+      "columns": ["order_id", "order_code", "id_1", "saler_name", "status_label", "real_amount", "order_date", "created_at"]
+    },
+    "staffs": {
+      "actual": "main.staffs",
+      "domain": "sales",
+      "description": "CRM staff roster used to map sellers to teams.",
+      "columns": ["contact_name", "dept_name"]
+    },
+    "kpis_daily": {
+      "actual": "dashboard.dashboard_kpis_daily",
+      "domain": "dashboard",
+      "description": "Daily sales KPI mart with revenue, new leads, and new customers.",
+      "columns": ["day", "revenue_amount", "new_leads_count", "new_customers_count"]
+    },
+    "revenue_series": {
+      "actual": "dashboard.dashboard_revenue_series",
+      "domain": "dashboard",
+      "description": "Revenue trend mart by day, week, and month labels.",
+      "columns": ["day", "month_key", "month_label", "iso_week_key", "iso_week_label", "day_label", "revenue_amount"]
+    },
+    "sales_leaderboard_monthly": {
+      "actual": "dashboard.dashboard_sales_leaderboard_monthly",
+      "domain": "dashboard",
+      "description": "Monthly seller leaderboard with revenue, order count, and rank.",
+      "columns": ["month_key", "seller_name", "team_name", "revenue_amount", "order_count", "rank_order"]
+    },
+    "recent_orders": {
+      "actual": "dashboard.dashboard_recent_orders",
+      "domain": "dashboard",
+      "description": "Latest orders mart for dashboard summaries and lookups.",
+      "columns": ["order_id", "order_code", "customer_id", "customer_title", "order_date", "amount", "seller_name", "team_name", "status_label"]
+    },
+    "dashboard_meta": {
+      "actual": "dashboard.dashboard_meta",
+      "domain": "dashboard",
+      "description": "Dashboard mart metadata such as build time and status labels.",
+      "columns": ["meta_key", "meta_value"]
+    },
+    "activation_accounts": {
+      "actual": "operations.ops_activation_accounts",
+      "domain": "operations",
+      "description": "Activation-rooted account inventory for operations analysis.",
+      "columns": ["account", "customer_id", "customer_name", "sale_owner", "activation_date", "expiry_date", "account_type", "customer_type"]
+    },
+    "expired_accounts": {
+      "actual": "operations.ops_jcd_expired_accounts",
+      "domain": "operations",
+      "description": "Expired account records synced from workbook JCD sheet.",
+      "columns": ["account", "activation_date", "expiry_date", "account_type", "password_customer_id"]
+    },
+    "ops_raw_daily": {
+      "actual": "operations.ops_raw_daily",
+      "domain": "operations",
+      "description": "Raw daily operations usage metrics by account.",
+      "columns": ["day_key", "account", "open_cnt", "create_cnt", "update_cnt", "render_cnt", "month_end_key", "invalid_daily"]
+    },
+    "monthly_metrics": {
+      "actual": "operations.ops_monthly_metrics",
+      "domain": "operations",
+      "description": "Monthly rolled-up operations activity metrics and quality ratio.",
+      "columns": ["account", "month_end_key", "open_cnt", "create_cnt", "update_cnt", "render_cnt", "quality_ratio", "invalid_daily_count", "latest_active_date"]
+    },
+    "monthly_status": {
+      "actual": "operations.ops_monthly_status",
+      "domain": "operations",
+      "description": "Monthly operations status and category labels by account.",
+      "columns": ["account", "month_end_key", "status", "category"]
+    },
+    "due_accounts": {
+      "actual": "operations.ops_due_accounts",
+      "domain": "operations",
+      "description": "Renewal-due account mart with renewed flag and due month.",
+      "columns": ["account", "due_month_key", "due_date", "renewed", "customer_id", "customer_name", "sale_owner", "account_type"]
+    },
+    "operations_meta": {
+      "actual": "operations.operations_meta",
+      "domain": "operations",
+      "description": "Operations mart metadata, thresholds, and latest raw date.",
+      "columns": ["key", "value"]
+    }
+  },
+  "domains": {
+    "sales": {
+      "description": "Raw CRM sales and lead data for seller, customer, order, and source questions.",
+      "tables": ["customers", "orders", "staffs"]
+    },
+    "dashboard": {
+      "description": "Pre-aggregated sales dashboard marts for KPI, revenue trend, leaderboard, and recent orders.",
+      "tables": ["kpis_daily", "revenue_series", "sales_leaderboard_monthly", "recent_orders", "dashboard_meta"]
+    },
+    "operations": {
+      "description": "Operations marts for activation, activity quality, cohort status, and renewal due analysis.",
+      "tables": ["activation_accounts", "expired_accounts", "ops_raw_daily", "monthly_metrics", "monthly_status", "due_accounts", "operations_meta"]
+    }
+  },
+  "viewDomains": {
+    "dashboard": ["dashboard", "sales"],
+    "leads": ["sales"],
+    "renew": ["operations"],
+    "user-map": ["operations"],
+    "conversion": ["sales"],
+    "active-map": ["operations"],
+    "cohort-active": ["operations"],
+    "team": ["sales", "dashboard"]
+  }
+}

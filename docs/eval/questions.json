@@ -1,0 +1,290 @@
+[
+  {
+    "id": "q001",
+    "question": "Doanh thu cua Hoang Van Huy thang 4 la bao nhieu?",
+    "view_id": "dashboard",
+    "expected_route": "skill",
+    "expected_skill_id": "seller-month-revenue",
+    "automated": true,
+    "legacy_parity": true
+  },
+  {
+    "id": "q002",
+    "question": "Doanh so cua Nguyen Thi Hien thang 4/2026 la bao nhieu?",
+    "view_id": "team",
+    "expected_route": "skill",
+    "expected_skill_id": "seller-month-revenue",
+    "automated": true,
+    "legacy_parity": true
+  },
+  {
+    "id": "q003",
+    "question": "Top seller trong ky hien tai la ai?",
+    "view_id": "dashboard",
+    "expected_route": "skill",
+    "expected_skill_id": "top-sellers-period",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q004",
+    "question": "Top 5 sale theo doanh thu thang nay",
+    "view_id": "team",
+    "expected_route": "skill",
+    "expected_skill_id": "top-sellers-period",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q005",
+    "question": "Tom tat KPI chinh trong view nay",
+    "view_id": "dashboard",
+    "expected_route": "skill",
+    "expected_skill_id": "kpi-overview",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q006",
+    "question": "Tong quan KPI thang nay",
+    "view_id": "dashboard",
+    "expected_route": "skill",
+    "expected_skill_id": "kpi-overview",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q007",
+    "question": "So sanh thang nay voi ky truoc",
+    "view_id": "dashboard",
+    "expected_route": "skill",
+    "expected_skill_id": "compare-periods",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q008",
+    "question": "So sanh KPI giua ky hien tai va ky truoc",
+    "view_id": "dashboard",
+    "expected_route": "skill",
+    "expected_skill_id": "compare-periods",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q009",
+    "question": "Tong hop renew trong thang 12/2026",
+    "view_id": "renew",
+    "expected_route": "skill",
+    "expected_skill_id": "renew-due-summary",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q010",
+    "question": "So account den han trong ky nay la bao nhieu?",
+    "view_id": "renew",
+    "expected_route": "skill",
+    "expected_skill_id": "renew-due-summary",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q011",
+    "question": "Tong hop active va category trong user map",
+    "view_id": "user-map",
+    "expected_route": "skill",
+    "expected_skill_id": "operations-status-summary",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q012",
+    "question": "Bao nhieu account dang active va bao nhieu ghost?",
+    "view_id": "active-map",
+    "expected_route": "skill",
+    "expected_skill_id": "operations-status-summary",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q013",
+    "question": "Ty le active hien tai la bao nhieu?",
+    "view_id": "user-map",
+    "expected_route": "skill",
+    "expected_skill_id": "operations-status-summary",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q014",
+    "question": "Doanh thu cua Hoang Van Huy thang 1/2030 la bao nhieu?",
+    "view_id": "dashboard",
+    "expected_route": "skill",
+    "expected_skill_id": "seller-month-revenue",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q015",
+    "question": "Top seller tu dau thang den hien tai",
+    "view_id": "team",
+    "expected_route": "skill",
+    "expected_skill_id": "top-sellers-period",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q016",
+    "question": "Tom tat dashboard cho toi",
+    "view_id": "dashboard",
+    "expected_route": "skill",
+    "expected_skill_id": "kpi-overview",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q017",
+    "question": "So sanh doanh thu ky hien tai voi ky truoc",
+    "view_id": "dashboard",
+    "expected_route": "skill",
+    "expected_skill_id": "compare-periods",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q018",
+    "question": "Tong hop renew ky nay",
+    "view_id": "renew",
+    "expected_route": "skill",
+    "expected_skill_id": "renew-due-summary",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q019",
+    "question": "Category nao dang chiem ty trong cao nhat trong operations?",
+    "view_id": "user-map",
+    "expected_route": "skill",
+    "expected_skill_id": "operations-status-summary",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q020",
+    "question": "Cho toi bang top seller hien tai",
+    "view_id": "dashboard",
+    "expected_route": "skill",
+    "expected_skill_id": "top-sellers-period",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q021",
+    "question": "Khach hang nao moi nhat trong tuan nay?",
+    "view_id": "dashboard",
+    "expected_route": "llm_fallback",
+    "expected_skill_id": null,
+    "automated": false,
+    "legacy_parity": false
+  },
+  {
+    "id": "q022",
+    "question": "Top tinh co nhieu lead nhat la gi?",
+    "view_id": "leads",
+    "expected_route": "llm_fallback",
+    "expected_skill_id": null,
+    "automated": false,
+    "legacy_parity": false
+  },
+  {
+    "id": "q023",
+    "question": "Nhom nguon nao co conversion cao nhat?",
+    "view_id": "conversion",
+    "expected_route": "skill",
+    "expected_skill_id": "conversion-source-summary",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q024",
+    "question": "Team nao dang dan dau doanh thu?",
+    "view_id": "team",
+    "expected_route": "skill",
+    "expected_skill_id": "team-performance-summary",
+    "automated": true,
+    "legacy_parity": false
+  },
+  {
+    "id": "q025",
+    "question": "Cho toi bang 5 don hang moi nhat",
+    "view_id": "dashboard",
+    "expected_route": "llm_fallback",
+    "expected_skill_id": null,
+    "automated": false,
+    "legacy_parity": false
+  },
+  {
+    "id": "q026",
+    "question": "So sanh doanh thu theo team trong quy nay",
+    "view_id": "team",
+    "expected_route": "llm_fallback",
+    "expected_skill_id": null,
+    "automated": false,
+    "legacy_parity": false
+  },
+  {
+    "id": "q027",
+    "question": "Tai sao conversion thang nay giam?",
+    "view_id": "conversion",
+    "expected_route": "llm_fallback",
+    "expected_skill_id": null,
+    "automated": false,
+    "legacy_parity": false
+  },
+  {
+    "id": "q028",
+    "question": "Loc giup cac account ghost sap het han",
+    "view_id": "renew",
+    "expected_route": "llm_fallback",
+    "expected_skill_id": null,
+    "automated": false,
+    "legacy_parity": false
+  },
+  {
+    "id": "q029",
+    "question": "Customer nao co nhieu don nhat?",
+    "view_id": "dashboard",
+    "expected_route": "llm_fallback",
+    "expected_skill_id": null,
+    "automated": false,
+    "legacy_parity": false
+  },
+  {
+    "id": "q030",
+    "question": "Hien thi bang seller co doanh thu duoi trung binh",
+    "view_id": "team",
+    "expected_route": "llm_fallback",
+    "expected_skill_id": null,
+    "automated": false,
+    "legacy_parity": false
+  },
+  {
+    "id": "q031",
+    "question": "Cho toi tong quan cohort active",
+    "view_id": "cohort-active",
+    "expected_route": "llm_fallback",
+    "expected_skill_id": null,
+    "automated": false,
+    "legacy_parity": false
+  },
+  {
+    "id": "q032",
+    "question": "Nguon nao tao ra khach moi nhieu nhat?",
+    "view_id": "conversion",
+    "expected_route": "skill",
+    "expected_skill_id": "conversion-source-summary",
+    "automated": true,
+    "legacy_parity": false
+  }
+]
