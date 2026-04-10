@@ -69,9 +69,9 @@ export const conversionSourceSummarySkill = {
       };
     });
 
-    const topGroup = rows[0];
+    const topGroup = rows[0] || null;
     const table = formatMarkdownTable(
-      ["Nhom nguon", "Lead", "Khach moi", "Conversion"],
+      ["Nhóm nguồn", "Lead", "Khách mới", "Conversion"],
       rows.map((row) => [
         row.source_group,
         row.lead_count.toLocaleString("vi-VN"),
@@ -80,12 +80,25 @@ export const conversionSourceSummarySkill = {
       ])
     );
 
-    const intro = topGroup
-      ? `Nhom nguon co conversion cao nhat trong giai doan ${period.from} den ${period.to} la ${topGroup.source_group} voi ${formatPercent(topGroup.conversion_rate)}.`
-      : `Khong tim thay du lieu conversion theo nguon trong giai doan ${period.from} den ${period.to}.`;
+    const reply = topGroup
+      ? [
+        `Nhóm nguồn có conversion cao nhất trong giai đoạn ${period.from} đến ${period.to} là ${topGroup.source_group} với ${formatPercent(topGroup.conversion_rate)}.`,
+        table
+      ].join("\n\n")
+      : `Không tìm thấy dữ liệu conversion theo nguồn trong giai đoạn ${period.from} đến ${period.to}.`;
 
     return {
-      reply: [intro, table].join("\n\n"),
+      reply,
+      fallback_reply: reply,
+      format_hint: rows.length > 0 ? "ranking_table" : "no_data",
+      summary_facts: {
+        period_from: period.from,
+        period_to: period.to,
+        top_source_group: topGroup
+      },
+      data: {
+        sources: rows
+      },
       sqlLogs: [{
         name: this.id,
         sql: result.sql,

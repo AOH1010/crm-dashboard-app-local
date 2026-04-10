@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import express from "express";
 import { chatWithCrmAgent } from "./lib/agent-chat.js";
+import { evaluateChatLabResults } from "./lib/chat-lab-evaluator.js";
 import {
   ensureDashboardSalesDb,
   getDashboardPayload,
@@ -32,6 +33,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const backendAppDir = path.resolve(__dirname, "..");
 const projectRoot = path.resolve(backendAppDir, "..", "..");
+const chatLabArtifactsRelativeDir = path.join("artifacts", "chat-lab-exports");
+const chatLabArtifactsDir = path.join(projectRoot, chatLabArtifactsRelativeDir);
 
 dotenv.config({ path: path.join(projectRoot, ".env") });
 dotenv.config({ path: path.join(backendAppDir, ".env"), override: true });
@@ -75,6 +78,104 @@ app.get("/api/agent/chat-lab/scenarios", (_req, res) => {
     res.status(500).type("application/json").send(JSON.stringify({
       error: "Failed to load Chat Lab scenarios.",
     }));
+  }
+});
+
+function csvEscape(value) {
+  const text = value === null || value === undefined ? "" : String(value);
+  return `"${text.replaceAll('"', '""').replaceAll("\r\n", "\n").replaceAll("\n", "\\n")}"`;
+}
+
+function buildCsvContent(rows) {
+  const headers = Array.from(new Set(rows.flatMap((row) => Object.keys(row))));
+  const lines = [headers.map(csvEscape).join(",")];
+  for (const row of rows) {
+    lines.push(headers.map((header) => csvEscape(row[header])).join(","));
+  }
+  return `\ufeff${lines.join("\n")}`;
+}
+
+function sanitizeArtifactFilename(filename) {
+  const normalized = String(filename || "").trim();
+  const basename = path.basename(normalized || "chat-lab-results.csv");
+  const safeName = basename.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/-+/g, "-");
+  return safeName.toLowerCase().endsWith(".csv") ? safeName : `${safeName}.csv`;
+}
+
+function resolveUniqueArtifactFilename(filename) {
+  const parsed = path.parse(filename);
+  let candidate = filename;
+  let counter = 1;
+
+  while (fs.existsSync(path.join(chatLabArtifactsDir, candidate))) {
+    candidate = `${parsed.name}-v${counter}${parsed.ext || ".csv"}`;
+    counter += 1;
+  }
+
+  return candidate;
+}
+
+app.post("/api/agent/chat-lab/export", (req, res) => {
+  try {
+    const rows = Array.isArray(req.body?.rows)
+      ? req.body.rows.filter((row) => row && typeof row === "object" && !Array.isArray(row))
+      : [];
+
+    if (rows.length === 0) {
+      res.status(400).json({
+        error: "Chat Lab export requires at least one row.",
+      });
+      return;
+    }
+
+    const requestedFilename = sanitizeArtifactFilename(req.body?.filename);
+    fs.mkdirSync(chatLabArtifactsDir, { recursive: true });
+    const filename = resolveUniqueArtifactFilename(requestedFilename);
+    const absolutePath = path.join(chatLabArtifactsDir, filename);
+    fs.writeFileSync(absolutePath, buildCsvContent(rows), "utf8");
+
+    res.status(200).json({
+      ok: true,
+      filename,
+      relative_path: path.posix.join("artifacts", "chat-lab-exports", filename),
+      absolute_path: absolutePath,
+      row_count: rows.length,
+    });
+  } catch (error) {
+    console.error("[chat-lab-api] failed to export csv", error instanceof Error ? error.stack : error);
+    res.status(500).json({
+      error: "Failed to export Chat Lab CSV artifact.",
+    });
+  }
+});
+
+app.post("/api/agent/chat-lab/evaluate", (req, res) => {
+  try {
+    const items = Array.isArray(req.body?.items)
+      ? req.body.items.filter((item) => item && typeof item === "object" && !Array.isArray(item))
+      : [];
+
+    if (items.length === 0) {
+      res.status(400).json({
+        error: "Chat Lab evaluate_test requires at least one result item.",
+      });
+      return;
+    }
+
+    const evaluations = evaluateChatLabResults({
+      items,
+      knowHowPath: path.join(projectRoot, "docs", "eval", "chat-lab-know-how.md"),
+    });
+
+    res.status(200).json({
+      ok: true,
+      evaluations,
+    });
+  } catch (error) {
+    console.error("[chat-lab-api] failed to evaluate results", error instanceof Error ? error.stack : error);
+    res.status(500).json({
+      error: "Failed to evaluate Chat Lab results.",
+    });
   }
 });
 

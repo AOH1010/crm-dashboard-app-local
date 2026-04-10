@@ -188,13 +188,13 @@ async function runGeminiFallback({ normalizedMessages, connector, systemInstruct
     const functionCalls = response.functionCalls || [];
     if (functionCalls.length === 0) {
       const textReply = String(response.text || "").trim();
-      return {
-        reply: textReply.length > 0
-          ? textReply
-          : "Khong tim thay ket qua phu hop trong du lieu hien tai.",
-        sqlLogs,
-        usage
-      };
+        return {
+          reply: textReply.length > 0
+            ? textReply
+            : "Không tìm thấy kết quả phù hợp trong dữ liệu hiện tại.",
+          sqlLogs,
+          usage
+        };
     }
 
     if (response.candidates?.[0]?.content) {
@@ -243,7 +243,7 @@ async function runGeminiFallback({ normalizedMessages, connector, systemInstruct
   }
 
   return {
-    reply: "Da vuot so lan truy van an toan. Vui long hoi lai voi pham vi nho hon.",
+    reply: "Đã vượt số lần truy vấn an toàn. Vui lòng hỏi lại với phạm vi nhỏ hơn.",
     sqlLogs,
     usage
   };
@@ -275,7 +275,7 @@ async function runNvidiaFallback({ normalizedMessages, connector, systemInstruct
       return {
         reply: textReply.length > 0
           ? textReply
-          : "Khong tim thay ket qua phu hop trong du lieu hien tai.",
+          : "Không tìm thấy kết quả phù hợp trong dữ liệu hiện tại.",
         sqlLogs,
         usage
       };
@@ -331,7 +331,7 @@ async function runNvidiaFallback({ normalizedMessages, connector, systemInstruct
   }
 
   return {
-    reply: "Da vuot so lan truy van an toan. Vui long hoi lai voi pham vi nho hon.",
+    reply: "Đã vượt số lần truy vấn an toàn. Vui lòng hỏi lại với phạm vi nhỏ hơn.",
     sqlLogs,
     usage
   };

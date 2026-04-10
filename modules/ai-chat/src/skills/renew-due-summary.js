@@ -2,6 +2,14 @@ import { createUsage } from "../contracts/chat-contracts.js";
 import { resolveMonthEndKey } from "../tooling/question-analysis.js";
 import { formatPercent } from "./formatters.js";
 
+function shouldIncludeSampleAccounts(question) {
+  const foldedQuestion = String(question || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return /(account nao|danh sach|mau|chi tiet|liet ke)/.test(foldedQuestion);
+}
+
 export const renewDueSummarySkill = {
   id: "renew-due-summary",
   canHandle(context) {
@@ -47,19 +55,38 @@ export const renewDueSummarySkill = {
     const row = result.rows[0] || {};
     const dueCount = Number(row.due_count || 0);
     const renewedCount = Number(row.renewed_count || 0);
+    const pendingCount = Math.max(0, dueCount - renewedCount);
     const renewalRate = dueCount > 0 ? (renewedCount / dueCount) * 100 : 0;
-    const expiringText = expiringSoon.rows.length > 0
-      ? `- Mau 5 account dau: ${expiringSoon.rows.map((item) => item.account).join(", ")}.`
-      : "- Chua co account mau trong ky nay.";
+    const replyLines = [
+      `Trong ${monthContext.label}, có ${dueCount.toLocaleString("vi-VN")} account sắp đến hạn.`,
+      `- Đã renew: ${renewedCount.toLocaleString("vi-VN")} account (${formatPercent(renewalRate)}).`,
+      `- Chưa renew: ${pendingCount.toLocaleString("vi-VN")} account.`
+    ];
+
+    if (shouldIncludeSampleAccounts(context.latestQuestion)) {
+      replyLines.push(
+        expiringSoon.rows.length > 0
+          ? `- Mẫu account gần hạn: ${expiringSoon.rows.map((item) => item.account).join(", ")}.`
+          : "- Chưa có account mẫu trong kỳ này."
+      );
+    }
+
+    const reply = replyLines.join("\n");
 
     return {
-      reply: [
-        `Tong hop renew trong ky ${monthContext.label}:`,
-        `- So account den han: ${dueCount.toLocaleString("vi-VN")}.`,
-        `- So account da renew: ${renewedCount.toLocaleString("vi-VN")} (${formatPercent(renewalRate)}).`,
-        `- Chua renew: ${Math.max(0, dueCount - renewedCount).toLocaleString("vi-VN")}.`,
-        expiringText
-      ].join("\n"),
+      reply,
+      fallback_reply: reply,
+      format_hint: "summary",
+      summary_facts: {
+        month_label: monthContext.label,
+        due_count: dueCount,
+        renewed_count: renewedCount,
+        pending_count: pendingCount,
+        renewal_rate: renewalRate
+      },
+      data: shouldIncludeSampleAccounts(context.latestQuestion) ? {
+        sample_accounts: expiringSoon.rows
+      } : null,
       sqlLogs: [
         {
           name: `${this.id}_summary`,

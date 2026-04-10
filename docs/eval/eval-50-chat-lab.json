@@ -302,18 +302,17 @@
         "content": "Tom tat cho toi"
       }
     ],
-    "expectedRoute": "skill",
-    "expectedSkillId": "kpi-overview",
-    "expectedIntent": "kpi_overview",
-    "expectedClarify": false,
-    "notes": "View=dashboard makes kpi-overview a safe default. Clarify also acceptable.",
-    "normalizedExpectedIntent": "kpi_overview",
-    "routeSuite": "soft",
-    "intentSuite": "strict",
-    "clarifySuite": "none",
+    "expectedRoute": "clarify_required",
+    "expectedSkillId": null,
+    "expectedIntent": "ambiguous",
+    "expectedClarify": true,
+    "notes": "Prompt summary qua chung chung. Nen hoi lai user muon tom tat hoi thoai, dashboard KPI, hay domain cu the.",
+    "normalizedExpectedIntent": "unknown",
+    "routeSuite": "strict",
+    "intentSuite": "soft",
+    "clarifySuite": "strict",
     "manualReview": false,
     "allowedRoutes": [
-      "skill",
       "clarify_required"
     ],
     "reviewFocus": []
@@ -416,17 +415,18 @@
         "content": "Team nao dan dau doanh thu va nguon nao co conversion cao nhat?"
       }
     ],
-    "expectedRoute": "llm_fallback",
+    "expectedRoute": "skill",
     "expectedSkillId": null,
     "expectedIntent": "multi_intent",
     "expectedClarify": false,
-    "notes": "Two different domains. Must answer BOTH or clarify. Must NOT answer only half.",
+    "notes": "Two different domains. Best outcome is one reply that answers BOTH parts without expensive broad fallback.",
     "normalizedExpectedIntent": "unknown",
     "routeSuite": "strict",
     "intentSuite": "soft",
     "clarifySuite": "none",
     "manualReview": false,
     "allowedRoutes": [
+      "skill",
       "llm_fallback"
     ],
     "reviewFocus": []
@@ -471,18 +471,18 @@
         "content": "So sanh hieu suat team Fire voi team Andes trong quy 1 nam 2026, bao gom doanh thu, so don va so seller active"
       }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "expectedIntent": "team_comparison_detailed",
+    "expectedRoute": "skill",
+    "expectedSkillId": "team-performance-summary",
+    "expectedIntent": "team_revenue_summary",
     "expectedClarify": false,
-    "notes": "Too complex for any single skill.",
-    "normalizedExpectedIntent": "custom_analytical_query",
+    "notes": "Deterministic team comparison is acceptable if the skill covers revenue, order count, and seller active.",
+    "normalizedExpectedIntent": "team_revenue_summary",
     "routeSuite": "strict",
     "intentSuite": "soft",
     "clarifySuite": "none",
     "manualReview": false,
     "allowedRoutes": [
-      "llm_fallback"
+      "skill"
     ],
     "reviewFocus": []
   },
@@ -497,18 +497,18 @@
         "content": "Doanh thu 6 thang gan nhat dang tang hay giam? Co thang nao bat thuong khong?"
       }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
+    "expectedRoute": "skill",
+    "expectedSkillId": "revenue-trend-analysis",
     "expectedIntent": "revenue_trend_analysis",
     "expectedClarify": false,
     "notes": "T10:844M, T11:597M, T12:1.13B, T1:381M, T2:643M, T3:1.38B. T1 low (Tet?).",
-    "normalizedExpectedIntent": "custom_analytical_query",
+    "normalizedExpectedIntent": "revenue_trend_analysis",
     "routeSuite": "strict",
     "intentSuite": "soft",
     "clarifySuite": "none",
     "manualReview": true,
     "allowedRoutes": [
-      "llm_fallback"
+      "skill"
     ],
     "reviewFocus": [
       "reasoning",
@@ -526,18 +526,18 @@
         "content": "Tai sao doanh thu thang 1/2026 giam manh so voi thang 12/2025?"
       }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "expectedIntent": "causal_analysis",
+    "expectedRoute": "skill",
+    "expectedSkillId": "revenue-trend-analysis",
+    "expectedIntent": "revenue_trend_analysis",
     "expectedClarify": false,
     "notes": "T12:1.13ty -> T1:381tr (-66%). Must provide data, may hypothesize Tet but NOT fabricate.",
-    "normalizedExpectedIntent": "custom_analytical_query",
+    "normalizedExpectedIntent": "revenue_trend_analysis",
     "routeSuite": "strict",
     "intentSuite": "soft",
     "clarifySuite": "none",
     "manualReview": true,
     "allowedRoutes": [
-      "llm_fallback"
+      "skill"
     ],
     "reviewFocus": [
       "reasoning",

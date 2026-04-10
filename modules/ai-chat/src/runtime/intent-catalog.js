@@ -7,6 +7,7 @@ export const INTENT_TYPES = [
   "operations_summary",
   "conversion_source_summary",
   "team_revenue_summary",
+  "revenue_trend_analysis",
   "customer_lookup",
   "lead_geography",
   "cohort_summary",
@@ -22,7 +23,8 @@ export const ROUTABLE_SKILL_INTENTS = {
   renew_summary: "renew-due-summary",
   operations_summary: "operations-status-summary",
   conversion_source_summary: "conversion-source-summary",
-  team_revenue_summary: "team-performance-summary"
+  team_revenue_summary: "team-performance-summary",
+  revenue_trend_analysis: "revenue-trend-analysis"
 };
 
 export const CLASSIFIER_ROUTE_SKILL_THRESHOLD = 0.85;

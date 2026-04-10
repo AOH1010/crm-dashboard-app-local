@@ -13,15 +13,15 @@ Chat Lab khong phai widget production. Day la man hinh kiem thu noi bo de:
 
 ## Duong dan lien quan
 
-- Frontend Chat Lab view: [apps/frontend/src/views/ChatLabView.tsx](/d:/CRM/crm-dashboard-app-local/apps/frontend/src/views/ChatLabView.tsx)
-- Frontend scenario type va fallback scenarios: [apps/frontend/src/lib/chatLabScenarios.ts](/d:/CRM/crm-dashboard-app-local/apps/frontend/src/lib/chatLabScenarios.ts)
-- Backend endpoint tra scenario: [apps/backend/src/index.js](/d:/CRM/crm-dashboard-app-local/apps/backend/src/index.js)
-- Runtime chinh: [modules/ai-chat/src/runtime/chat-runtime.js](/d:/CRM/crm-dashboard-app-local/modules/ai-chat/src/runtime/chat-runtime.js)
-- Intent catalog va route threshold: [modules/ai-chat/src/runtime/intent-catalog.js](/d:/CRM/crm-dashboard-app-local/modules/ai-chat/src/runtime/intent-catalog.js)
-- Skill formatter runtime: [modules/ai-chat/src/runtime/skill-response-formatter.js](/d:/CRM/crm-dashboard-app-local/modules/ai-chat/src/runtime/skill-response-formatter.js)
-- Eval dataset cho Chat Lab: [docs/eval/eval-50-chat-lab.json](/d:/CRM/crm-dashboard-app-local/docs/eval/eval-50-chat-lab.json)
-- Know-how da duoc xac minh: [docs/eval/chat-lab-know-how.md](/d:/CRM/crm-dashboard-app-local/docs/eval/chat-lab-know-how.md)
-- Draft skill de dong goi workflow nay: [skills/chat-lab-review/SKILL.md](/d:/CRM/crm-dashboard-app-local/skills/chat-lab-review/SKILL.md)
+- Frontend Chat Lab view: [apps/frontend/src/views/ChatLabView.tsx](../../apps/frontend/src/views/ChatLabView.tsx)
+- Frontend scenario type va fallback scenarios: [apps/frontend/src/lib/chatLabScenarios.ts](../../apps/frontend/src/lib/chatLabScenarios.ts)
+- Backend endpoint tra scenario: [apps/backend/src/index.js](../../apps/backend/src/index.js)
+- Runtime chinh: [modules/ai-chat/src/runtime/chat-runtime.js](../../modules/ai-chat/src/runtime/chat-runtime.js)
+- Intent catalog va route threshold: [modules/ai-chat/src/runtime/intent-catalog.js](../../modules/ai-chat/src/runtime/intent-catalog.js)
+- Skill formatter runtime: [modules/ai-chat/src/runtime/skill-response-formatter.js](../../modules/ai-chat/src/runtime/skill-response-formatter.js)
+- Eval dataset cho Chat Lab: [docs/eval/eval-50-chat-lab.json](./eval-50-chat-lab.json)
+- Know-how da duoc xac minh: [docs/eval/chat-lab-know-how.md](./chat-lab-know-how.md)
+- Draft skill de dong goi workflow nay: [skills/chat-lab-review/SKILL.md](../../skills/chat-lab-review/SKILL.md)
 
 ## Luong chay cua he thong
 
@@ -105,7 +105,7 @@ Vi du:
 
 ## Cau truc scenario
 
-Moi scenario trong [eval-50-chat-lab.json](/d:/CRM/crm-dashboard-app-local/docs/eval/eval-50-chat-lab.json) co cac field chinh:
+Moi scenario trong [eval-50-chat-lab.json](./eval-50-chat-lab.json) co cac field chinh:
 
 - `id`: ma testcase, vi du `tc01-seller-revenue-basic`
 - `title`: ten hien thi
@@ -127,7 +127,7 @@ Moi scenario trong [eval-50-chat-lab.json](/d:/CRM/crm-dashboard-app-local/docs/
 
 ## Mapping intent -> skill
 
-Route tu intent sang skill duoc khoa o [intent-catalog.js](/d:/CRM/crm-dashboard-app-local/modules/ai-chat/src/runtime/intent-catalog.js):
+Route tu intent sang skill duoc khoa o [intent-catalog.js](../../modules/ai-chat/src/runtime/intent-catalog.js):
 
 - `seller_revenue_month` -> `seller-month-revenue`
 - `top_sellers_period` -> `top-sellers-period`
@@ -153,7 +153,7 @@ Threshold classifier hien tai:
 - `confidence < 0.50` -> `llm_fallback`
 - `ambiguity_flag = true` -> uu tien `clarify_required`
 
-Nguon: [intent-catalog.js](/d:/CRM/crm-dashboard-app-local/modules/ai-chat/src/runtime/intent-catalog.js)
+Nguon: [intent-catalog.js](../../modules/ai-chat/src/runtime/intent-catalog.js)
 
 ## Cach doc Chat Lab
 
@@ -264,9 +264,9 @@ Khi mot agent khac duoc giao fix testcase:
 - Frontend lay full scenario tu:
   - `GET /api/agent/chat-lab/scenarios`
 - Backend doc file:
-  - [docs/eval/eval-50-chat-lab.json](/d:/CRM/crm-dashboard-app-local/docs/eval/eval-50-chat-lab.json)
+  - [docs/eval/eval-50-chat-lab.json](./eval-50-chat-lab.json)
 - Neu endpoint loi, frontend roi ve:
-  - `CHAT_LAB_FALLBACK_SCENARIOS` trong [chatLabScenarios.ts](/d:/CRM/crm-dashboard-app-local/apps/frontend/src/lib/chatLabScenarios.ts)
+  - `CHAT_LAB_FALLBACK_SCENARIOS` trong [chatLabScenarios.ts](../../apps/frontend/src/lib/chatLabScenarios.ts)
 
 ## Muc tieu cua tai lieu nay
 
@@ -283,7 +283,7 @@ Doc tai lieu nay truoc de nam:
 - testcase duoc cham nhu the nao
 - route, intent, formatter, SQL nam o dau
 
-Sau do doc [chat-lab-know-how.md](/d:/CRM/crm-dashboard-app-local/docs/eval/chat-lab-know-how.md) de ap bo loc triage truoc khi sua code:
+Sau do doc [chat-lab-know-how.md](./chat-lab-know-how.md) de ap bo loc triage truoc khi sua code:
 - day la tang route hay intent
 - day la bug skill SQL hay formatter
 - day la bug runtime hay lech label cua dataset

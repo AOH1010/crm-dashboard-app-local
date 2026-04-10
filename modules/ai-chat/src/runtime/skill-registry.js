@@ -9,6 +9,7 @@ import { renewDueSummarySkill } from "../skills/renew-due-summary.js";
 import { operationsStatusSummarySkill } from "../skills/operations-status-summary.js";
 import { conversionSourceSummarySkill } from "../skills/conversion-source-summary.js";
 import { teamPerformanceSummarySkill } from "../skills/team-performance-summary.js";
+import { revenueTrendAnalysisSkill } from "../skills/revenue-trend-analysis.js";
 import { ROUTABLE_SKILL_INTENTS } from "./intent-catalog.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,7 +25,8 @@ const handlers = new Map([
   [renewDueSummarySkill.id, renewDueSummarySkill],
   [operationsStatusSummarySkill.id, operationsStatusSummarySkill],
   [conversionSourceSummarySkill.id, conversionSourceSummarySkill],
-  [teamPerformanceSummarySkill.id, teamPerformanceSummarySkill]
+  [teamPerformanceSummarySkill.id, teamPerformanceSummarySkill],
+  [revenueTrendAnalysisSkill.id, revenueTrendAnalysisSkill]
 ]);
 
 function loadSkillManifest(skillId) {
@@ -84,6 +86,7 @@ export class SkillRegistry {
     if (context.questionAnalysis?.isMultiIntent && matchedSkills.length > 1) {
       return {
         skill: null,
+        compoundSkills: matchedSkills,
         matchedSkillCandidates: matchedSkills.map((skill) => skill.id),
         routeReason: "legacy_multi_intent_conflict"
       };

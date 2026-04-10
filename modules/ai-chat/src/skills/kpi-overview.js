@@ -49,20 +49,25 @@ export const kpiOverviewSkill = {
 
     const kpis = kpiResult.rows[0] || {};
     const topSeller = topSellerResult.rows[0] || null;
-    const conversionRate = Number(kpis.new_leads || 0) > 0
-      ? (Number(kpis.new_customers || 0) / Number(kpis.new_leads || 0)) * 100
-      : 0;
+    const totalRevenue = Number(kpis.total_revenue || 0);
+    const newLeads = Number(kpis.new_leads || 0);
+    const newCustomers = Number(kpis.new_customers || 0);
+    const conversionRate = newLeads > 0 ? (newCustomers / newLeads) * 100 : 0;
 
     const replyLines = [
-      `Tom tat KPI giai doan ${period.from} den ${period.to}:`,
-      `- Tong doanh thu: ${formatCurrency(kpis.total_revenue)}.`,
-      `- Lead moi: ${Number(kpis.new_leads || 0).toLocaleString("vi-VN")}.`,
-      `- Khach moi: ${Number(kpis.new_customers || 0).toLocaleString("vi-VN")} (${formatPercent(conversionRate)} chuyen doi).`
+      `Tổng quan nhanh giai đoạn ${period.from} đến ${period.to}:`,
+      `- Doanh thu: ${formatCurrency(totalRevenue)}.`,
+      `- Lead mới: ${newLeads.toLocaleString("vi-VN")} và khách mới: ${newCustomers.toLocaleString("vi-VN")} (${formatPercent(conversionRate)} chuyển đổi).`
     ];
 
     if (topSeller) {
-      replyLines.push(`- Seller dan dau: ${topSeller.seller_name} voi ${formatCurrency(topSeller.revenue_amount)}.`);
+      replyLines.push(`- Seller dẫn đầu: ${topSeller.seller_name} với ${formatCurrency(topSeller.revenue_amount)}.`);
     }
+
+    if (newCustomers === 0 && newLeads > 0) {
+      replyLines.push("- Lưu ý: có lead mới nhưng chưa ghi nhận khách mới trong kỳ.");
+    }
+
     const reply = replyLines.join("\n");
 
     return {
@@ -72,9 +77,9 @@ export const kpiOverviewSkill = {
       summary_facts: {
         period_from: period.from,
         period_to: period.to,
-        total_revenue: Number(kpis.total_revenue || 0),
-        new_leads: Number(kpis.new_leads || 0),
-        new_customers: Number(kpis.new_customers || 0),
+        total_revenue: totalRevenue,
+        new_leads: newLeads,
+        new_customers: newCustomers,
         conversion_rate: conversionRate,
         top_seller: topSeller ? {
           seller_name: topSeller.seller_name,
@@ -83,9 +88,9 @@ export const kpiOverviewSkill = {
       },
       data: {
         kpis: {
-          total_revenue: Number(kpis.total_revenue || 0),
-          new_leads: Number(kpis.new_leads || 0),
-          new_customers: Number(kpis.new_customers || 0),
+          total_revenue: totalRevenue,
+          new_leads: newLeads,
+          new_customers: newCustomers,
           conversion_rate: conversionRate
         }
       },

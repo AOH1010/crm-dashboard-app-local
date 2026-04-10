@@ -34,7 +34,23 @@ const SELLER_ALIAS_STOPWORDS = new Set([
   "van",
   "thi",
   "thu",
-  "anh"
+  "anh",
+  "thang",
+  "nam",
+  "nao",
+  "the",
+  "nhu",
+  "cho",
+  "toi",
+  "tong",
+  "quan",
+  "tom",
+  "tat",
+  "doanh",
+  "thu",
+  "con",
+  "ky",
+  "roi"
 ]);
 let dashboardReady = false;
 
@@ -314,6 +330,9 @@ export class SQLiteConnector {
       const tokens = foldedName
         .split(/\s+/)
         .filter((token) => token.length >= 3 && !SELLER_ALIAS_STOPWORDS.has(token));
+      if (tokens.length === 0) {
+        return false;
+      }
       return tokens.some((token) => questionTokens.has(token));
     });
 

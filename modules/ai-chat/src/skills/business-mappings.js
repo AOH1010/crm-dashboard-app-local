@@ -50,6 +50,24 @@ export const TEAM_GROUPS = [
   { key: "hcm", label: "HCM" }
 ];
 
+export function detectTeamEntities(question) {
+  const foldedQuestion = String(question || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const matches = [];
+
+  for (const team of TEAM_GROUPS) {
+    if (foldedQuestion.includes(team.key) || foldedQuestion.includes(team.label.toLowerCase())) {
+      if (!matches.some((entry) => entry.key === team.key)) {
+        matches.push(team);
+      }
+    }
+  }
+
+  return matches;
+}
+
 function quoteSqlString(value) {
   return `'${String(value || "").replace(/'/g, "''")}'`;
 }

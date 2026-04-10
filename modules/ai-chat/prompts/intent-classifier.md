@@ -20,6 +20,7 @@ Allowed primary_intent values:
 - operations_summary
 - conversion_source_summary
 - team_revenue_summary
+- revenue_trend_analysis
 - customer_lookup
 - lead_geography
 - cohort_summary
@@ -78,8 +79,12 @@ Entity rules:
 Routing hints:
 - "Ai dang dan dau doanh thu thang nay?" should usually be `top_sellers_period`, not `custom_analytical_query`.
 - "Tinh hinh chung", "tong quan", or "tom tat" should be interpreted with the active view context when possible.
+- Very generic prompts such as "Tom tat cho toi" should prefer `unknown + ambiguity_flag=true` unless the requested scope is explicit in the conversation.
 - Very short follow-ups such as "Con thang 4?" or "So voi thang truoc?" should reuse the recent topic if the context is clear.
 - If a short follow-up changes the entity, keep the old intent family but update the entity.
+- If the ask clearly combines two separate analytics domains in one sentence, prefer `unknown` or `custom_analytical_query` for fallback routing instead of asking the user to pick only one.
+- Questions about revenue trends, anomalies, or "why doanh thu" should prefer `revenue_trend_analysis` when the ask is still centered on revenue over time.
+- Detailed team-vs-team comparison in one period can still be `team_revenue_summary` with `action=compare` if the metrics stay within revenue / orders / active sellers.
 
 Examples:
 
@@ -177,8 +182,75 @@ Return:
   "output_mode": "summary",
   "ambiguity_flag": true,
   "ambiguity_reason": "scope_unclear",
-  "clarification_question": "Ban muon xem doanh thu theo seller, team hay tong quan KPI?",
+  "clarification_question": "Bạn muốn xem doanh thu theo seller, team, nguồn hay tổng quan KPI?",
   "confidence": 0.42
+}
+
+User: "Tom tat cho toi"
+Return:
+{
+  "primary_intent": "unknown",
+  "action": "unknown",
+  "metric": "unknown",
+  "dimension": "unknown",
+  "entities": [],
+  "time_window": { "type": "unknown", "value": "unknown" },
+  "output_mode": "summary",
+  "ambiguity_flag": true,
+  "ambiguity_reason": "summary_scope_unclear",
+  "clarification_question": "Bạn muốn tôi tóm tắt phần nào: nội dung hội thoại, KPI dashboard, team, renew hay operations?",
+  "confidence": 0.44
+}
+
+User: "Team nao dan dau doanh thu va nguon nao co conversion cao nhat?"
+Return:
+{
+  "primary_intent": "unknown",
+  "action": "analyze",
+  "metric": "revenue",
+  "dimension": "unknown",
+  "entities": [],
+  "time_window": { "type": "unknown", "value": "unknown" },
+  "output_mode": "summary",
+  "ambiguity_flag": true,
+  "ambiguity_reason": "multi_intent",
+  "clarification_question": "",
+  "confidence": 0.48
+}
+
+User: "Doanh thu 6 thang gan nhat dang tang hay giam? Co thang nao bat thuong khong?"
+Return:
+{
+  "primary_intent": "revenue_trend_analysis",
+  "action": "analyze",
+  "metric": "revenue",
+  "dimension": "time",
+  "entities": [],
+  "time_window": { "type": "unknown", "value": "unknown" },
+  "output_mode": "summary",
+  "ambiguity_flag": false,
+  "ambiguity_reason": "",
+  "clarification_question": "",
+  "confidence": 0.88
+}
+
+User: "So sanh hieu suat team Fire voi team Andes trong quy 1 nam 2026, bao gom doanh thu, so don va so seller active"
+Return:
+{
+  "primary_intent": "team_revenue_summary",
+  "action": "compare",
+  "metric": "revenue",
+  "dimension": "team",
+  "entities": [
+    { "type": "team", "value": "Fire" },
+    { "type": "team", "value": "Andes" }
+  ],
+  "time_window": { "type": "explicit", "value": "quy 1 nam 2026" },
+  "output_mode": "comparison",
+  "ambiguity_flag": false,
+  "ambiguity_reason": "",
+  "clarification_question": "",
+  "confidence": 0.9
 }
 
 Return JSON with exactly these keys:

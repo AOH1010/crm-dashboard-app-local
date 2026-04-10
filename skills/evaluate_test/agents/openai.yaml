@@ -1,0 +1,3 @@
+display_name: Evaluate Test
+short_description: Review Chat Lab testcase results using verified know-how before manual review.
+default_prompt: Review Chat Lab testcase results, load docs/eval/chat-lab-know-how.md first, then recommend whether the failure is in route, intent, clarify, formatter language, or still needs manual review.

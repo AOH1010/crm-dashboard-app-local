@@ -140,6 +140,127 @@ Moi entry nen tra loi du 6 cau hoi:
 - `Regression added`: usage plumbing o runtime
 - `Applies to`: classifier, formatter, fallback
 
+### KH-010: Prompt summary qua chung chung nen hoi lai, khong nen default vao dashboard KPI
+
+- `Date`: 2026-04-10
+- `Cases`: `tc12`
+- `Symptom`: prompt kieu `Tom tat cho toi` auto route vao `kpi_overview` du user chua noi ro muon tom tat cai gi
+- `True root cause`: classifier dang coi tu `tom tat` la du de map vao overview theo view, trong khi scope summary thuc te van mo ho
+- `Fix applied`: them generic-summary rule de route sang `clarify_required`; cap nhat dataset `tc12` theo quyet dinh moi
+- `Rule learned`: `summary word != summary intent`; neu user chi noi `tom tat` ma chua ro object thi phai hoi lai
+- `Regression added`: test `generic summary prompt asks for clarification`
+- `Applies to`: prompt summary ngan, overview mo ho, yeu cau tom tat khong ro object
+
+### KH-011: Multi-intent ro rang nen roi ve fallback, khong nen hoi user chon 1 trong 2
+
+- `Date`: 2026-04-10
+- `Cases`: `tc16`
+- `Symptom`: user hoi 2 y ro rang trong cung 1 cau, he thong lai route `clarify_required`
+- `True root cause`: runtime dang coi `multi_intent` la ambiguity theo nghia can hoi lai, trong khi day la compound analytics ask can fallback
+- `Fix applied`: doi route cua `ambiguity_reason = multi_intent` sang `llm_fallback`; cap nhat prompt classifier de coi day la compound ask thay vi "scope unclear"
+- `Rule learned`: multi-intent ro rang khong phai la prompt mo ho; neu chua co orchestration da-ky-nang thi fallback tot hon clarify
+- `Regression added`: test `multi-intent clear asks route to llm_fallback instead of clarify`
+- `Applies to`: prompt 2 domain, prompt compound, prompt can tra loi nhieu phan
+
+### KH-012: Seller alias can false-positive tren token chung va day prompt mo ho vao skill sai
+
+- `Date`: 2026-04-10
+- `Cases`: `tc11`, `tc19`
+- `Symptom`: cau kieu `Doanh thu nhu the nao?` hoac trend question bi route vao `seller-month-revenue`
+- `True root cause`: `detectSellerName()` cho phep match 1 token qua "pho thong" nhu `thu`, `thang`, `nao`, lam classifier hieu nham la ten seller
+- `Fix applied`: mo rong stopword cho seller alias va them rule `generic revenue ask -> clarify_required`
+- `Rule learned`: alias resolver phai phong thu voi token thong dung trong tieng Viet; neu khong se sinh false positive rat nguy hiem
+- `Regression added`: test `seller alias detection does not false-positive on generic revenue wording` va `generic revenue ask requires clarification instead of forcing seller skill`
+- `Applies to`: seller lookup, revenue prompts ngan, trend/summary prompts co tu `thu`, `thang`, `nao`
+
+### KH-013: Follow-up team phai giu entity tu history den tan skill execution
+
+- `Date`: 2026-04-10
+- `Cases`: `tc13`
+- `Symptom`: classifier route dung `team_revenue_summary` nhung reply lai tong hop toan bo team, khong bam `team Fire`
+- `True root cause`: follow-up inference co the giu intent family, nhung skill `team-performance-summary` chua filter theo team entity trong context
+- `Fix applied`: them detect team entity vao classifier va follow-up inference; nang `team-performance-summary` thanh team-aware skill co the tra 1 team cu the theo ky duoc carry-over
+- `Rule learned`: giu duoc intent chua du; skill layer phai tieu thu context entity neu khong answer van sai nghia hoi thoai
+- `Regression added`: mo rong test `follow-up prompt can reuse recent turns for intent detection`
+- `Applies to`: team follow-up, entity carry-over, prompt ngan kieu `Con thang 4?`
+
+### KH-014: Cross-view operations summary nen mac dinh theo thang hien tai va tra ve snapshot giau hon
+
+- `Date`: 2026-04-10
+- `Cases`: `tc15`
+- `Symptom`: route dung sang operations skill nhung reply qua mong va de troi sang latest-data semantics thay vi current-month semantics
+- `True root cause`: `operations-status-summary` dang dung ky gan nhat trong mart va chi tra mot snapshot rat gon
+- `Fix applied`: cho skill uu tien system current month khi user khong noi ro ky; bo sung breakdown `Active/Inactive` va `Best/Value/Noise/Ghost`
+- `Rule learned`: voi prompt `tinh hinh operations`, route dung chua du; summary phai giong dashboard snapshot ma user ky vong
+- `Regression added`: test `operations summary without explicit period defaults to the system current month`
+- `Applies to`: operations summary, cross-view ask, current-month default semantics
+
+### KH-015: User-facing answer cua Chat Lab phai la tieng Viet co dau
+
+- `Date`: 2026-04-10
+- `Cases`: nhieu case group B/C
+- `Symptom`: route dung nhung reply cuoi van ra tieng Viet khong dau, lam giam chat luong va fail manual review
+- `True root cause`: nhieu deterministic reply, fallback message, va formatter prompt chi rang buoc `Vietnamese` nhung khong ep `co dau`
+- `Fix applied`: doi cac user-facing deterministic strings sang tieng Viet co dau; them formatter guardrail reject reply khong co dau; cap nhat base/fallback/formatter prompts de yeu cau `Vietnamese with full diacritics`
+- `Rule learned`: ngon ngu dau ra la mot phan cua correctness; "dung so nhung khong dau" van co the la fail doi voi UX noi bo
+- `Regression added`: route tests van pass sau khi doi toan bo deterministic copy sang tieng Viet co dau
+- `Applies to`: skill replies, fallback replies, clarification text, formatter output
+
+### KH-016: Ask hep thi skill khong duoc tra loi du thong tin hon muc can
+
+- `Date`: 2026-04-11
+- `Cases`: `tc06`, `tc07`
+- `Symptom`: skill route dung nhung reply bi "tham thong tin", vi du renew count lai ke them mau account; operations chi hoi `active va ghost` nhung reply dump ca dashboard snapshot
+- `True root cause`: deterministic skill dang tra bo snapshot mac dinh thay vi toi uu theo pham vi cau hoi
+- `Fix applied`: them branch wording theo intent hep trong `renew-due-summary` va `operations-status-summary`; chi them mau/list khi user hoi ro danh sach hoac chi tiet
+- `Rule learned`: route dung chua du; skill phai ton trong `scope` cua cau hoi, neu khong manual review van fail vi answer khong trong tam
+- `Regression added`: route tests cho renew va operations duoc cap nhat de giu reply hep hon
+- `Applies to`: count asks, status asks, operations snapshot, renew summary
+
+### KH-017: Team-vs-team comparison ro rang co the giu o deterministic skill
+
+- `Date`: 2026-04-11
+- `Cases`: `tc18`
+- `Symptom`: team comparison chi gom doanh thu / so don / seller active nhung runtime van roi `llm_fallback`
+- `True root cause`: classifier dang coi moi team comparison 2 doi tuong la analytical query qua rong, trong khi `team-performance-summary` thuc te da co du truong du lieu de tra loi
+- `Fix applied`: doi intent sang `team_revenue_summary` voi `action=compare` khi prompt so sanh 2 team ro rang; nang `team-performance-summary` de tra comparison deterministic
+- `Rule learned`: neu bai toan so sanh van nam trong metric schema cua 1 skill hien co thi uu tien nang skill, khong fallback vo dieu kien
+- `Regression added`: test `complex team comparison stays on deterministic team skill`
+- `Applies to`: team compare, quarter compare, asks gom revenue + order_count + seller_active
+
+### KH-018: Revenue trend va cau hoi "tai sao" nen co deterministic diagnostic skill rieng
+
+- `Date`: 2026-04-11
+- `Cases`: `tc19`, `tc20`
+- `Symptom`: trend / why revenue bi day vao fallback SQL rong, ton token va thuong tra loi lan man
+- `True root cause`: runtime chua co skill cho phan tich doanh thu theo thang va chuan doan driver co ban
+- `Fix applied`: them skill `revenue-trend-analysis`; classifier route revenue trend / causal asks vao skill nay; skill tra loi tu monthly metrics + team delta thay vi broad fallback
+- `Rule learned`: recurring analytical asks co schema on dinh nen duoc dong goi thanh diagnostic skill, khong nen de fallback giong ad-hoc query
+- `Regression added`: tests `revenue trend analysis uses deterministic trend skill` va `causal why question uses deterministic revenue trend skill`
+- `Applies to`: revenue trend, anomaly detection, month-over-month why analysis
+
+### KH-019: Multi-intent ro rang co the orchestration 2 deterministic skills truoc khi dung fallback
+
+- `Date`: 2026-04-11
+- `Cases`: `tc16`
+- `Symptom`: user hoi 2 y ro rang, moi y deu co skill san, nhung runtime van roi `llm_fallback`
+- `True root cause`: router coi multi-intent = conflict va dung lai, du skill registry da nhin thay 2 candidate ro rang
+- `Fix applied`: them compound deterministic orchestration cho 2 skill candidate dau tien khi legacy path gap `legacy_multi_intent_conflict`
+- `Rule learned`: khong phai multi-intent nao cung can fallback; neu moi sub-ask da co deterministic skill thi nen compose truoc
+- `Regression added`: test `runtime can answer clear multi-domain ask by composing deterministic skills`
+- `Applies to`: 2-domain prompts kieu team + conversion, 2 sub-asks deu co skill
+
+### KH-020: Prompt dai 1 intent van nen tra loi them 1 insight nho de nghe "thong minh" hon
+
+- `Date`: 2026-04-11
+- `Cases`: `tc17`
+- `Symptom`: route dung va so lieu dung nhung answer nghe cut lung, khong dua them 1 goc nhin bo tro du context prompt dai
+- `True root cause`: deterministic seller reply chi tra metric chinh ma khong co business context bo sung nao
+- `Fix applied`: nang `seller-month-revenue` de them average order value va ty trong doanh thu trong thang khi du du lieu
+- `Rule learned`: voi long prompt nhung 1 ask ro rang, 1 insight bo tro co the tang chat luong rat nhieu ma van giu answer gon
+- `Regression added`: long seller prompt regression van pass tren deterministic skill
+- `Applies to`: seller lookup, direct metric asks, long internal meeting prompts
+
 ## Quy tac bo loc truoc khi sua case moi
 
 Truoc khi sua mot testcase fail, agent nen di qua bo loc nay:

@@ -4,15 +4,15 @@
 
 Agent moi vao repo nay, sau khi doc file nay, phai doc tiep theo dung thu tu:
 
-1. [docs/ai-chat-architecture.md](/d:/CRM/crm-dashboard-app-local/docs/ai-chat-architecture.md)
+1. [docs/ai-chat-architecture.md](./ai-chat-architecture.md)
    - Doc de hieu runtime AI chat dang van hanh nhu the nao.
-2. [docs/eval/chat-lab-testing-guide.md](/d:/CRM/crm-dashboard-app-local/docs/eval/chat-lab-testing-guide.md)
+2. [docs/eval/chat-lab-testing-guide.md](./eval/chat-lab-testing-guide.md)
    - Doc neu cong viec lien quan den Chat Lab, testcase, batch run, scorer, manual review, export CSV.
-3. [docs/eval/chat-lab-know-how.md](/d:/CRM/crm-dashboard-app-local/docs/eval/chat-lab-know-how.md)
+3. [docs/eval/chat-lab-know-how.md](./eval/chat-lab-know-how.md)
    - Doc neu can triage testcase fail, manual review fail, hoac sua runtime theo feedback test.
-4. [code_audit_ai_chat.md](/d:/CRM/crm-dashboard-app-local/code_audit_ai_chat.md)
+4. [code_audit_ai_chat.md](../code_audit_ai_chat.md)
    - Doc neu cong viec lien quan den huong sua theo audit, debt hien tai, va cac diem yeu da duoc doi chieu voi code.
-5. [sub_plan.md](/d:/CRM/crm-dashboard-app-local/sub_plan.md)
+5. [sub_plan.md](../sub_plan.md)
    - Doc de biet roadmap da chot va pham vi Round 1.
 
 Quy tac:
@@ -92,6 +92,39 @@ Quy tac:
 - Added packaged Chat Lab review know-how and a draft repo-local skill scaffold:
   - `docs/eval/chat-lab-know-how.md`
   - `skills/chat-lab-review/SKILL.md`
+- Normalized continuity and Chat Lab markdown links to repo-relative paths so docs stay portable across machines and drive letters.
+- Added repo-local Chat Lab CSV artifact export flow:
+  - artifact directory: `artifacts/chat-lab-exports`
+  - backend export endpoint: `POST /api/agent/chat-lab/export`
+  - frontend `Xuat CSV` now saves into the artifact directory instead of depending on browser download placement.
+  - artifact filenames are now version-preserving: frontend includes a full UTC timestamp and backend appends `-vN` if the requested filename already exists.
+- Fixed Chat Lab manual review button states so `pass`, `fail`, and `bo review` now update button colors based on the active review selection.
+- Applied Chat Lab review-driven runtime fixes for groups `B` and `C`:
+  - generic revenue asks such as `Doanh thu nhu the nao?` now route to `clarify_required`
+  - bare summary asks such as `Tom tat cho toi` now route to `clarify_required`
+  - clear multi-intent asks now route to `llm_fallback` instead of `clarify_required`
+  - seller alias detection now avoids generic false positives such as `thu` / `thang`
+  - team follow-up now carries team entity into `team-performance-summary`
+  - operations summary now defaults to the system current month and returns a richer status/category snapshot
+- Tightened Vietnamese output quality:
+  - deterministic skill replies and runtime fallback strings now use Vietnamese with diacritics
+  - formatter prompt now explicitly requires Vietnamese with full diacritics
+  - formatter rejects low-quality replies that come back in ASCII-only Vietnamese
+- Updated Chat Lab knowledge and datasets:
+  - added verified entries `KH-010` to `KH-015` in `docs/eval/chat-lab-know-how.md`
+  - updated `docs/eval/eval-50-chat-lab.json` so `tc12` now expects `clarify_required`
+- Added a repo-local `evaluate_test` skill scaffold and first Chat Lab evaluator flow:
+  - skill path: `skills/evaluate_test`
+  - backend endpoint: `POST /api/agent/chat-lab/evaluate`
+  - evaluator reads `docs/eval/chat-lab-know-how.md` on each request and returns a recommendation layer, summary, and matched `KH-xxx` entries
+  - Chat Lab now has a `Bat Evaluate_test` checkbox and an evaluator recommendation box beside manual review
+  - evaluator output is cached locally in the frontend and included in CSV export columns
+- Applied the next Chat Lab hardening pass from the reviewed CSV artifacts:
+  - upgraded deterministic skill wording for `seller-month-revenue`, `top-sellers-period`, `kpi-overview`, `renew-due-summary`, `operations-status-summary`, `team-performance-summary`, and `conversion-source-summary`
+  - added deterministic skill `revenue-trend-analysis` for trend / anomaly / why-revenue asks
+  - added compound deterministic orchestration for clear 2-domain asks that map to two existing skills
+  - updated Chat Lab eval dataset so `tc16`, `tc18`, `tc19`, and `tc20` now reflect the hardened expected behavior
+  - chat widget token/cost footer now renders as `[... token | ~... đ]`
 
 ## Validation
 
@@ -102,12 +135,41 @@ Quy tac:
 - `npm run lint --workspace @crm/frontend` passed after adding Chat Lab.
 - `npm run build --workspace @crm/frontend` passed after adding Chat Lab.
 - `npm run check` passed.
+- `rg -n "/d:/CRM/crm-dashboard-app-local|\\(\\/d:/CRM/crm-dashboard-app-local" docs skills code_audit_ai_chat.md sub_plan.md PLAN.md sub_plan_v2_scoring.md plan_v2_review.md` returned no matches after normalizing markdown links to repo-relative paths.
+- `npm run lint --workspace @crm/frontend` passed after wiring Chat Lab CSV export to repo-local artifacts.
+- `npm run build --workspace @crm/frontend` passed after wiring Chat Lab CSV export to repo-local artifacts.
+- `npm run lint --workspace @crm/frontend` passed after fixing Chat Lab manual review button state styling.
+- `npm run lint --workspace @crm/frontend` passed after making Chat Lab CSV artifact exports version-preserving.
+- `npm run test --workspace @crm/ai-chat-module` passed with 26/26 tests after applying Chat Lab review fixes for groups `B` and `C`.
+- Spot-check via `node --experimental-sqlite -` confirmed:
+  - `tc11` -> `clarify_required`
+  - `tc12` -> `clarify_required`
+  - `tc13` -> `team-performance-summary` with `Team Fire`
+  - `tc15` -> richer `operations-status-summary` snapshot for `04/2026`
+- Spot-check via `node --experimental-sqlite -` also confirmed `tc16`, `tc18`, `tc19`, and `tc20` now route to `llm_fallback` under legacy routing; final analytical answer quality still depends on valid model API keys in the local environment.
+- `npm run lint --workspace @crm/frontend` passed after wiring the `Evaluate_test` checkbox, recommendation box, and CSV export fields into Chat Lab.
+- `npm run build --workspace @crm/frontend` passed after wiring the `Evaluate_test` flow into Chat Lab.
+- `node --check apps/backend/src/index.js` passed after adding the Chat Lab evaluator endpoint.
+- `node --check apps/backend/src/lib/chat-lab-evaluator.js` passed after adding the know-how-driven evaluator module.
+- Smoke check via `node --input-type=module -` confirmed `tc12-generic-summary` is evaluated as a route failure with matched know-how `KH-010`.
+- `npm run test --workspace @crm/ai-chat-module` passed with 29/29 tests after adding deterministic trend analysis, compound multi-skill orchestration, and narrower business wording for renew / operations / seller / team skills.
+- `npm run lint --workspace @crm/frontend` passed after updating the widget token + cost footer format.
+- `npm run build --workspace @crm/frontend` passed after the widget token + cost footer format update.
+- Spot-check via `node --experimental-sqlite --input-type=module -` confirmed:
+  - `tc03` now answers top seller directly in Vietnamese with diacritics
+  - `tc06` no longer dumps sample renew accounts by default
+  - `tc07` answers only `Active` and `Ghost` instead of the full operations snapshot
+  - `tc16` now returns one compound reply from two deterministic skills
+  - `tc18` now stays on `team-performance-summary`
+  - `tc19` now uses the last 6 closed months and flags `01/2026` as the outlier low month
+  - `tc20` now quantifies the revenue drop and points to lead / conversion / team deltas before suggesting drill-down
 
 ## Open Issues
 
 - Live classifier, live formatter, and fallback quality still depend on valid model API keys; without them the runtime falls back to legacy intent rules and template formatting.
 - Only the first 3 representative deterministic skills have been migrated to structured facts + formatter flow; the remaining skills still rely mostly on legacy reply shaping.
 - Several richer intents still fall through to `llm_fallback`, including customer lookup, lead geography, cohort summary, and custom analytical queries.
+- Group `C` trend / causal revenue cases no longer need `llm_fallback`, but broader customer / geography / cohort analytics still do.
 - Frontend per-view selected filters are still not fully wired into the production widget; Chat Lab can send explicit filters but the normal widget still depends mostly on `viewId`.
 - `npm audit` still reports dependency risk and has not been addressed in this round.
 
@@ -121,4 +183,6 @@ Quy tac:
   - lead geography
   - cohort summary
   - richer team/source drill-down
+- Continue the next Chat Lab review batch from groups `D` onward, using `artifacts/chat-lab-exports/` as the source of reviewed CSV artifacts and appending only verified lessons to `docs/eval/chat-lab-know-how.md`.
+- Decide whether `evaluate_test` should remain heuristic-only or later upgrade to an LLM-backed reviewer once enough know-how coverage exists for groups `E` onward.
 - Keep `docs/ai-chat-architecture.md` and `sub_plan.md` aligned with the actual runtime as Round 1 hardening continues.

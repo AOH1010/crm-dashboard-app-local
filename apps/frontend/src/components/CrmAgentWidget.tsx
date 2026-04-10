@@ -218,6 +218,7 @@ function estimateMessageCostVnd(message: AgentMessage) {
 function MessageBubble({ message }: { message: AgentMessage }) {
   const isUser = message.role === "user";
   const estimatedCostVnd = estimateMessageCostVnd(message);
+  const totalTokens = Number(message.usage?.total_tokens || 0);
 
   return (
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
@@ -236,9 +237,7 @@ function MessageBubble({ message }: { message: AgentMessage }) {
             <AssistantContent content={message.content} />
             {estimatedCostVnd !== null ? (
               <div className="px-1 text-[11px] font-semibold text-gray-400">
-                {message.usage?.provider === "nvidia"
-                  ? "Free / 0d"
-                  : `~${Math.round(estimatedCostVnd).toLocaleString("vi-VN")} d / call`}
+                [{totalTokens.toLocaleString("vi-VN")} token | ~{Math.round(estimatedCostVnd).toLocaleString("vi-VN")} đ]
               </div>
             ) : null}
           </div>

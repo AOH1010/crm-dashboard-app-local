@@ -101,7 +101,7 @@ export const comparePeriodsSkill = {
     );
 
     const reply = [
-      `So sanh giai doan ${currentPeriod.from} den ${currentPeriod.to} voi ${previousPeriod.from} den ${previousPeriod.to}:`,
+      `So sánh giai đoạn ${currentPeriod.from} đến ${currentPeriod.to} với ${previousPeriod.from} đến ${previousPeriod.to}:`,
       table
     ].join("\n\n");
 

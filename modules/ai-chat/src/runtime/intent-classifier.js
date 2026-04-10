@@ -1,5 +1,6 @@
 import { foldText } from "../tooling/common.js";
 import { createUsage } from "../contracts/chat-contracts.js";
+import { detectTeamEntities } from "../skills/business-mappings.js";
 import {
   ACTION_TYPES,
   CLASSIFIER_ROUTE_CLARIFY_THRESHOLD,
@@ -35,6 +36,10 @@ const COHORT_PATTERN = /(cohort)/;
 const TABLE_PATTERN = /(bang|table|hien thi bang)/;
 const MULTI_PATTERN = /\b(va|dong thoi|kem theo|ngoai ra|sau do)\b/;
 const FOLLOW_UP_PATTERN = /^(con|the|thang|quy|nam|so voi|thi sao|ra sao)\b|(\bthi sao\b|\bra sao\b|\bso voi\b)/;
+const TREND_PATTERN = /(xu huong|trend|tang hay giam|giam hay tang|bat thuong|6 thang gan nhat)/;
+const CAUSAL_PATTERN = /(tai sao|vi sao|nguyen nhan)/;
+const GENERIC_SUMMARY_PATTERN = /^\s*(tom tat|tong quan|overview)(\s+(cho toi|giup toi|di|nhe|voi))?\s*$/;
+const OUT_OF_SCOPE_PATTERN = /(nghi viec|thoi viec|resign|roi cong ty)/;
 
 function createIntentSkeleton() {
   return {
@@ -161,10 +166,23 @@ function shouldUseFollowUpInference(foldedQuestion, previousTopic) {
   return FOLLOW_UP_PATTERN.test(foldedQuestion);
 }
 
+function buildRevenueClarification(result) {
+  result.primary_intent = "unknown";
+  result.action = "unknown";
+  result.metric = "revenue";
+  result.dimension = "unknown";
+  result.ambiguity_flag = true;
+  result.ambiguity_reason = "scope_unclear";
+  result.clarification_question = "Bạn muốn xem doanh thu theo seller, team, nguồn hay tổng quan KPI?";
+  result.confidence = 0.46;
+  return result;
+}
+
 function inferIntentFromQuestion(question, context, options = {}) {
   const result = createIntentSkeleton();
   const foldedQuestion = foldText(question);
   const sellerName = context.connector.detectSellerName(question);
+  const teamEntities = detectTeamEntities(question);
   const previousTopic = context.recentTurnsForIntent
     .slice(0, -1)
     .reverse()
@@ -201,6 +219,36 @@ function inferIntentFromQuestion(question, context, options = {}) {
       value: sellerName
     });
   }
+  for (const team of teamEntities) {
+    result.entities.push({
+      type: "team",
+      value: team.label
+    });
+  }
+
+  if (GENERIC_SUMMARY_PATTERN.test(foldedQuestion)) {
+    result.primary_intent = "unknown";
+    result.action = "unknown";
+    result.metric = "unknown";
+    result.dimension = "unknown";
+    result.ambiguity_flag = true;
+    result.ambiguity_reason = "summary_scope_unclear";
+    result.clarification_question = "Bạn muốn tôi tóm tắt phần nào: nội dung hội thoại, KPI dashboard, team, renew hay operations?";
+    result.confidence = 0.44;
+    return result;
+  }
+
+  if (OUT_OF_SCOPE_PATTERN.test(foldedQuestion)) {
+    result.primary_intent = "unknown";
+    result.action = "unknown";
+    result.metric = "unknown";
+    result.dimension = "unknown";
+    result.ambiguity_flag = false;
+    result.ambiguity_reason = "out_of_scope";
+    result.clarification_question = "";
+    result.confidence = 0.32;
+    return result;
+  }
 
   if (renewMatch) {
     result.primary_intent = "renew_summary";
@@ -215,9 +263,31 @@ function inferIntentFromQuestion(question, context, options = {}) {
     result.primary_intent = "unknown";
     result.ambiguity_flag = true;
     result.ambiguity_reason = "multi_intent";
-    result.clarification_question = "Ban muon uu tien xem team doanh thu hay nhom nguon conversion truoc?";
-    result.confidence = 0.78;
+    result.clarification_question = "";
+    result.confidence = 0.48;
     return result;
+  }
+
+  if ((TREND_PATTERN.test(foldedQuestion) || CAUSAL_PATTERN.test(foldedQuestion)) && revenueMatch) {
+    result.primary_intent = "revenue_trend_analysis";
+    result.action = "analyze";
+    result.metric = "revenue";
+    result.dimension = teamMatch ? "team" : "time";
+    result.confidence = 0.89;
+    return result;
+  }
+
+  if (compareMatch && teamEntities.length >= 2) {
+    result.primary_intent = "team_revenue_summary";
+    result.action = "compare";
+    result.metric = revenueMatch ? "revenue" : /don/.test(foldedQuestion) ? "orders" : "revenue";
+    result.dimension = "team";
+    result.confidence = 0.9;
+    return result;
+  }
+
+  if (revenueMatch && !sellerName && !teamMatch && !sourceMatch && !topMatch && !compareMatch && !renewMatch && !opsMatch && !conversionMatch) {
+    return buildRevenueClarification(result);
   }
 
   if (opsMatch && !conversionMatch) {
@@ -282,7 +352,7 @@ function inferIntentFromQuestion(question, context, options = {}) {
     result.primary_intent = "unknown";
     result.ambiguity_flag = true;
     result.ambiguity_reason = "scope_unclear";
-    result.clarification_question = "Ban muon xem tong quan KPI, team, renew hay operations?";
+    result.clarification_question = "Bạn muốn xem tổng quan KPI, team, renew hay operations?";
     result.confidence = 0.4;
     return result;
   }
@@ -291,7 +361,7 @@ function inferIntentFromQuestion(question, context, options = {}) {
     result.primary_intent = "unknown";
     result.ambiguity_flag = true;
     result.ambiguity_reason = "scope_unclear";
-    result.clarification_question = "Ban muon xem tong quan KPI, team, renew hay operations?";
+    result.clarification_question = "Bạn muốn xem tổng quan KPI, team, renew hay operations?";
     result.confidence = 0.4;
     return result;
   }
@@ -344,6 +414,7 @@ function inferIntentFromQuestion(question, context, options = {}) {
       skipFollowUpInference: true
     });
     const currentSellerName = context.connector.detectSellerName(question);
+    const currentTeamEntities = detectTeamEntities(question);
     if (currentSellerName) {
       inferred.entities = [{
         type: "seller",
@@ -355,6 +426,16 @@ function inferIntentFromQuestion(question, context, options = {}) {
       inferred.action = inferred.action === "unknown" ? "lookup" : inferred.action;
       inferred.metric = inferred.metric === "unknown" ? "revenue" : inferred.metric;
       inferred.dimension = "seller";
+    }
+    if (currentTeamEntities.length > 0) {
+      inferred.entities = [
+        ...inferred.entities.filter((entity) => entity.type !== "team"),
+        ...currentTeamEntities.map((team) => ({
+          type: "team",
+          value: team.label
+        }))
+      ];
+      inferred.dimension = "team";
     }
     if (/thang\s*\d{1,2}|\bquy\s*\d\b|\bnam\s*20\d{2}\b|\bthang nay\b|\bthang truoc\b|\bso voi\b/.test(foldedQuestion)) {
       inferred.time_window = {
@@ -419,7 +500,7 @@ export async function classifyIntent({
     if (intent.primary_intent === "unknown" && !intent.ambiguity_flag && intent.confidence < CLASSIFIER_ROUTE_CLARIFY_THRESHOLD) {
       intent.ambiguity_flag = true;
       intent.ambiguity_reason = "unknown_intent";
-      intent.clarification_question = intent.clarification_question || "Ban co the noi ro hon ban muon xem chi so nao khong?";
+      intent.clarification_question = intent.clarification_question || "Bạn có thể nói rõ hơn bạn muốn xem chỉ số nào không?";
     }
     return {
       intent,
@@ -437,6 +518,9 @@ export async function classifyIntent({
 
 export function resolveRouteFromIntent(intent) {
   if (!intent) {
+    return "llm_fallback";
+  }
+  if (intent.ambiguity_reason === "multi_intent") {
     return "llm_fallback";
   }
   if (intent.primary_intent === "custom_analytical_query") {

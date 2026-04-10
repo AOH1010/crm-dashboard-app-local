@@ -15,8 +15,8 @@ This skill is the review-and-triage layer before deeper fixes in routing, skills
 
 ## Workflow
 
-1. Read [docs/eval/chat-lab-testing-guide.md](/d:/CRM/crm-dashboard-app-local/docs/eval/chat-lab-testing-guide.md).
-2. Read [docs/eval/chat-lab-know-how.md](/d:/CRM/crm-dashboard-app-local/docs/eval/chat-lab-know-how.md).
+1. Read [docs/eval/chat-lab-testing-guide.md](../../docs/eval/chat-lab-testing-guide.md).
+2. Read [docs/eval/chat-lab-know-how.md](../../docs/eval/chat-lab-know-how.md).
 3. Identify the failing `scenario id`, expected outcome, actual outcome, and reviewer note.
 4. Triage the failure in this order:
    - route
@@ -44,14 +44,14 @@ Do not skip this filter. Many "AI ngu" failures are formatter or scoring failure
 
 ## Where To Look
 
-- Runtime entry: [modules/ai-chat/src/runtime/chat-runtime.js](/d:/CRM/crm-dashboard-app-local/modules/ai-chat/src/runtime/chat-runtime.js)
-- Intent classifier: [modules/ai-chat/src/runtime/intent-classifier.js](/d:/CRM/crm-dashboard-app-local/modules/ai-chat/src/runtime/intent-classifier.js)
-- Intent catalog: [modules/ai-chat/src/runtime/intent-catalog.js](/d:/CRM/crm-dashboard-app-local/modules/ai-chat/src/runtime/intent-catalog.js)
-- Skill registry: [modules/ai-chat/src/runtime/skill-registry.js](/d:/CRM/crm-dashboard-app-local/modules/ai-chat/src/runtime/skill-registry.js)
-- Formatter: [modules/ai-chat/src/runtime/skill-response-formatter.js](/d:/CRM/crm-dashboard-app-local/modules/ai-chat/src/runtime/skill-response-formatter.js)
+- Runtime entry: [modules/ai-chat/src/runtime/chat-runtime.js](../../modules/ai-chat/src/runtime/chat-runtime.js)
+- Intent classifier: [modules/ai-chat/src/runtime/intent-classifier.js](../../modules/ai-chat/src/runtime/intent-classifier.js)
+- Intent catalog: [modules/ai-chat/src/runtime/intent-catalog.js](../../modules/ai-chat/src/runtime/intent-catalog.js)
+- Skill registry: [modules/ai-chat/src/runtime/skill-registry.js](../../modules/ai-chat/src/runtime/skill-registry.js)
+- Formatter: [modules/ai-chat/src/runtime/skill-response-formatter.js](../../modules/ai-chat/src/runtime/skill-response-formatter.js)
 - Prompt files:
-  - [modules/ai-chat/prompts/intent-classifier.md](/d:/CRM/crm-dashboard-app-local/modules/ai-chat/prompts/intent-classifier.md)
-  - [modules/ai-chat/prompts/skill-formatter.md](/d:/CRM/crm-dashboard-app-local/modules/ai-chat/prompts/skill-formatter.md)
+  - [modules/ai-chat/prompts/intent-classifier.md](../../modules/ai-chat/prompts/intent-classifier.md)
+  - [modules/ai-chat/prompts/skill-formatter.md](../../modules/ai-chat/prompts/skill-formatter.md)
 
 ## Common Failure Mapping
 
@@ -81,5 +81,5 @@ Do not skip this filter. Many "AI ngu" failures are formatter or scoring failure
 
 ## References
 
-- [references/checklist.md](/d:/CRM/crm-dashboard-app-local/skills/chat-lab-review/references/checklist.md)
-- [references/failure-patterns.md](/d:/CRM/crm-dashboard-app-local/skills/chat-lab-review/references/failure-patterns.md)
+- [references/checklist.md](./references/checklist.md)
+- [references/failure-patterns.md](./references/failure-patterns.md)

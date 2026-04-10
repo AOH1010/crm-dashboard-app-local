@@ -22,6 +22,7 @@ function stringifySkillFacts(skillResult) {
 function buildFormatterUserMessage({ requestContext, skillResult }) {
   return [
     "Format this deterministic CRM skill result into the final user reply.",
+    "Always answer in Vietnamese with full diacritics.",
     `View: ${requestContext.viewId}`,
     `Intent: ${requestContext.intent?.primary_intent || "unknown"}`,
     requestContext.selectedFilters
@@ -33,12 +34,24 @@ function buildFormatterUserMessage({ requestContext, skillResult }) {
 }
 
 function shouldPreferDeterministicReply(skillResult) {
-  return ["seller-month-revenue", "team-performance-summary"].includes(String(skillResult.skill_id || ""));
+  return [
+    "seller-month-revenue",
+    "team-performance-summary",
+    "top-sellers-period",
+    "kpi-overview",
+    "renew-due-summary",
+    "operations-status-summary",
+    "conversion-source-summary",
+    "revenue-trend-analysis"
+  ].includes(String(skillResult.skill_id || ""));
 }
 
 function shouldRejectFormatterReply(reply, skillResult, requestContext) {
   const normalizedReply = String(reply || "").trim();
   if (normalizedReply.length < 24) {
+    return true;
+  }
+  if (/[a-zA-Z]/.test(normalizedReply) && !/[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i.test(normalizedReply)) {
     return true;
   }
 
@@ -60,6 +73,10 @@ function shouldRejectFormatterReply(reply, skillResult, requestContext) {
   return false;
 }
 
+function fallbackSkillReply(skillResult) {
+  return skillResult.reply || skillResult.fallback_reply || "Không tìm thấy dữ liệu phù hợp trong skill này.";
+}
+
 export async function formatSkillResponse({
   requestContext,
   skillResult,
@@ -68,7 +85,7 @@ export async function formatSkillResponse({
 }) {
   if (shouldPreferDeterministicReply(skillResult) || !useSkillFormatter || !isSkillFormatterEnabled() || !hasConfiguredProviderKey(getDefaultProvider())) {
     return {
-      reply: skillResult.reply || skillResult.fallback_reply || "Khong tim thay du lieu phu hop trong skill nay.",
+      reply: fallbackSkillReply(skillResult),
       formatterSource: "template_fallback",
       usage: createUsage("skill")
     };
@@ -76,7 +93,7 @@ export async function formatSkillResponse({
 
   if (!skillResult.summary_facts && !skillResult.data) {
     return {
-      reply: skillResult.reply || skillResult.fallback_reply || "Khong tim thay du lieu phu hop trong skill nay.",
+      reply: fallbackSkillReply(skillResult),
       formatterSource: "template_fallback",
       usage: createUsage("skill")
     };
@@ -113,7 +130,7 @@ export async function formatSkillResponse({
     };
   } catch {
     return {
-      reply: skillResult.reply || skillResult.fallback_reply || "Khong tim thay du lieu phu hop trong skill nay.",
+      reply: fallbackSkillReply(skillResult),
       formatterSource: "template_fallback",
       usage: createUsage("skill")
     };

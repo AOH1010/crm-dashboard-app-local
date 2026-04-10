@@ -40,20 +40,43 @@ export const sellerMonthRevenueSkill = {
       maxRows: 200
     });
 
+    const monthTotalResult = connector.runReadQuery({
+      sql: `
+        SELECT
+          ROUND(SUM(COALESCE(real_amount, 0)), 2) AS total_revenue
+        FROM orders
+        WHERE TRIM(COALESCE(status_label, '')) <> COALESCE((
+          SELECT meta_value FROM dashboard_meta WHERE meta_key = 'cancelled_status_label'
+        ), '__never_match__')
+          AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 7) = ?
+      `,
+      params: [resolvedMonth.month_key],
+      allowPlaceholders: true,
+      maxRows: 1
+    });
+
     const nonCancelledRows = result.rows.filter((row) => !foldText(row.status_label).includes("huy"));
     const totalRevenue = nonCancelledRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
     const orderCount = nonCancelledRows.length;
+    const monthTotalRevenue = Number(monthTotalResult.rows[0]?.total_revenue || 0);
+    const averageOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
+    const sellerSharePercent = monthTotalRevenue > 0 ? (totalRevenue / monthTotalRevenue) * 100 : 0;
 
     let reply;
     if (orderCount === 0) {
-      reply = `Khong tim thay doanh so cua ${sellerName} trong ${resolvedMonth.label}.`;
+      reply = `Không tìm thấy doanh số của ${sellerName} trong ${resolvedMonth.label}.`;
     } else {
-      const assumptionText = resolvedMonth.inferred_year ? " (mac dinh nam moi nhat trong du lieu)" : "";
-      reply = [
-        `${sellerName} dat doanh so ${formatCurrency(totalRevenue)} trong ${resolvedMonth.label}${assumptionText}.`,
-        `- So don khong huy: ${orderCount}.`,
-        `- Doanh thu binh quan/don: ${formatCurrency(totalRevenue / orderCount)}.`
-      ].join("\n");
+      const assumptionText = resolvedMonth.inferred_year ? " Tôi đang mặc định năm mới nhất trong dữ liệu." : "";
+      const replyLines = [
+        `Trong ${resolvedMonth.label}, ${sellerName} đạt doanh số ${formatCurrency(totalRevenue)} từ ${orderCount.toLocaleString("vi-VN")} đơn không huỷ.${assumptionText}`,
+        `- Bình quân mỗi đơn: ${formatCurrency(averageOrderValue)}.`
+      ];
+
+      if (monthTotalRevenue > 0) {
+        replyLines.push(`- Tỷ trọng trong tổng doanh thu toàn kỳ: ${sellerSharePercent.toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%.`);
+      }
+
+      reply = replyLines.join("\n");
     }
 
     return {
@@ -67,7 +90,9 @@ export const sellerMonthRevenueSkill = {
         inferred_year: resolvedMonth.inferred_year,
         total_revenue: totalRevenue,
         order_count: orderCount,
-        average_order_value: orderCount > 0 ? totalRevenue / orderCount : 0
+        average_order_value: averageOrderValue,
+        month_total_revenue: monthTotalRevenue,
+        seller_share_percent: sellerSharePercent
       },
       data: orderCount > 0 ? {
         non_cancelled_orders: nonCancelledRows.map((row) => ({
@@ -80,6 +105,11 @@ export const sellerMonthRevenueSkill = {
         sql: result.sql,
         row_count: result.row_count,
         row_limit: result.row_limit
+      }, {
+        name: `${this.id}_month_total`,
+        sql: monthTotalResult.sql,
+        row_count: monthTotalResult.row_count,
+        row_limit: monthTotalResult.row_limit
       }],
       usage: createUsage("skill")
     };

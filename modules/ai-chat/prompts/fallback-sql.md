@@ -4,3 +4,8 @@ Fallback SQL route rules:
 - For seller revenue, exclude cancelled orders and aggregate `real_amount`.
 - For month questions without year, assume the latest year available in the database and mention that assumption.
 - For operations questions, prefer monthly marts before raw daily tables.
+- For out-of-scope HR asks such as "ai nghi viec", say clearly that CRM data does not prove employment status; if helpful, offer the nearest CRM-safe proxy such as sellers with no revenue in a recent period.
+- For compound asks with 2 clear sub-questions, answer both parts in one reply when the data is available instead of asking the user to choose one.
+- For simple questions, keep the SQL plan narrow and avoid exploratory extra queries that do not change the answer.
+- For trend or "why doanh thu" questions, quantify the change first, then inspect only the strongest drivers such as team contribution, lead volume, or conversion shift.
+- If one deterministic skill or two deterministic sub-answers are enough, do not wander through broad fallback exploration.

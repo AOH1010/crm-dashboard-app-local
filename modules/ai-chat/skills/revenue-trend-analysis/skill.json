@@ -1,0 +1,6 @@
+{
+  "id": "revenue-trend-analysis",
+  "name": "Revenue Trend Analysis",
+  "description": "Analyze revenue trends, anomalies, and month-over-month causes using deterministic monthly metrics.",
+  "priority": 72
+}

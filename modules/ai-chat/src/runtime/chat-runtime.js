@@ -137,7 +137,24 @@ function applyIntentResult(context, intentResult, timeline) {
 
 function buildClarificationReply(context) {
   return context.clarificationQuestion
-    || "Ban co the noi ro hon yeu cau hien tai de toi route dung phan du lieu can xem khong?";
+    || "Bạn có thể nói rõ hơn yêu cầu hiện tại để tôi route đúng phần dữ liệu cần xem không?";
+}
+
+function buildCompoundSkillReply(compoundResults) {
+  const firstParagraphs = compoundResults
+    .map(({ skill, result }) => {
+      const firstBlock = String(result.reply || "")
+        .split(/\n\s*\n/)
+        .map((part) => part.trim())
+        .find(Boolean);
+      return firstBlock ? `- ${skill.name || skill.id}: ${firstBlock}` : null;
+    })
+    .filter(Boolean);
+
+  return [
+    "Tôi tách câu hỏi thành các phần rõ ràng và trả lời lần lượt:",
+    ...firstParagraphs
+  ].join("\n");
 }
 
 export async function chatWithCrmAgent({
@@ -162,7 +179,7 @@ export async function chatWithCrmAgent({
     return buildValidationResponse({
       traceContext,
       promptRegistry,
-      reply: "Vui long gui cau hoi ve du lieu CRM.",
+      reply: "Vui lòng gửi câu hỏi về dữ liệu CRM.",
       timeline
     });
   }
@@ -172,7 +189,7 @@ export async function chatWithCrmAgent({
     return buildValidationResponse({
       traceContext,
       promptRegistry,
-      reply: "Vui long gui cau hoi moi tu nguoi dung.",
+      reply: "Vui lòng gửi câu hỏi mới từ người dùng.",
       timeline
     });
   }
@@ -302,6 +319,41 @@ export async function chatWithCrmAgent({
     }
   }
 
+  if (resolvedRoute === ROUTE_LLM_FALLBACK && Array.isArray(skillMatch.compoundSkills) && skillMatch.compoundSkills.length >= 2) {
+    pushTimeline(timeline, "compound_skill_execute", {
+      skill_ids: skillMatch.compoundSkills.map((skill) => skill.id)
+    });
+    const compoundResults = skillMatch.compoundSkills
+      .slice(0, 2)
+      .map((skill) => ({
+        skill,
+        result: skill.handler.run(context, connector)
+      }))
+      .filter((item) => item.result);
+
+    if (compoundResults.length >= 2) {
+      return buildTelemetryResponse({
+        traceContext,
+        route: "skill",
+        skillId: `compound:${compoundResults.map((item) => item.skill.id).join("+")}`,
+        confidence: context.intentConfidence || 0.86,
+        promptVersion: promptRegistry.getPromptVersion(),
+        usage: compoundResults.reduce((accumulator, item) => mergeUsage(accumulator, item.result.usage), null),
+        sqlLogs: compoundResults.flatMap((item) => item.result.sqlLogs || []),
+        reply: buildCompoundSkillReply(compoundResults),
+        intent: context.intent,
+        intentSource: context.intentSource,
+        intentConfidence: context.intentConfidence,
+        ambiguityFlag: false,
+        clarificationQuestion: null,
+        matchedSkillCandidates: skillMatch.matchedSkillCandidates,
+        fallbackReason: "compound_skill_orchestration",
+        formatterSource: "compound_skills",
+        debugTimeline: timeline
+      });
+    }
+  }
+
   const fallbackDecision = createFallbackRouteDecision(context.intentConfidence || 0.45);
   pushTimeline(timeline, "llm_fallback", {
     fallback_reason: skillMatch.routeReason
@@ -325,7 +377,7 @@ export async function chatWithCrmAgent({
       promptVersion: promptRegistry.getPromptVersion(),
       usage: mergeUsage(intentResult.usage, null),
       sqlLogs: [],
-      reply: "Khong the truy van agent luc nay. Vui long thu lai sau.",
+      reply: "Không thể truy vấn agent lúc này. Vui lòng thử lại sau.",
       error: errorMessage,
       intent: context.intent,
       intentSource: context.intentSource,

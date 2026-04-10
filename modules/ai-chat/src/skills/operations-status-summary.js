@@ -1,6 +1,23 @@
 import { createUsage } from "../contracts/chat-contracts.js";
+import { getSystemTodayDateKey } from "../tooling/date-utils.js";
 import { resolveMonthEndKey } from "../tooling/question-analysis.js";
 import { formatMarkdownTable, formatPercent } from "./formatters.js";
+
+function detectRequestedSlices(question) {
+  const foldedQuestion = String(question || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return {
+    wantsActive: /(active|hoat dong)/.test(foldedQuestion),
+    wantsInactive: /(inactive|khong hoat dong)/.test(foldedQuestion),
+    wantsGhost: /\bghost\b/.test(foldedQuestion),
+    wantsBest: /\bbest\b/.test(foldedQuestion),
+    wantsValue: /\bvalue\b/.test(foldedQuestion),
+    wantsNoise: /\bnoise\b/.test(foldedQuestion),
+    wantsBroadOverview: /(operations|tinh hinh|tong quan|tom tat)/.test(foldedQuestion)
+  };
+}
 
 export const operationsStatusSummarySkill = {
   id: "operations-status-summary",
@@ -12,8 +29,9 @@ export const operationsStatusSummarySkill = {
     const monthContext = resolveMonthEndKey({
       question: context.latestQuestion,
       selectedFilters: context.selectedFilters,
-      latestDateKey: connector.getLatestOperationsMonthEndKey() || connector.getLatestOrderDateKey()
+      latestDateKey: getSystemTodayDateKey()
     });
+    const requestedSlices = detectRequestedSlices(context.latestQuestion);
 
     const statusResult = connector.runReadQuery({
       sql: `
@@ -47,7 +65,15 @@ export const operationsStatusSummarySkill = {
 
     const totalAccounts = statusResult.rows.reduce((sum, row) => sum + Number(row.account_count || 0), 0);
     const activeCount = Number(statusResult.rows.find((row) => String(row.status) === "Active")?.account_count || 0);
+    const inactiveCount = Math.max(0, totalAccounts - activeCount);
     const activeRate = totalAccounts > 0 ? (activeCount / totalAccounts) * 100 : 0;
+    const categoryMap = new Map(
+      categoryResult.rows.map((row) => [String(row.category || "Unknown"), Number(row.account_count || 0)])
+    );
+    const ghostCount = Number(categoryMap.get("Ghost") || 0);
+    const bestCount = Number(categoryMap.get("Best") || 0);
+    const valueCount = Number(categoryMap.get("Value") || 0);
+    const noiseCount = Number(categoryMap.get("Noise") || 0);
 
     const categoryTable = formatMarkdownTable(
       ["Category", "Accounts", "Share"],
@@ -58,13 +84,48 @@ export const operationsStatusSummarySkill = {
       ])
     );
 
-    return {
-      reply: [
-        `Tong hop operations trong ky ${monthContext.label}:`,
-        `- Tong account tracked: ${totalAccounts.toLocaleString("vi-VN")}.`,
-        `- Active: ${activeCount.toLocaleString("vi-VN")} (${formatPercent(activeRate)}).`,
+    let reply;
+    const asksOnlyActiveGhost = requestedSlices.wantsActive && requestedSlices.wantsGhost
+      && !requestedSlices.wantsBroadOverview
+      && !requestedSlices.wantsBest
+      && !requestedSlices.wantsValue
+      && !requestedSlices.wantsNoise
+      && !requestedSlices.wantsInactive;
+
+    if (asksOnlyActiveGhost) {
+      reply = [
+        `Trong ${monthContext.label}, có ${activeCount.toLocaleString("vi-VN")} account Active và ${ghostCount.toLocaleString("vi-VN")} account Ghost.`,
+        `- Active chiếm ${formatPercent(activeRate)} trên tổng ${totalAccounts.toLocaleString("vi-VN")} account tracked.`
+      ].join("\n");
+    } else {
+      reply = [
+        `Tổng hợp operations trong ${monthContext.label}:`,
+        `- Tổng account tracked: ${totalAccounts.toLocaleString("vi-VN")}.`,
+        `- Active: ${activeCount.toLocaleString("vi-VN")} (${formatPercent(activeRate)}); Inactive: ${inactiveCount.toLocaleString("vi-VN")}.`,
+        `- Best / Value / Noise / Ghost: ${bestCount.toLocaleString("vi-VN")} / ${valueCount.toLocaleString("vi-VN")} / ${noiseCount.toLocaleString("vi-VN")} / ${ghostCount.toLocaleString("vi-VN")}.`,
         categoryTable
-      ].join("\n\n"),
+      ].join("\n\n");
+    }
+
+    return {
+      reply,
+      fallback_reply: reply,
+      format_hint: asksOnlyActiveGhost ? "summary" : "table",
+      summary_facts: {
+        month_label: monthContext.label,
+        total_accounts: totalAccounts,
+        active_count: activeCount,
+        inactive_count: inactiveCount,
+        active_rate: activeRate,
+        ghost_count: ghostCount,
+        best_count: bestCount,
+        value_count: valueCount,
+        noise_count: noiseCount
+      },
+      data: {
+        categories: categoryResult.rows,
+        statuses: statusResult.rows
+      },
       sqlLogs: [
         {
           name: `${this.id}_status`,
