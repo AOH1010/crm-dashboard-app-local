@@ -11,6 +11,7 @@ coverage/
 .env*
 !.env.example
 .local-development/
+artifacts/chat-lab-results/
 jega products/
 Decko - CRM Dashboard.jfif
 data/*.db

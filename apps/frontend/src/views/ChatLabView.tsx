@@ -6,13 +6,46 @@ import { cn } from "@/src/lib/utils";
 
 type RunResult = { scenarioId: string; response: AgentChatResponse | null; error: string | null; startedAt: string };
 type LabTab = "overview" | "reasoning" | "sql" | "batch";
+type ManualReviewStatus = "pending" | "pass" | "fail";
+type ManualReviewDecision = { status: ManualReviewStatus; reason: string; updatedAt: string };
 
-function getScoreSummary(scenario: ChatLabScenario, response: AgentChatResponse | null) {
+const STORAGE_KEYS = {
+  currentResult: "chat-lab-current-result",
+  batchResults: "chat-lab-batch-results",
+  manualReviews: "chat-lab-manual-reviews"
+} as const;
+
+function getScoreSummary(
+  scenario: ChatLabScenario,
+  response: AgentChatResponse | null,
+  manualDecision?: ManualReviewDecision | null
+) {
   const allowedRoutes = scenario.allowedRoutes?.length ? scenario.allowedRoutes : [scenario.expectedRoute];
+  const expectedIntent = scenario.normalizedExpectedIntent || scenario.expectedIntent;
   const routePass = allowedRoutes.includes(response?.route || "");
-  const intentPass = (response?.intent?.primary_intent || "unknown") === scenario.expectedIntent;
+  const intentPass = (response?.intent?.primary_intent || "unknown") === expectedIntent;
   const clarifyPass = scenario.expectedClarify === undefined ? true : Boolean(response?.clarification_question) === scenario.expectedClarify;
-  return { routePass, intentPass, clarifyPass, pass: routePass && intentPass && clarifyPass };
+  const autoPass = routePass && intentPass && clarifyPass;
+  const requiresManualReview = Boolean(scenario.manualReview);
+  const manualStatus = manualDecision?.status || (requiresManualReview ? "pending" : null);
+  const manualPass = manualStatus === "fail" ? false : manualStatus === "pass" ? true : !requiresManualReview;
+  const pass = manualStatus === "fail"
+    ? false
+    : manualStatus === "pass"
+      ? true
+      : requiresManualReview
+        ? false
+        : autoPass && manualPass;
+  return {
+    routePass,
+    intentPass,
+    clarifyPass,
+    autoPass,
+    requiresManualReview,
+    manualStatus,
+    manualPass,
+    pass
+  };
 }
 
 function csvEscape(value: unknown) {
@@ -39,8 +72,8 @@ function downloadCsv(filename: string, rows: Record<string, unknown>[]) {
 
 const prettyJson = (value: unknown) => JSON.stringify(value, null, 2);
 
-function Badge({ ok, label }: { ok: boolean; label: string }) {
-  return <span className={cn("inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide", ok ? "bg-[#B8FF68] text-[#1C1D21]" : "bg-[#FFD6D6] text-[#7D1D1D]")}>{label}</span>;
+function Badge({ tone, label }: { tone: "ok" | "bad" | "neutral"; label: string }) {
+  return <span className={cn("inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide", tone === "ok" ? "bg-[#B8FF68] text-[#1C1D21]" : tone === "bad" ? "bg-[#FFD6D6] text-[#7D1D1D]" : "bg-[#E9ECF1] text-[#4B5563]")}>{label}</span>;
 }
 
 function Panel({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
@@ -60,7 +93,29 @@ export default function ChatLabView() {
   const [selectedGroup, setSelectedGroup] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<LabTab>("overview");
+  const [manualReviews, setManualReviews] = useState<Record<string, ManualReviewDecision>>({});
   const deferredSearchTerm = useDeferredValue(searchTerm);
+
+  useEffect(() => {
+    try {
+      const storedCurrent = localStorage.getItem(STORAGE_KEYS.currentResult);
+      const storedBatch = localStorage.getItem(STORAGE_KEYS.batchResults);
+      const storedManualReviews = localStorage.getItem(STORAGE_KEYS.manualReviews);
+      if (storedCurrent) {
+        setCurrentResult(JSON.parse(storedCurrent));
+      }
+      if (storedBatch) {
+        setBatchResults(JSON.parse(storedBatch));
+      }
+      if (storedManualReviews) {
+        setManualReviews(JSON.parse(storedManualReviews));
+      }
+    } catch {
+      localStorage.removeItem(STORAGE_KEYS.currentResult);
+      localStorage.removeItem(STORAGE_KEYS.batchResults);
+      localStorage.removeItem(STORAGE_KEYS.manualReviews);
+    }
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -82,6 +137,30 @@ export default function ChatLabView() {
     return () => { alive = false; };
   }, []);
 
+  useEffect(() => {
+    if (currentResult) {
+      localStorage.setItem(STORAGE_KEYS.currentResult, JSON.stringify(currentResult));
+      return;
+    }
+    localStorage.removeItem(STORAGE_KEYS.currentResult);
+  }, [currentResult]);
+
+  useEffect(() => {
+    if (batchResults.length > 0) {
+      localStorage.setItem(STORAGE_KEYS.batchResults, JSON.stringify(batchResults));
+      return;
+    }
+    localStorage.removeItem(STORAGE_KEYS.batchResults);
+  }, [batchResults]);
+
+  useEffect(() => {
+    if (Object.keys(manualReviews).length > 0) {
+      localStorage.setItem(STORAGE_KEYS.manualReviews, JSON.stringify(manualReviews));
+      return;
+    }
+    localStorage.removeItem(STORAGE_KEYS.manualReviews);
+  }, [manualReviews]);
+
   const groups = useMemo(() => ["all", ...Array.from(new Set(scenarios.map((scenario) => scenario.group))).sort()], [scenarios]);
 
   const filteredScenarios = useMemo(() => {
@@ -98,18 +177,35 @@ export default function ChatLabView() {
   }, [filteredScenarios, selectedScenarioId]);
 
   const selectedScenario = useMemo(() => filteredScenarios.find((scenario) => scenario.id === selectedScenarioId) || scenarios.find((scenario) => scenario.id === selectedScenarioId) || filteredScenarios[0] || scenarios[0] || null, [filteredScenarios, scenarios, selectedScenarioId]);
-  const currentScore = useMemo(() => selectedScenario && currentResult?.response ? getScoreSummary(selectedScenario, currentResult.response) : null, [currentResult, selectedScenario]);
+  const selectedManualReview = useMemo(() => selectedScenario ? manualReviews[selectedScenario.id] || null : null, [manualReviews, selectedScenario]);
+  const currentScore = useMemo(() => selectedScenario && currentResult?.response ? getScoreSummary(selectedScenario, currentResult.response, selectedManualReview) : null, [currentResult, selectedManualReview, selectedScenario]);
   const selectedResponse = currentResult?.response || null;
   const batchSummary = useMemo(() => {
     let passed = 0;
+    let pendingManual = 0;
     for (const result of batchResults) {
       const scenario = scenarios.find((item) => item.id === result.scenarioId);
-      if (scenario && getScoreSummary(scenario, result.response).pass) {
+      const score = scenario ? getScoreSummary(scenario, result.response, manualReviews[result.scenarioId]) : null;
+      if (score?.pass) {
         passed += 1;
       }
+      if (score?.requiresManualReview && score.manualStatus === "pending") {
+        pendingManual += 1;
+      }
     }
-    return { total: batchResults.length, passed };
-  }, [batchResults, scenarios]);
+    return { total: batchResults.length, passed, pendingManual };
+  }, [batchResults, manualReviews, scenarios]);
+
+  const upsertManualReview = (scenarioId: string, status: ManualReviewStatus, reason: string) => {
+    setManualReviews((current) => ({
+      ...current,
+      [scenarioId]: {
+        status,
+        reason,
+        updatedAt: new Date().toISOString()
+      }
+    }));
+  };
 
   const exportResultsToCsv = () => {
     const resultsToExport = batchResults.length > 0 ? batchResults : currentResult ? [currentResult] : [];
@@ -117,7 +213,8 @@ export default function ChatLabView() {
       .map((result) => {
         const scenario = scenarios.find((item) => item.id === result.scenarioId);
         if (!scenario) return null;
-        const score = getScoreSummary(scenario, result.response);
+        const manualReview = manualReviews[result.scenarioId] || null;
+        const score = getScoreSummary(scenario, result.response, manualReview);
         const response = result.response;
         return {
           scenario_id: scenario.id,
@@ -139,6 +236,12 @@ export default function ChatLabView() {
           route_pass: String(score.routePass),
           intent_pass: String(score.intentPass),
           clarify_pass: String(score.clarifyPass),
+          auto_pass: String(score.autoPass),
+          manual_review_required: String(Boolean(scenario.manualReview)),
+          manual_review_available: "true",
+          manual_review_status: score.manualStatus || "",
+          manual_review_reason: manualReview?.reason || "",
+          manual_review_updated_at: manualReview?.updatedAt || "",
           pass: String(score.pass),
           latency_ms: response?.latency_ms ?? "",
           total_tokens: response?.usage?.total_tokens ?? "",
@@ -179,10 +282,15 @@ export default function ChatLabView() {
   const handleRunBatch = async () => {
     if (isRunning || filteredScenarios.length === 0) return;
     setIsRunning(true);
-    const nextResults: RunResult[] = [];
+    const nextResults = [...batchResults];
     for (const scenario of filteredScenarios) {
       const result = await runScenario(scenario);
-      nextResults.push(result);
+      const existingIndex = nextResults.findIndex((item) => item.scenarioId === result.scenarioId);
+      if (existingIndex >= 0) {
+        nextResults.splice(existingIndex, 1, result);
+      } else {
+        nextResults.push(result);
+      }
       if (scenario.id === selectedScenario?.id) startTransition(() => setCurrentResult(result));
     }
     startTransition(() => { setBatchResults(nextResults); setActiveTab("batch"); });
@@ -228,17 +336,17 @@ export default function ChatLabView() {
 
         <div className="space-y-4">
           <div className="sticky top-5 z-10 rounded-3xl border border-gray-200 bg-white/90 p-3 shadow-sm backdrop-blur"><div className="flex flex-wrap gap-2">{[{ id: "overview", label: "Tổng quan", icon: <SplitSquareHorizontal className="h-4 w-4" /> }, { id: "reasoning", label: "Suy luận", icon: <FlaskConical className="h-4 w-4" /> }, { id: "sql", label: "SQL", icon: <FlaskConical className="h-4 w-4" /> }, { id: "batch", label: "Batch", icon: <Rows4 className="h-4 w-4" /> }].map((tab) => (<button key={tab.id} type="button" onClick={() => setActiveTab(tab.id as LabTab)} className={cn("inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition-colors", activeTab === tab.id ? "bg-[#1C1D21] text-[#B8FF68]" : "bg-[#F3F4F6] text-[#1C1D21] hover:bg-[#E8EAED]")}>{tab.icon}{tab.label}</button>))}</div></div>
-          {activeTab === "overview" ? (<div className="grid gap-5 xl:grid-cols-2"><Panel title="Tóm tắt điểm">{selectedScenario && currentResult ? (<div className="space-y-4"><div className="flex flex-wrap gap-2"><Badge ok={Boolean(currentScore?.pass)} label={currentScore?.pass ? "Đạt" : "Trượt"} /><Badge ok={Boolean(currentScore?.routePass)} label="Route" /><Badge ok={Boolean(currentScore?.intentPass)} label="Intent" /><Badge ok={Boolean(currentScore?.clarifyPass)} label="Clarify" /></div><div className="grid gap-3 sm:grid-cols-2"><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Kỳ vọng</div><div className="mt-2 text-sm leading-6 text-[#1C1D21]">Luồng: <strong>{selectedScenario.expectedRoute}</strong><br />Ý định: <strong>{selectedScenario.expectedIntent}</strong><br />Skill: <strong>{selectedScenario.expectedSkillId || "-"}</strong></div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Thực tế</div><div className="mt-2 text-sm leading-6 text-[#1C1D21]">Luồng: <strong>{selectedResponse?.route || "-"}</strong><br />Ý định: <strong>{selectedResponse?.intent?.primary_intent || "-"}</strong><br />Skill: <strong>{selectedResponse?.skill_id || "-"}</strong></div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Độ trễ</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{selectedResponse?.latency_ms || 0} ms</div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Token</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{selectedResponse?.usage?.total_tokens || 0}</div></div></div></div>) : <p className="text-sm text-gray-500">Chưa có kết quả để chấm điểm.</p>}</Panel><Panel title="So sánh phản hồi">{selectedScenario && currentResult ? (<div className="grid gap-4 lg:grid-cols-2"><div className="rounded-2xl border border-gray-200 bg-[#FAFAFC] p-4"><div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Kỳ vọng</div><div className="text-sm leading-6 text-[#1C1D21]">Luồng: <strong>{selectedScenario.expectedRoute}</strong><br />Ý định: <strong>{selectedScenario.expectedIntent}</strong></div></div><div className="rounded-2xl border border-gray-200 bg-[#FAFAFC] p-4"><div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Phản hồi thực tế</div><div className="max-h-[18rem] overflow-y-auto whitespace-pre-wrap text-sm leading-6 text-[#1C1D21]">{currentResult.error || selectedResponse?.reply || "-"}</div></div></div>) : <p className="text-sm text-gray-500">Chưa có kết quả để so sánh.</p>}</Panel></div>) : null}
+          {activeTab === "overview" ? (<div className="grid gap-5 xl:grid-cols-2"><Panel title="Tóm tắt điểm">{selectedScenario && currentResult ? (<div className="space-y-4"><div className="flex flex-wrap gap-2"><Badge tone={currentScore?.pass ? "ok" : currentScore?.requiresManualReview && currentScore?.manualStatus === "pending" && currentScore?.autoPass ? "neutral" : "bad"} label={currentScore?.requiresManualReview ? currentScore?.manualStatus === "pass" ? "Đạt sau review" : currentScore?.manualStatus === "fail" ? "Trượt sau review" : "Chờ review tay" : currentScore?.manualStatus === "pass" ? "Đạt có review" : currentScore?.manualStatus === "fail" ? "Trượt do review" : currentScore?.pass ? "Đạt tự động" : "Trượt"} /><Badge tone={currentScore?.routePass ? "ok" : "bad"} label="Route" /><Badge tone={currentScore?.intentPass ? "ok" : "bad"} label="Intent" /><Badge tone={currentScore?.clarifyPass ? "ok" : "bad"} label="Clarify" /><Badge tone={currentScore?.manualStatus === "pass" ? "ok" : currentScore?.manualStatus === "fail" ? "bad" : "neutral"} label={currentScore?.manualStatus === "pass" ? "Review pass" : currentScore?.manualStatus === "fail" ? "Review fail" : currentScore?.requiresManualReview ? "Review pending" : "Review tùy chọn"} /></div><div className="grid gap-3 sm:grid-cols-2"><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Kỳ vọng</div><div className="mt-2 text-sm leading-6 text-[#1C1D21]">Luồng: <strong>{selectedScenario.expectedRoute}</strong><br />Ý định: <strong>{selectedScenario.expectedIntent}</strong><br />Skill: <strong>{selectedScenario.expectedSkillId || "-"}</strong></div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Thực tế</div><div className="mt-2 text-sm leading-6 text-[#1C1D21]">Luồng: <strong>{selectedResponse?.route || "-"}</strong><br />Ý định: <strong>{selectedResponse?.intent?.primary_intent || "-"}</strong><br />Skill: <strong>{selectedResponse?.skill_id || "-"}</strong></div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Độ trễ</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{selectedResponse?.latency_ms || 0} ms</div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Token</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{selectedResponse?.usage?.total_tokens || 0}</div></div></div><div className="rounded-2xl border border-gray-200 bg-[#FCFCFE] p-4"><div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">{selectedScenario.manualReview ? "Manual review bắt buộc" : "Manual review tùy chọn"}</div><div className="flex flex-wrap items-center gap-2"><button type="button" onClick={() => upsertManualReview(selectedScenario.id, "pass", selectedManualReview?.reason || "")} className="rounded-2xl bg-[#1C1D21] px-4 py-2 text-sm font-bold text-[#B8FF68]">Đánh dấu pass</button><button type="button" onClick={() => upsertManualReview(selectedScenario.id, "fail", selectedManualReview?.reason || "")} className="rounded-2xl border border-gray-300 bg-white px-4 py-2 text-sm font-bold text-[#1C1D21]">Đánh dấu fail</button><button type="button" onClick={() => setManualReviews((current) => { const next = { ...current }; delete next[selectedScenario.id]; return next; })} className="rounded-2xl border border-gray-300 bg-white px-4 py-2 text-sm font-bold text-[#1C1D21]">Bỏ review</button></div><label className="mt-3 block space-y-2"><span className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Lý do review tay</span><textarea value={selectedManualReview?.reason || ""} onChange={(event) => upsertManualReview(selectedScenario.id, selectedManualReview?.status || "pending", event.target.value)} placeholder="Ví dụ: route đúng nhưng reply thiếu số tổng, sai ngôn ngữ, hoặc chưa grounded." className="min-h-28 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm leading-6 outline-none transition-colors focus:border-[#B8FF68]" /></label>{selectedManualReview?.updatedAt ? <div className="mt-2 text-xs text-gray-500">Cập nhật: {selectedManualReview.updatedAt}</div> : null}</div></div>) : <p className="text-sm text-gray-500">Chưa có kết quả để chấm điểm.</p>}</Panel><Panel title="So sánh phản hồi">{selectedScenario && currentResult ? (<div className="grid gap-4 lg:grid-cols-2"><div className="rounded-2xl border border-gray-200 bg-[#FAFAFC] p-4"><div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Kỳ vọng</div><div className="text-sm leading-6 text-[#1C1D21]">Luồng: <strong>{selectedScenario.expectedRoute}</strong><br />Ý định: <strong>{selectedScenario.expectedIntent}</strong></div></div><div className="rounded-2xl border border-gray-200 bg-[#FAFAFC] p-4"><div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Phản hồi thực tế</div><div className="max-h-[18rem] overflow-y-auto whitespace-pre-wrap text-sm leading-6 text-[#1C1D21]">{currentResult.error || selectedResponse?.reply || "-"}</div></div></div>) : <p className="text-sm text-gray-500">Chưa có kết quả để so sánh.</p>}</Panel></div>) : null}
 
           {activeTab === "reasoning" ? (<div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]"><Panel title="Ảnh chụp suy luận">{selectedResponse ? (<div className="space-y-4"><div className="grid gap-3 sm:grid-cols-2"><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Nguồn intent</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{selectedResponse.intent_source || "-"}</div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Nguồn formatter</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{selectedResponse.formatter_source || "-"}</div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Độ tin cậy</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{selectedResponse.intent_confidence ?? selectedResponse.confidence ?? "-"}</div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Lý do fallback</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{selectedResponse.fallback_reason || "-"}</div></div></div><div className="rounded-2xl bg-[#FAFAFC] p-4 text-sm leading-6 text-[#1C1D21]"><div>Trace: <strong>{selectedResponse.trace_id || "-"}</strong></div><div className="mt-2">Clarify: <strong>{selectedResponse.clarification_question || "-"}</strong></div><div className="mt-2">Candidates: <strong>{selectedResponse.matched_skill_candidates?.join(", ") || "-"}</strong></div></div><pre className="max-h-[28rem] overflow-auto rounded-2xl bg-[#101114] p-4 text-[11px] text-[#D8FBC1]">{prettyJson(selectedResponse.intent)}</pre></div>) : <p className="text-sm text-gray-500">Chưa có ảnh chụp để xem.</p>}</Panel><Panel title="Dòng thời gian thực thi">{selectedResponse?.execution_timeline?.length ? (<div className="max-h-[34rem] space-y-3 overflow-y-auto pr-1">{selectedResponse.execution_timeline.map((item, index) => (<div key={item.step + "-" + index} className="rounded-2xl border border-gray-200 bg-[#FAFAFC] p-3"><div className="flex items-center justify-between gap-3"><div className="text-sm font-bold capitalize text-[#1C1D21]">{item.step.replaceAll("_", " ")}</div><div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400">{item.at}</div></div><pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-[11px] text-gray-600">{prettyJson(item)}</pre></div>))}</div>) : <p className="text-sm text-gray-500">Không có dòng thời gian thực thi.</p>}</Panel></div>) : null}
 
           {activeTab === "sql" ? (<div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]"><Panel title="Trình xem SQL">{selectedResponse?.sql_logs?.length ? (<div className="max-h-[36rem] space-y-4 overflow-y-auto pr-1">{selectedResponse.sql_logs.map((log, index) => (<div key={log.name + "-" + index} className="rounded-2xl border border-gray-200 bg-[#FAFAFC] p-4"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-[#1C1D21] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[#B8FF68]">{log.name}</span><span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400">rows={log.row_count} limit={log.row_limit}</span></div>{log.error ? <div className="mt-3 rounded-xl bg-[#FFF0F0] px-3 py-2 text-xs font-semibold text-[#7D1D1D]">{log.error}</div> : null}<pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-white p-4 text-[11px] text-gray-700">{log.sql}</pre></div>))}</div>) : <p className="text-sm text-gray-500">Không có SQL logs cho test case này.</p>}</Panel><Panel title="Bản đồ test">{selectedScenario ? (<div className="space-y-4"><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Tự động hóa</div><div className="mt-2 space-y-2 text-sm leading-6 text-[#1C1D21]"><div>Route suite: <strong>{selectedScenario.routeSuite || "-"}</strong></div><div>Intent suite: <strong>{selectedScenario.intentSuite || "-"}</strong></div><div>Clarify suite: <strong>{selectedScenario.clarifySuite || "-"}</strong></div><div>Manual review: <strong>{String(Boolean(selectedScenario.manualReview))}</strong></div></div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Trọng tâm review</div><div className="mt-3 flex flex-wrap gap-2">{(selectedScenario.reviewFocus || []).length ? selectedScenario.reviewFocus?.map((focus) => (<span key={focus} className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">{focus}</span>)) : <span className="text-sm text-gray-500">Không có.</span>}</div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Ghi chú</div><div className="mt-2 text-sm leading-6 text-[#1C1D21]">{selectedScenario.notes || "-"}</div></div></div>) : <p className="text-sm text-gray-500">Chưa có scenario nào được chọn.</p>}</Panel></div>) : null}
 
-          {activeTab === "batch" ? (<div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]"><Panel title="Tổng kết batch"><div className="grid gap-3"><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Tập chạy</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{filteredScenarios.length} test case</div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Tỷ lệ đạt</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{batchSummary.passed}/{batchSummary.total}</div></div><div className="rounded-2xl bg-[#FAFAFC] p-4 text-sm leading-6 text-gray-600">Batch sẽ chạy trên tập scenario đang được lọc ở cột trái. Cách này giúp đi từng bảng A, B, C... mà không bị loãng.</div></div></Panel><Panel title="Danh sách batch">{batchResults.length > 0 ? (<div className="max-h-[36rem] space-y-3 overflow-y-auto pr-1">{batchResults.map((result) => { const scenario = scenarios.find((item) => item.id === result.scenarioId); if (!scenario) return null; const score = getScoreSummary(scenario, result.response); return <button key={result.scenarioId} type="button" onClick={() => { setSelectedScenarioId(result.scenarioId); setCurrentResult(result); setActiveTab("overview"); }} className="w-full rounded-2xl border border-gray-200 bg-[#FAFAFC] px-4 py-3 text-left transition-colors hover:bg-white"><div className="flex items-center justify-between gap-3"><div><div className="text-sm font-bold text-[#1C1D21]">{scenario.id + " · " + scenario.title}</div><div className="mt-1 text-xs text-gray-500">luồng={result.response?.route || "error"} ý định={result.response?.intent?.primary_intent || "-"}</div></div><Badge ok={score.pass} label={score.pass ? "Đạt" : "Trượt"} /></div></button>; })}</div>) : <p className="text-sm text-gray-500">Batch run chưa được chạy.</p>}</Panel></div>) : null}
+          {activeTab === "batch" ? (<div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]"><Panel title="Tổng kết batch"><div className="grid gap-3"><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Tập chạy</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{filteredScenarios.length} test case</div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Đạt hoàn chỉnh</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{batchSummary.passed}/{batchSummary.total}</div></div><div className="rounded-2xl bg-[#FAFAFC] p-4"><div className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">Chờ review tay</div><div className="mt-2 text-sm font-bold text-[#1C1D21]">{batchSummary.pendingManual}</div></div><div className="rounded-2xl bg-[#FAFAFC] p-4 text-sm leading-6 text-gray-600">Batch được giữ lại trong cache local. Chỉ khi bấm Làm mới lab thì toàn bộ lịch sử chạy và review tay mới bị xóa.</div></div></Panel><Panel title="Danh sách batch">{batchResults.length > 0 ? (<div className="max-h-[36rem] space-y-3 overflow-y-auto pr-1">{batchResults.map((result) => { const scenario = scenarios.find((item) => item.id === result.scenarioId); if (!scenario) return null; const score = getScoreSummary(scenario, result.response, manualReviews[result.scenarioId]); return <button key={result.scenarioId} type="button" onClick={() => { setSelectedScenarioId(result.scenarioId); setCurrentResult(result); setActiveTab("overview"); }} className="w-full rounded-2xl border border-gray-200 bg-[#FAFAFC] px-4 py-3 text-left transition-colors hover:bg-white"><div className="flex items-center justify-between gap-3"><div><div className="text-sm font-bold text-[#1C1D21]">{scenario.id + " · " + scenario.title}</div><div className="mt-1 text-xs text-gray-500">luồng={result.response?.route || "error"} ý định={result.response?.intent?.primary_intent || "-"}</div></div><Badge tone={score.pass ? "ok" : score.requiresManualReview && score.manualStatus === "pending" && score.autoPass ? "neutral" : "bad"} label={score.requiresManualReview ? score.manualStatus === "pass" ? "Đạt sau review" : score.manualStatus === "fail" ? "Trượt sau review" : "Chờ review" : score.manualStatus === "pass" ? "Đạt có review" : score.manualStatus === "fail" ? "Trượt do review" : score.pass ? "Đạt tự động" : "Trượt"} /></div></button>; })}</div>) : <p className="text-sm text-gray-500">Batch run chưa được chạy.</p>}</Panel></div>) : null}
         </div>
       </div>
 
-      {isRunning ? <div className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full bg-[#1C1D21] px-4 py-3 text-sm font-bold text-[#B8FF68] shadow-xl"><Bot className="h-4 w-4" />Đang chạy test case...</div> : <button type="button" onClick={() => { setCurrentResult(null); setBatchResults([]); }} className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-[#1C1D21] shadow-lg"><TimerReset className="h-4 w-4" />Làm mới lab</button>}
+      {isRunning ? <div className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full bg-[#1C1D21] px-4 py-3 text-sm font-bold text-[#B8FF68] shadow-xl"><Bot className="h-4 w-4" />Đang chạy test case...</div> : <button type="button" onClick={() => { setCurrentResult(null); setBatchResults([]); setManualReviews({}); localStorage.removeItem(STORAGE_KEYS.currentResult); localStorage.removeItem(STORAGE_KEYS.batchResults); localStorage.removeItem(STORAGE_KEYS.manualReviews); }} className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-[#1C1D21] shadow-lg"><TimerReset className="h-4 w-4" />Làm mới lab</button>}
       {isLoadingScenarios ? <div className="fixed bottom-24 right-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-[#1C1D21] shadow-lg"><Bot className="h-4 w-4" />Đang tải eval-50 scenarios...</div> : null}
     </div>
   );

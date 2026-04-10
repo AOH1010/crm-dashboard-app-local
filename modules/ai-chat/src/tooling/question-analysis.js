@@ -136,15 +136,16 @@ export function extractMonthYear(question) {
 export function resolveMonthlyWindow({ question, selectedFilters, latestMonthKey, latestYear }) {
   const explicit = extractMonthYear(question);
   if (explicit?.relative === "current_month") {
+    const currentMonthKey = monthKey(getSystemTodayDateKey());
     return {
-      month_key: latestMonthKey,
-      label: formatMonthLabel(latestMonthKey),
+      month_key: currentMonthKey,
+      label: formatMonthLabel(currentMonthKey),
       inferred_year: false
     };
   }
 
   if (explicit?.relative === "previous_month") {
-    const previousMonthKey = addMonthsToMonthKey(latestMonthKey, -1);
+    const previousMonthKey = addMonthsToMonthKey(monthKey(getSystemTodayDateKey()), -1);
     return {
       month_key: previousMonthKey,
       label: formatMonthLabel(previousMonthKey),

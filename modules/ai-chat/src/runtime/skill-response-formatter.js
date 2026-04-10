@@ -1,11 +1,13 @@
 import { createUsage } from "../contracts/chat-contracts.js";
+import { foldText } from "../tooling/common.js";
 import {
   callTextCompletion,
   getDefaultProvider,
   getSkillFormatterModel,
   getSkillFormatterTimeoutMs,
   hasConfiguredProviderKey,
-  isSkillFormatterEnabled
+  isSkillFormatterEnabled,
+  usageFromMetadata
 } from "./model-runtime.js";
 
 function stringifySkillFacts(skillResult) {
@@ -30,13 +32,41 @@ function buildFormatterUserMessage({ requestContext, skillResult }) {
   ].filter(Boolean).join("\n\n");
 }
 
+function shouldPreferDeterministicReply(skillResult) {
+  return ["seller-month-revenue", "team-performance-summary"].includes(String(skillResult.skill_id || ""));
+}
+
+function shouldRejectFormatterReply(reply, skillResult, requestContext) {
+  const normalizedReply = String(reply || "").trim();
+  if (normalizedReply.length < 24) {
+    return true;
+  }
+
+  const deterministicFallback = String(skillResult.fallback_reply || skillResult.reply || "").trim();
+  if (/\d/.test(deterministicFallback) && !/\d/.test(normalizedReply)) {
+    return true;
+  }
+
+  const sellerName = String(skillResult.summary_facts?.seller_name || "").trim();
+  if (sellerName && !foldText(normalizedReply).includes(foldText(sellerName))) {
+    return true;
+  }
+
+  const latestQuestion = foldText(requestContext.latestQuestion || "");
+  if (/(doanh thu|doanh so|bao nhieu)/.test(latestQuestion) && /\d/.test(deterministicFallback) && !/\d/.test(normalizedReply)) {
+    return true;
+  }
+
+  return false;
+}
+
 export async function formatSkillResponse({
   requestContext,
   skillResult,
   promptRegistry,
   useSkillFormatter = true
 }) {
-  if (!useSkillFormatter || !isSkillFormatterEnabled() || !hasConfiguredProviderKey(getDefaultProvider())) {
+  if (shouldPreferDeterministicReply(skillResult) || !useSkillFormatter || !isSkillFormatterEnabled() || !hasConfiguredProviderKey(getDefaultProvider())) {
     return {
       reply: skillResult.reply || skillResult.fallback_reply || "Khong tim thay du lieu phu hop trong skill nay.",
       formatterSource: "template_fallback",
@@ -73,13 +103,13 @@ export async function formatSkillResponse({
       maxOutputTokens: 400
     });
     const reply = String(completion.text || "").trim();
-    if (!reply) {
+    if (!reply || shouldRejectFormatterReply(reply, skillResult, requestContext)) {
       throw new Error("Empty formatter reply.");
     }
     return {
       reply,
       formatterSource: "llm_formatter",
-      usage: createUsage("skill_formatter")
+      usage: usageFromMetadata("skill_formatter", completion.usageMetadata, getDefaultProvider())
     };
   } catch {
     return {

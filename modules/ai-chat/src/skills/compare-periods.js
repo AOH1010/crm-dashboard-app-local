@@ -2,6 +2,42 @@ import { createUsage } from "../contracts/chat-contracts.js";
 import { resolveCurrentPeriod, resolvePreviousPeriod } from "../tooling/question-analysis.js";
 import { formatCurrency, formatMarkdownTable, formatPercent } from "./formatters.js";
 
+function getMonthEndKey(year, month) {
+  const day = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function resolveExplicitMonthlyComparison(question, connector) {
+  const normalized = String(question || "").toLowerCase();
+  const monthMatches = [...normalized.matchAll(/thang\s*(\d{1,2})(?:\s*\/\s*(20\d{2}))?/g)];
+  if (monthMatches.length < 2) {
+    return null;
+  }
+
+  const explicitYears = [...normalized.matchAll(/\b(20\d{2})\b/g)].map((match) => Number.parseInt(match[1], 10));
+  const fallbackYear = explicitYears[explicitYears.length - 1] || connector.getLatestOrderYear();
+  const [currentMatch, previousMatch] = monthMatches;
+  const currentMonth = Number.parseInt(currentMatch[1], 10);
+  const previousMonth = Number.parseInt(previousMatch[1], 10);
+  const currentYear = currentMatch[2] ? Number.parseInt(currentMatch[2], 10) : fallbackYear;
+  const previousYear = previousMatch[2] ? Number.parseInt(previousMatch[2], 10) : fallbackYear;
+
+  if ([currentMonth, previousMonth].some((month) => Number.isNaN(month) || month < 1 || month > 12)) {
+    return null;
+  }
+
+  return {
+    current: {
+      from: `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`,
+      to: getMonthEndKey(currentYear, currentMonth)
+    },
+    previous: {
+      from: `${previousYear}-${String(previousMonth).padStart(2, "0")}-01`,
+      to: getMonthEndKey(previousYear, previousMonth)
+    }
+  };
+}
+
 function buildMetricRow(label, currentValue, previousValue, formatter) {
   const delta = Number(currentValue || 0) - Number(previousValue || 0);
   const deltaPercent = Number(previousValue || 0) > 0 ? (delta / Number(previousValue || 0)) * 100 : null;
@@ -21,11 +57,12 @@ export const comparePeriodsSkill = {
     return /(so sanh|compare)/.test(foldedQuestion);
   },
   run(context, connector) {
-    const currentPeriod = resolveCurrentPeriod({
+    const explicitComparison = resolveExplicitMonthlyComparison(context.latestQuestion, connector);
+    const currentPeriod = explicitComparison?.current || resolveCurrentPeriod({
       selectedFilters: context.selectedFilters,
       latestDateKey: connector.getLatestOrderDateKey()
     });
-    const previousPeriod = resolvePreviousPeriod(currentPeriod);
+    const previousPeriod = explicitComparison?.previous || resolvePreviousPeriod(currentPeriod);
 
     const aggregate = (from, to) => connector.runReadQuery({
       sql: `
@@ -63,11 +100,14 @@ export const comparePeriodsSkill = {
       ]
     );
 
+    const reply = [
+      `So sanh giai doan ${currentPeriod.from} den ${currentPeriod.to} voi ${previousPeriod.from} den ${previousPeriod.to}:`,
+      table
+    ].join("\n\n");
+
     return {
-      reply: [
-        `So sanh giai doan ${currentPeriod.from} den ${currentPeriod.to} voi ${previousPeriod.from} den ${previousPeriod.to}:`,
-        table
-      ].join("\n\n"),
+      reply,
+      fallback_reply: reply,
       sqlLogs: [
         {
           name: `${this.id}_current`,

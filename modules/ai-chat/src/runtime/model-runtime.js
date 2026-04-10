@@ -1,6 +1,7 @@
 import {
   GoogleGenAI
 } from "@google/genai";
+import { createUsage } from "../contracts/chat-contracts.js";
 
 const PLACEHOLDER_PREFIXES = [
   "MY_",
@@ -56,6 +57,25 @@ export function hasConfiguredProviderKey(provider = getDefaultProvider()) {
     return isConfiguredSecret(process.env.NVIDIA_API_KEY);
   }
   return isConfiguredSecret(process.env.GEMINI_API_KEY);
+}
+
+export function usageFromMetadata(kind, usageMetadata, provider = getDefaultProvider()) {
+  const usage = createUsage(kind);
+  if (!usageMetadata) {
+    return usage;
+  }
+  if (provider === "nvidia") {
+    usage.prompt_tokens += Number(usageMetadata.prompt_tokens || 0);
+    usage.completion_tokens += Number(usageMetadata.completion_tokens || 0);
+    usage.total_tokens += Number(usageMetadata.total_tokens || 0);
+    return usage;
+  }
+  usage.prompt_tokens += Number(usageMetadata.promptTokenCount || 0);
+  usage.completion_tokens += Number(usageMetadata.candidatesTokenCount || 0);
+  usage.total_tokens += Number(usageMetadata.totalTokenCount || 0);
+  usage.thoughts_tokens += Number(usageMetadata.thoughtsTokenCount || 0);
+  usage.tool_use_prompt_tokens += Number(usageMetadata.toolUsePromptTokenCount || 0);
+  return usage;
 }
 
 export function getGeminiClient() {

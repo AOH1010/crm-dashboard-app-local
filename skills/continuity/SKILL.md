@@ -10,10 +10,11 @@ Use `docs/continuity.md` as the canonical shared memory file for this repository
 ## Workflow
 
 1. Read `docs/continuity.md` before doing substantial work.
-2. If `docs/continuity.md` is missing, create it from `references/continuity-template.md`.
-3. Update the file after context-building when you understand the task shape.
-4. Update the file again after meaningful implementation, cleanup, or debugging milestones.
-5. Update the file one last time before finishing the turn if the repo state changed or the next agent would benefit.
+2. Follow the `Required Reading` section in `docs/continuity.md` before touching AI chat, Chat Lab, eval datasets, or related docs.
+3. If `docs/continuity.md` is missing, create it from `references/continuity-template.md`.
+4. Update the file after context-building when you understand the task shape.
+5. Update the file again after meaningful implementation, cleanup, or debugging milestones.
+6. Update the file one last time before finishing the turn if the repo state changed or the next agent would benefit.
 
 ## Required Updates
 

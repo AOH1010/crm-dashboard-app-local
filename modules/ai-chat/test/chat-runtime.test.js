@@ -11,8 +11,16 @@ const latestMonth = connector.getLatestMonthKey();
 const latestMonthNumber = Number.parseInt(latestMonth.slice(5, 7), 10);
 const latestYear = Number.parseInt(latestMonth.slice(0, 4), 10);
 
+function chatWithDeterministicRouting(params) {
+  return chatWithCrmAgent({
+    ...params,
+    useIntentClassifier: false,
+    useSkillFormatter: false
+  });
+}
+
 test("seller revenue route uses deterministic skill", async () => {
-  const payload = await chatWithCrmAgent({
+  const payload = await chatWithDeterministicRouting({
     viewId: "dashboard",
     messages: [{
       role: "user",
@@ -29,7 +37,7 @@ test("seller revenue route uses deterministic skill", async () => {
 });
 
 test("long seller prompt still routes to deterministic seller skill", async () => {
-  const payload = await chatWithCrmAgent({
+  const payload = await chatWithDeterministicRouting({
     viewId: "dashboard",
     messages: [{
       role: "user",
@@ -47,7 +55,7 @@ test("long seller prompt still routes to deterministic seller skill", async () =
 });
 
 test("seller revenue skill handles no-data period gracefully", async () => {
-  const payload = await chatWithCrmAgent({
+  const payload = await chatWithDeterministicRouting({
     viewId: "dashboard",
     messages: [{
       role: "user",
@@ -61,7 +69,7 @@ test("seller revenue skill handles no-data period gracefully", async () => {
 });
 
 test("dashboard overview uses kpi skill", async () => {
-  const payload = await chatWithCrmAgent({
+  const payload = await chatWithDeterministicRouting({
     viewId: "dashboard",
     messages: [{
       role: "user",
@@ -75,8 +83,22 @@ test("dashboard overview uses kpi skill", async () => {
   assert.match(payload.reply, /Tong doanh thu/i);
 });
 
+test("dashboard 'tinh hinh chung' defaults to kpi overview instead of clarify", async () => {
+  const payload = await chatWithDeterministicRouting({
+    viewId: "dashboard",
+    messages: [{
+      role: "user",
+      content: "Tinh hinh chung the nao roi?"
+    }]
+  });
+
+  assert.equal(payload.route, "skill");
+  assert.equal(payload.skill_id, "kpi-overview");
+  assert.equal(payload.intent?.primary_intent, "kpi_overview");
+});
+
 test("compare route uses compare skill", async () => {
-  const payload = await chatWithCrmAgent({
+  const payload = await chatWithDeterministicRouting({
     viewId: "dashboard",
     messages: [{
       role: "user",
@@ -90,8 +112,23 @@ test("compare route uses compare skill", async () => {
   assert.match(payload.reply, /\| Chi so \|/);
 });
 
+test("explicit month comparison uses the months asked by the user", async () => {
+  const payload = await chatWithDeterministicRouting({
+    viewId: "dashboard",
+    messages: [{
+      role: "user",
+      content: "So sanh doanh thu thang 3 voi thang 2 nam 2026"
+    }]
+  });
+
+  assert.equal(payload.route, "skill");
+  assert.equal(payload.skill_id, "compare-periods");
+  assert.match(payload.reply, /2026-03-01 den 2026-03-31/i);
+  assert.match(payload.reply, /2026-02-01 den 2026-02-28/i);
+});
+
 test("renew summary uses renew skill", async () => {
-  const payload = await chatWithCrmAgent({
+  const payload = await chatWithDeterministicRouting({
     viewId: "renew",
     messages: [{
       role: "user",
@@ -105,8 +142,22 @@ test("renew summary uses renew skill", async () => {
   assert.match(payload.reply, /Tong hop renew/i);
 });
 
+test("renew current month question defaults to the system current month", async () => {
+  const payload = await chatWithDeterministicRouting({
+    viewId: "renew",
+    messages: [{
+      role: "user",
+      content: "Thang nay co bao nhieu account sap den han?"
+    }]
+  });
+
+  assert.equal(payload.route, "skill");
+  assert.equal(payload.skill_id, "renew-due-summary");
+  assert.match(payload.reply, /04\/2026/i);
+});
+
 test("operations summary uses operations skill", async () => {
-  const payload = await chatWithCrmAgent({
+  const payload = await chatWithDeterministicRouting({
     viewId: "user-map",
     messages: [{
       role: "user",
@@ -121,7 +172,7 @@ test("operations summary uses operations skill", async () => {
 });
 
 test("conversion source summary uses deterministic skill", async () => {
-  const payload = await chatWithCrmAgent({
+  const payload = await chatWithDeterministicRouting({
     viewId: "conversion",
     messages: [{
       role: "user",
@@ -136,7 +187,7 @@ test("conversion source summary uses deterministic skill", async () => {
 });
 
 test("team performance summary uses deterministic skill", async () => {
-  const payload = await chatWithCrmAgent({
+  const payload = await chatWithDeterministicRouting({
     viewId: "team",
     messages: [{
       role: "user",
@@ -150,8 +201,36 @@ test("team performance summary uses deterministic skill", async () => {
   assert.match(payload.reply, /Team dan dau doanh thu/i);
 });
 
+test("natural top seller query routes to top sellers skill", async () => {
+  const payload = await chatWithDeterministicRouting({
+    viewId: "dashboard",
+    messages: [{
+      role: "user",
+      content: "Ai dang dan dau doanh thu thang nay?"
+    }]
+  });
+
+  assert.equal(payload.route, "skill");
+  assert.equal(payload.skill_id, "top-sellers-period");
+  assert.equal(payload.intent?.primary_intent, "top_sellers_period");
+});
+
+test("renew overview in renew view does not drift into dashboard kpi intent", async () => {
+  const payload = await chatWithDeterministicRouting({
+    viewId: "renew",
+    messages: [{
+      role: "user",
+      content: "Cho toi tong quan view nay"
+    }]
+  });
+
+  assert.equal(payload.route, "skill");
+  assert.equal(payload.skill_id, "renew-due-summary");
+  assert.equal(payload.intent?.primary_intent, "renew_summary");
+});
+
 test("multi-intent long prompt asks for clarification instead of forcing a deterministic skill", async () => {
-  const payload = await chatWithCrmAgent({
+  const payload = await chatWithDeterministicRouting({
     viewId: "dashboard",
     messages: [{
       role: "user",
@@ -165,7 +244,7 @@ test("multi-intent long prompt asks for clarification instead of forcing a deter
 });
 
 test("follow-up prompt can reuse recent turns for intent detection", async () => {
-  const payload = await chatWithCrmAgent({
+  const payload = await chatWithDeterministicRouting({
     viewId: "team",
     messages: [
       {

@@ -11,6 +11,7 @@ export interface ChatLabScenario {
   expectedRoute: string;
   expectedSkillId?: string | null;
   expectedIntent: string;
+  normalizedExpectedIntent?: string;
   expectedClarify?: boolean;
   allowedRoutes?: string[];
   routeSuite?: "strict" | "soft";

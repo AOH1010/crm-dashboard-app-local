@@ -15,7 +15,8 @@ import {
   getIntentModel,
   getIntentTimeoutMs,
   hasConfiguredProviderKey,
-  isIntentClassifierEnabled
+  isIntentClassifierEnabled,
+  usageFromMetadata
 } from "./model-runtime.js";
 
 const REVENUE_PATTERN = /(doanh so|doanh thu|revenue|ban duoc bao nhieu)/;
@@ -33,6 +34,7 @@ const LEAD_GEO_PATTERN = /(tinh|thanh pho|province|dia ly)/;
 const COHORT_PATTERN = /(cohort)/;
 const TABLE_PATTERN = /(bang|table|hien thi bang)/;
 const MULTI_PATTERN = /\b(va|dong thoi|kem theo|ngoai ra|sau do)\b/;
+const FOLLOW_UP_PATTERN = /^(con|the|thang|quy|nam|so voi|thi sao|ra sao)\b|(\bthi sao\b|\bra sao\b|\bso voi\b)/;
 
 function createIntentSkeleton() {
   return {
@@ -101,7 +103,65 @@ function parseJsonPayload(text) {
   }
 }
 
-function inferIntentFromQuestion(question, context) {
+function isOperationsView(viewId) {
+  return ["user-map", "active-map", "operations"].includes(String(viewId || ""));
+}
+
+function inferViewScopedOverviewIntent(context, result) {
+  if (context.viewId === "dashboard") {
+    result.primary_intent = "kpi_overview";
+    result.action = "summarize";
+    result.metric = "revenue";
+    result.dimension = "time";
+    result.confidence = 0.87;
+    return result;
+  }
+  if (context.viewId === "renew") {
+    result.primary_intent = "renew_summary";
+    result.action = "summarize";
+    result.metric = "renew";
+    result.dimension = "time";
+    result.confidence = 0.87;
+    return result;
+  }
+  if (context.viewId === "team") {
+    result.primary_intent = "team_revenue_summary";
+    result.action = "summarize";
+    result.metric = "revenue";
+    result.dimension = "team";
+    result.confidence = 0.86;
+    return result;
+  }
+  if (context.viewId === "conversion") {
+    result.primary_intent = "conversion_source_summary";
+    result.action = "summarize";
+    result.metric = "conversion";
+    result.dimension = "source";
+    result.confidence = 0.86;
+    return result;
+  }
+  if (isOperationsView(context.viewId)) {
+    result.primary_intent = "operations_summary";
+    result.action = "summarize";
+    result.metric = "active_rate";
+    result.dimension = "category";
+    result.confidence = 0.86;
+    return result;
+  }
+  return null;
+}
+
+function shouldUseFollowUpInference(foldedQuestion, previousTopic) {
+  if (!previousTopic || !foldedQuestion) {
+    return false;
+  }
+  if (foldedQuestion.length > 40) {
+    return false;
+  }
+  return FOLLOW_UP_PATTERN.test(foldedQuestion);
+}
+
+function inferIntentFromQuestion(question, context, options = {}) {
   const result = createIntentSkeleton();
   const foldedQuestion = foldText(question);
   const sellerName = context.connector.detectSellerName(question);
@@ -125,6 +185,7 @@ function inferIntentFromQuestion(question, context) {
   const leadGeoMatch = LEAD_GEO_PATTERN.test(foldedQuestion);
   const cohortMatch = COHORT_PATTERN.test(foldedQuestion);
   const multiMatch = MULTI_PATTERN.test(foldedQuestion);
+  const viewScopedOverviewIntent = KPI_PATTERN.test(foldedQuestion) ? inferViewScopedOverviewIntent(context, createIntentSkeleton()) : null;
 
   result.output_mode = TABLE_PATTERN.test(foldedQuestion)
     ? "table"
@@ -204,7 +265,7 @@ function inferIntentFromQuestion(question, context) {
     return result;
   }
 
-  if (topMatch && SELLER_PATTERN.test(foldedQuestion)) {
+  if (topMatch && (SELLER_PATTERN.test(foldedQuestion) || (revenueMatch && !teamMatch))) {
     result.primary_intent = "top_sellers_period";
     result.action = "rank";
     result.metric = "revenue";
@@ -213,13 +274,30 @@ function inferIntentFromQuestion(question, context) {
     return result;
   }
 
-  if (/tinh hinh chung/.test(foldedQuestion) || (!foldedQuestion && foldedPreviousTopic)) {
+  if (/tinh hinh chung/.test(foldedQuestion)) {
+    const scopedIntent = inferViewScopedOverviewIntent(context, result);
+    if (scopedIntent) {
+      return scopedIntent;
+    }
     result.primary_intent = "unknown";
     result.ambiguity_flag = true;
     result.ambiguity_reason = "scope_unclear";
     result.clarification_question = "Ban muon xem tong quan KPI, team, renew hay operations?";
     result.confidence = 0.4;
     return result;
+  }
+
+  if (!foldedQuestion && foldedPreviousTopic) {
+    result.primary_intent = "unknown";
+    result.ambiguity_flag = true;
+    result.ambiguity_reason = "scope_unclear";
+    result.clarification_question = "Ban muon xem tong quan KPI, team, renew hay operations?";
+    result.confidence = 0.4;
+    return result;
+  }
+
+  if (viewScopedOverviewIntent) {
+    return viewScopedOverviewIntent;
   }
 
   if (kpiMatch && (context.viewId === "dashboard" || !teamMatch)) {
@@ -258,15 +336,32 @@ function inferIntentFromQuestion(question, context) {
     return result;
   }
 
-  if (foldedQuestion.length <= 18 && previousTopic && /thang\s*\d{1,2}/.test(foldedQuestion)) {
+  if (!options.skipFollowUpInference && shouldUseFollowUpInference(foldedQuestion, previousTopic)) {
     const inferred = inferIntentFromQuestion(previousTopic.content, {
       ...context,
       recentTurnsForIntent: context.recentTurnsForIntent.slice(0, -1)
+    }, {
+      skipFollowUpInference: true
     });
-    inferred.time_window = {
-      type: "explicit",
-      value: foldedQuestion
-    };
+    const currentSellerName = context.connector.detectSellerName(question);
+    if (currentSellerName) {
+      inferred.entities = [{
+        type: "seller",
+        value: currentSellerName
+      }];
+      inferred.primary_intent = inferred.primary_intent === "unknown"
+        ? "seller_revenue_month"
+        : inferred.primary_intent;
+      inferred.action = inferred.action === "unknown" ? "lookup" : inferred.action;
+      inferred.metric = inferred.metric === "unknown" ? "revenue" : inferred.metric;
+      inferred.dimension = "seller";
+    }
+    if (/thang\s*\d{1,2}|\bquy\s*\d\b|\bnam\s*20\d{2}\b|\bthang nay\b|\bthang truoc\b|\bso voi\b/.test(foldedQuestion)) {
+      inferred.time_window = {
+        type: "explicit",
+        value: foldedQuestion
+      };
+    }
     inferred.confidence = Math.max(inferred.confidence, 0.86);
     return inferred;
   }
@@ -329,7 +424,7 @@ export async function classifyIntent({
     return {
       intent,
       source: "classifier",
-      usage: createUsage("intent_classifier"),
+      usage: usageFromMetadata("intent_classifier", completion.usageMetadata, getDefaultProvider()),
       debugReason: null
     };
   } catch {

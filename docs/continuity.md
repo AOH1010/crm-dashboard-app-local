@@ -1,5 +1,25 @@
 # Continuity
 
+## Required Reading
+
+Agent moi vao repo nay, sau khi doc file nay, phai doc tiep theo dung thu tu:
+
+1. [docs/ai-chat-architecture.md](/d:/CRM/crm-dashboard-app-local/docs/ai-chat-architecture.md)
+   - Doc de hieu runtime AI chat dang van hanh nhu the nao.
+2. [docs/eval/chat-lab-testing-guide.md](/d:/CRM/crm-dashboard-app-local/docs/eval/chat-lab-testing-guide.md)
+   - Doc neu cong viec lien quan den Chat Lab, testcase, batch run, scorer, manual review, export CSV.
+3. [docs/eval/chat-lab-know-how.md](/d:/CRM/crm-dashboard-app-local/docs/eval/chat-lab-know-how.md)
+   - Doc neu can triage testcase fail, manual review fail, hoac sua runtime theo feedback test.
+4. [code_audit_ai_chat.md](/d:/CRM/crm-dashboard-app-local/code_audit_ai_chat.md)
+   - Doc neu cong viec lien quan den huong sua theo audit, debt hien tai, va cac diem yeu da duoc doi chieu voi code.
+5. [sub_plan.md](/d:/CRM/crm-dashboard-app-local/sub_plan.md)
+   - Doc de biet roadmap da chot va pham vi Round 1.
+
+Quy tac:
+- Neu task la sua AI chat theo testcase fail: doc ca 5 file tren.
+- Neu task la van hanh local hoac chay app: doc them `skills/local-development/SKILL.md`.
+- Khong nhay vao sua code AI chat chi sau khi doc rieng `docs/continuity.md`.
+
 ## Current Objective
 
 - Ship Round 1 of the AI chat upgrade as an intent-first runtime while keeping `/api/agent/chat` compatible for the current frontend app.
@@ -61,13 +81,24 @@
 - Added frontend Chat Lab view and scenario dataset for single-run and batch-run testing.
 - Added CSV export from Chat Lab so test results can be preserved without rerunning.
 - Updated backend `/api/agent/chat` to accept request-level toggles for classifier and formatter.
+- Hardened legacy intent inference for high-volume natural prompts:
+  - top seller phrasing such as `Ai dang dan dau doanh thu thang nay?`
+  - view-aware overview prompts such as `Tinh hinh chung` and `Tong quan`
+  - short follow-up prompts now reuse the previous turn more broadly than only `thang X`
+- Expanded the intent-classifier prompt with explicit enums, time-window rules, and few-shot examples.
+- Added usage plumbing for classifier and formatter so token instrumentation can be surfaced instead of always returning zeroed placeholders.
+- Added formatter guardrails so low-quality LLM replies can be rejected in favor of deterministic fallback text.
+- Opened manual review UI for every Chat Lab testcase while keeping some scenarios marked as mandatory review.
+- Added packaged Chat Lab review know-how and a draft repo-local skill scaffold:
+  - `docs/eval/chat-lab-know-how.md`
+  - `skills/chat-lab-review/SKILL.md`
 
 ## Validation
 
-- `npm run test --workspace @crm/ai-chat-module` passed with 16/16 tests.
+- `npm run test --workspace @crm/ai-chat-module` passed with 21/21 tests after adding route regressions for top-sellers, dashboard overview, renew overview, explicit month comparison, and system-month semantics.
 - `npm run eval --workspace @crm/ai-chat-module` passed for 23/23 automated route cases and 2/2 legacy parity smoke cases.
 - `npm run eval:intent --workspace @crm/ai-chat-module` passed for the current intent eval dataset.
-- `npm run eval:clarify --workspace @crm/ai-chat-module` passed for the current clarify eval dataset.
+- `npm run eval:clarify --workspace @crm/ai-chat-module` is currently blocked by a local SQLite `database is locked` condition in this workspace, not by a code assertion failure.
 - `npm run lint --workspace @crm/frontend` passed after adding Chat Lab.
 - `npm run build --workspace @crm/frontend` passed after adding Chat Lab.
 - `npm run check` passed.
