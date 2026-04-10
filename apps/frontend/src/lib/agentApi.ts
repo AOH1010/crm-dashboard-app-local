@@ -1,4 +1,5 @@
 import { buildApiUrl } from "./apiBase";
+import type { ChatLabScenario } from "./chatLabScenarios";
 
 export interface AgentMessage {
   role: "user" | "assistant";
@@ -21,6 +22,31 @@ export interface AgentChatResponse {
   confidence?: number | null;
   prompt_version?: string | null;
   latency_ms?: number | null;
+  intent?: {
+    primary_intent?: string;
+    action?: string;
+    metric?: string;
+    dimension?: string;
+    entities?: Array<{ type: string; value: string }>;
+    time_window?: { type: string; value: string };
+    output_mode?: string;
+    ambiguity_flag?: boolean;
+    ambiguity_reason?: string;
+    clarification_question?: string;
+    confidence?: number;
+  } | null;
+  intent_source?: string | null;
+  intent_confidence?: number | null;
+  ambiguity_flag?: boolean | null;
+  clarification_question?: string | null;
+  matched_skill_candidates?: string[] | null;
+  fallback_reason?: string | null;
+  formatter_source?: string | null;
+  execution_timeline?: Array<{
+    step: string;
+    at: string;
+    [key: string]: unknown;
+  }> | null;
   usage?: {
     provider?: string;
     prompt_tokens: number;
@@ -45,6 +71,8 @@ export async function sendAgentMessage(params: {
   selectedFilters?: Record<string, unknown> | null;
   sessionId?: string | null;
   debug?: boolean;
+  useIntentClassifier?: boolean;
+  useSkillFormatter?: boolean;
 }): Promise<AgentChatResponse> {
   const response = await fetch(buildApiUrl("/api/agent/chat"), {
     method: "POST",
@@ -57,11 +85,23 @@ export async function sendAgentMessage(params: {
       selected_filters: params.selectedFilters ?? undefined,
       session_id: params.sessionId ?? undefined,
       debug: params.debug ?? undefined,
+      use_intent_classifier: params.useIntentClassifier ?? undefined,
+      use_skill_formatter: params.useSkillFormatter ?? undefined,
     }),
   });
 
   if (!response.ok) {
     throw new Error("Khong the gui cau hoi den Data Agent.");
+  }
+
+  return response.json();
+}
+
+export async function fetchChatLabScenarios(): Promise<ChatLabScenario[]> {
+  const response = await fetch(buildApiUrl("/api/agent/chat-lab/scenarios"));
+
+  if (!response.ok) {
+    throw new Error("Khong the tai danh sach testcase cho Chat Lab.");
   }
 
   return response.json();

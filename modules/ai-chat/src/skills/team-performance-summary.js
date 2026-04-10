@@ -68,9 +68,26 @@ export const teamPerformanceSummarySkill = {
     const intro = topTeam
       ? `Team dan dau doanh thu trong giai doan ${period.from} den ${period.to} la ${topTeam.team_label} voi ${formatCurrency(topTeam.revenue_amount)}.`
       : `Khong tim thay du lieu team trong giai doan ${period.from} den ${period.to}.`;
+    const reply = [intro, table].join("\n\n");
 
     return {
-      reply: [intro, table].join("\n\n"),
+      reply,
+      fallback_reply: reply,
+      format_hint: rows.length > 0 ? "ranking_table" : "no_data",
+      summary_facts: {
+        period_from: period.from,
+        period_to: period.to,
+        top_team: topTeam ? {
+          team_label: topTeam.team_label,
+          revenue_amount: topTeam.revenue_amount,
+          order_count: topTeam.order_count,
+          seller_count: topTeam.seller_count
+        } : null,
+        team_count: rows.length
+      },
+      data: {
+        teams: rows
+      },
       sqlLogs: [{
         name: this.id,
         sql: result.sql,

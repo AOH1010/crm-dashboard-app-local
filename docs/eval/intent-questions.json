@@ -1,0 +1,70 @@
+[
+  {
+    "id": "i001",
+    "view_id": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Doanh thu cua Hoang Van Huy thang 4/2026 la bao nhieu?"
+      }
+    ],
+    "expected_primary_intent": "seller_revenue_month",
+    "expected_action": "lookup",
+    "expected_metric": "revenue",
+    "expected_dimension": "seller",
+    "expected_ambiguity_flag": false
+  },
+  {
+    "id": "i002",
+    "view_id": "team",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Team nao dang dan dau doanh thu?"
+      }
+    ],
+    "expected_primary_intent": "team_revenue_summary",
+    "expected_action": "rank",
+    "expected_metric": "revenue",
+    "expected_dimension": "team",
+    "expected_ambiguity_flag": false
+  },
+  {
+    "id": "i003",
+    "view_id": "conversion",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Nhom nguon nao co conversion cao nhat?"
+      }
+    ],
+    "expected_primary_intent": "conversion_source_summary",
+    "expected_action": "rank",
+    "expected_metric": "conversion",
+    "expected_dimension": "source",
+    "expected_ambiguity_flag": false
+  },
+  {
+    "id": "i004",
+    "view_id": "team",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Doanh thu team thang 3 nhu the nao?"
+      },
+      {
+        "role": "assistant",
+        "content": "Toi dang xem doanh thu team trong thang 3."
+      },
+      {
+        "role": "user",
+        "content": "Con thang 4?"
+      }
+    ],
+    "expected_primary_intent": "team_revenue_summary",
+    "expected_action": "summarize",
+    "expected_metric": "revenue",
+    "expected_dimension": "team",
+    "expected_ambiguity_flag": false
+  }
+]

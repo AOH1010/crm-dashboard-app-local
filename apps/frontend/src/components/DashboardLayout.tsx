@@ -7,9 +7,15 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
   activeId: string;
   onNavigate: (id: string) => void;
+  showAgentWidget?: boolean;
 }
 
-export default function DashboardLayout({ children, activeId, onNavigate }: DashboardLayoutProps) {
+export default function DashboardLayout({
+  children,
+  activeId,
+  onNavigate,
+  showAgentWidget = true
+}: DashboardLayoutProps) {
   return (
     <div className="min-h-screen overflow-x-clip bg-[#F9F9FB]">
       <Sidebar activeId={activeId} onNavigate={onNavigate} />
@@ -19,7 +25,7 @@ export default function DashboardLayout({ children, activeId, onNavigate }: Dash
           {children}
         </main>
       </div>
-      <CrmAgentWidget viewId={activeId} />
+      {showAgentWidget ? <CrmAgentWidget viewId={activeId} /> : null}
     </div>
   );
 }

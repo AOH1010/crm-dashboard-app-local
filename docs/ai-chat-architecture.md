@@ -2,12 +2,14 @@
 
 ## Muc tieu
 
-Tai lieu nay mo ta buc tranh tong the cua AI chat V1 trong repo hien tai:
+Tai lieu nay mo ta runtime AI chat da duoc nang cap trong Round 1:
 
-- van giu `frontend -> backend -> modules/ai-chat -> SQLite`
-- tach ro `system prompt`, `skills`, `chat runtime`, `connector`
-- uu tien deterministic skills cho cau hoi pho bien
-- chi dung LLM fallback cho cau hoi ngoai catalog hoac prompt dai, nhieu y, kho route an toan
+- van giu luong `frontend -> backend -> modules/ai-chat -> SQLite`
+- them lop `Intent Classifier` de hieu prompt truoc khi route
+- them route `clarify_required` cho prompt mo ho
+- giu deterministic skill execution cho query business pho bien
+- them `SkillResponseFormatter` de skill path khong con bypass answer style
+- giu `llm_fallback` cho intent chua co skill hoac query phuc tap
 
 ## So do tong the
 
@@ -15,7 +17,7 @@ Tai lieu nay mo ta buc tranh tong the cua AI chat V1 trong repo hien tai:
 User Prompt
   |
   v
-CrmAgentWidget (frontend)
+CrmAgentWidget / Chat Lab (frontend)
   |
   v
 POST /api/agent/chat
@@ -30,52 +32,50 @@ chatWithCrmAgent()
   |
   +--> buildRequestContext()
   |      |
-  |      +--> questionAnalysis
-  |      |      - latestQuestion
-  |      |      - routingQuestion
-  |      |      - isLongPrompt
-  |      |      - isMultiIntent
-  |      |
-  |      +--> selectedFilters / viewId / sessionId
+  |      +--> recent_turns_for_intent
+  |      +--> selected_filters / view_id / session_id
+  |      +--> legacy_question_analysis
   |
-  +--> SkillRegistry.findMatch()
+  +--> IntentClassifier
   |      |
-  |      +--> neu match 1 skill ro rang
-  |      |      |
-  |      |      v
-  |      |   Skill Handler
-  |      |      |
-  |      |      v
-  |      |   SQLiteConnector.runReadQuery()
-  |      |      |
-  |      |      v
-  |      |   SQLite CRM + dashboard + operations
+  |      +--> primary_intent
+  |      +--> entities
+  |      +--> time_window
+  |      +--> output_mode
+  |      +--> confidence
+  |      +--> ambiguity_flag
+  |      +--> clarification_question
+  |
+  +--> Intent Router / SkillRegistry
   |      |
-  |      +--> neu khong match an toan
+  |      +--> skill
+  |      +--> clarify_required
+  |      +--> llm_fallback
+  |
+  +--> neu route = skill
+  |      |
+  |      +--> Skill Handler.run()
+  |      |      |
+  |      |      +--> deterministic SQL via SQLiteConnector
+  |      |      +--> structured facts
+  |      |
+  |      +--> SkillResponseFormatter
   |             |
-  |             v
-  +----------> PromptRegistry.buildSystemPrompt()
-                |
-                +--> base-system.md
-                +--> tool-policy.md
-                +--> answer-style.md
-                +--> views/<view>.md
-                +--> fallback-sql.md
-                +--> schema summary
-                |
-                v
-             Fallback LLM
-                |
-                v
-             query_crm_data tool
-                |
-                v
-             SQLiteConnector.runReadQuery()
-                |
-                v
-             SQLite CRM + dashboard + operations
-                |
-                v
+  |             +--> answer-style prompt
+  |             +--> template fallback neu formatter fail
+  |
+  +--> neu route = clarify_required
+  |      |
+  |      +--> clarification_question
+  |
+  +--> neu route = llm_fallback
+         |
+         +--> buildFallbackPrompt()
+         +--> query_crm_data tool
+         +--> SQLiteConnector.runReadQuery()
+         +--> model summary
+         |
+         v
 Telemetry + API Response
 ```
 
@@ -83,120 +83,163 @@ Telemetry + API Response
 
 ### 1. Frontend
 
-- Widget hien tai gui `messages`, `view_id`, va co the gui them `selected_filters`, `session_id`, `debug`.
-- Frontend khong chon skill.
-- Frontend khong tu build system prompt.
+- Production widget van gui:
+  - `messages`
+  - `view_id`
+  - `selected_filters`
+  - `session_id`
+  - `debug`
+- Request hien tai co them:
+  - `use_intent_classifier`
+  - `use_skill_formatter`
+- Frontend co them route `chat-lab` de test testcase va xem debug chain day du
 
-Vai tro cua frontend chi la:
+Vai tro cua frontend:
 
-- lay user prompt
-- gui request
-- hien reply va debug metadata neu can
+- gui conversation history
+- chuyen view context va filter context
+- hien reply
+- hien debug metadata khi can
+- o Chat Lab: visualize route, intent, sql logs, timeline, va score
 
 ### 2. Backend adapter
 
-- Route `/api/agent/chat` trong backend giu contract tuong thich nguoc.
-- Backend o V1 la adapter mong:
+- Route `/api/agent/chat` van la compatibility target
+- Backend chi la adapter mong:
   - nhan request
+  - map field request
   - goi `chatWithCrmAgent`
-  - tra response
+  - tra JSON response
 
-No khong chua business logic route skill.
+Backend khong chua business routing logic.
 
-### 3. Chat runtime
+### 3. Request context
 
-Runtime la bo dieu phoi trung tam.
+`buildRequestContext()` khong con la noi tu route bang regex.
 
-No lam 6 buoc:
+No co 3 vai tro:
 
-1. normalize messages
-2. build request context
-3. phan tich prompt de route
-4. uu tien deterministic skill
-5. neu khong an toan thi dung LLM fallback
-6. build telemetry response
+1. normalize conversation
+2. cat ra recent turns phuc vu intent classification
+3. tap hop view/filter/session/debug vao mot context object
 
-Day la noi quyet dinh:
+Context hien tai chua:
 
-- cau nao di skill
-- cau nao di fallback
-- metadata nao duoc log
+- `normalizedMessages`
+- `latestUserMessage`
+- `recentTurnsForIntent`
+- `viewId`
+- `selectedFilters`
+- `sessionId`
+- `legacyQuestionAnalysis`
+- `intent`
+- `intentSource`
+- `intentConfidence`
+- `ambiguityFlag`
+- `clarificationQuestion`
 
-### 4. System prompt
+### 4. Intent Classifier
 
-System prompt hien tai khong con nam trong 1 file JS lon.
+Day la lop "hieu" prompt chinh trong Round 1.
 
-No duoc ghep tu:
+Classifier la mot LLM call rieng, strict JSON, khong duoc phep tra loi business.
 
-- `modules/ai-chat/prompts/base-system.md`
-- `modules/ai-chat/prompts/tool-policy.md`
-- `modules/ai-chat/prompts/answer-style.md`
-- `modules/ai-chat/prompts/fallback-sql.md`
-- `modules/ai-chat/prompts/views/<view-id>.md`
+Output chuan hoa:
 
-Vai tro cua system prompt:
+- `primary_intent`
+- `action`
+- `metric`
+- `dimension`
+- `entities`
+- `time_window`
+- `output_mode`
+- `ambiguity_flag`
+- `ambiguity_reason`
+- `clarification_question`
+- `confidence`
 
-- dinh nghia vai tro cua agent
-- buoc model phai grounded vao du lieu noi bo
-- quy dinh tool policy
-- quy dinh answer style
-- them view hint
-- them schema summary o fallback route
+Neu classifier fail, timeout, hoac output invalid:
 
-Quan trong:
+- runtime danh dau `intent_source = legacy_rules`
+- roi sang logic fallback compatibility
 
-- neu request di qua deterministic skill thi model khong can quyet dinh skill
-- khi do system prompt chu yeu co gia tri versioning va fallback readiness
-- system prompt duoc dung manh nhat o `llm_fallback`
+### 5. Intent Router va SkillRegistry
 
-### 5. Skills
+Runtime khong con uu tien regex-first.
 
-Skill o V1 khong phai la sub-agent.
+No route theo thu tu:
 
-Skill la business handler deterministic gom 2 phan:
+1. doc `intent`
+2. xet `ambiguity_flag` + `confidence`
+3. map `primary_intent` sang skill neu co
 
-- metadata ben ngoai:
-  - `modules/ai-chat/skills/<skill-id>/skill.json`
-- execution logic trong code:
-  - `modules/ai-chat/src/skills/<skill-id>.js`
+Route hien tai:
 
-Moi skill thuong co:
+- `skill`
+- `clarify_required`
+- `llm_fallback`
+- `validation`
 
-- `canHandle(context)`
-- `run(context, connector)`
-- `formatResponse(result)`
+Nguong route hien tai:
+
+- `ambiguity_flag = true` -> `clarify_required`
+- `confidence >= 0.85` + co skill map -> `skill`
+- `0.50 <= confidence < 0.85` -> `clarify_required`
+- `confidence < 0.50` -> `llm_fallback`
+- `custom_analytical_query` -> `llm_fallback`
+
+### 6. Skills
+
+Skill van la business handler deterministic, khong phai sub-agent.
+
+Trong Round 1, skill path duoc tach thanh 2 lop:
+
+1. `run(context, connector)`
+   - query SQL deterministic
+   - tra facts / data co cau truc
+
+2. `SkillResponseFormatter`
+   - format reply theo `answer-style`
+   - neu fail thi roi ve deterministic template
+
+3 skill da migrate sang structured-facts formatter flow:
+
+- `seller-month-revenue`
+- `team-performance-summary`
+- `kpi-overview`
+
+Nhung skill con lai van chay duoc va co the tiep tuc dung reply shaping cu nhu compatibility path.
+
+### 7. PromptRegistry
+
+PromptRegistry hien tai tach ro 3 muc dich:
+
+- `buildIntentClassifierPrompt()`
+- `buildSkillFormatterPrompt()`
+- `buildFallbackPrompt()`
 
 Y nghia:
 
-- `canHandle`: nhin prompt va context de xem co nen nhan case nay hay khong
-- `run`: build query va lay du lieu
-- `formatResponse`: dong goi cau tra loi cuoi
+- classifier prompt de hieu intent
+- formatter prompt de dien dat lai deterministic facts
+- fallback prompt de guide model query SQL khi khong co skill
 
-### 6. SQLiteConnector
+`buildSystemPrompt()` khong con la trung tam cua moi route; no chu yeu con gia tri compatibility va fallback support.
 
-Connector la lop rat quan trong trong V1.
+### 8. SQLiteConnector
 
-No lam 4 viec:
+Connector van la lop trung tam cho truy van read-only:
 
-- attach cac DB SQLite hien tai
-- map `canonical table names` sang bang that
+- attach CRM DB + dashboard marts + operations DB
+- map canonical table names
 - validate SQL an toan
-- thuc thi read-only query va tra rows
+- execute query read-only
 
-Nho connector, skills va fallback khong can biet truc tiep:
-
-- `dashboard.dashboard_kpis_daily`
-- `operations.ops_monthly_metrics`
-
-ma co the query bang ten chuan nhu:
-
-- `kpis_daily`
-- `monthly_status`
-- `due_accounts`
+Ca skill path va fallback path deu di qua connector nay.
 
 ## Luong route thuc te
 
-## A. Cau hoi don, ro, nam trong skill catalog
+### A. Cau hoi ro rang, co skill
 
 Vi du:
 
@@ -204,227 +247,105 @@ Vi du:
 
 Luong chay:
 
-1. Runtime lay `latestQuestion`
-2. `questionAnalysis` tao `routingQuestion`
-3. `SkillRegistry` duyet skill theo priority
-4. `seller-month-revenue.canHandle()` thay:
-   - co keyword doanh thu
-   - detect duoc seller name
-   - co the resolve thang
-5. Runtime chay skill nay ngay
-6. Skill query `orders`
-7. Connector validate SQL, chay query, tra rows
-8. Skill format cau tra loi
-9. Runtime tra response voi `route=skill`, `skill_id=seller-month-revenue`
+1. runtime build context
+2. classifier tra `primary_intent = seller_revenue_month`
+3. router map intent -> `seller-month-revenue`
+4. skill query `orders`
+5. skill tra structured facts
+6. formatter tao reply cuoi
+7. runtime tra `route=skill`, `skill_id=seller-month-revenue`
 
-LLM khong can tham gia.
-
-## B. Cau hoi ngoai catalog
+### B. Cau hoi mo ho can hoi lai
 
 Vi du:
 
-`Cho toi bang 5 don hang moi nhat co gia tri cao hon 20 trieu va nhom theo khu vuc`
+`Cho toi biet tinh hinh chung`
 
 Luong chay:
 
-1. Runtime thu skill
-2. Khong co skill nao match an toan
-3. Runtime build system prompt tu `PromptRegistry`
-4. Runtime goi fallback LLM
-5. LLM duoc phep goi `query_crm_data`
-6. Tool nay thuc chat di qua `SQLiteConnector.runReadQuery()`
-7. Connector chan SQL nguy hiem va gioi han bang
-8. LLM nhan rows ve va tong hop cau tra loi
-9. Runtime tra response voi `route=llm_fallback`
+1. classifier danh dau `ambiguity_flag=true`
+2. classifier tao `clarification_question`
+3. runtime tra `route=clarify_required`
 
-## C. Prompt dai, nhieu boi canh nhung chi co 1 y chinh
+Khong query SQL o buoc nay.
+
+### C. Cau hoi chua co skill catalog
 
 Vi du:
 
-`Toi dang xem dashboard cho buoi hop. Hay dong vai analyst noi bo, doc boi canh view nay, nhung quan trong nhat la cho toi biet doanh thu cua Hoang Van Huy thang 4/2026 la bao nhieu.`
+`Hien thi bang seller co doanh thu duoi trung binh`
 
-V1 hien tai xu ly theo 2 tang:
+Luong chay:
 
-1. `normalizeMessages()` giu lai toi da 20 messages gan nhat
-2. `analyzeQuestionComplexity()` tao `routingQuestion`
+1. classifier tra `primary_intent = custom_analytical_query`
+2. runtime route sang `llm_fallback`
+3. fallback prompt nhan resolved intent + filters + schema summary
+4. model goi `query_crm_data`
+5. connector validate va execute SQL
+6. model tong hop cau tra loi
 
-`routingQuestion` la phien ban da rut gon cua prompt dai:
-
-- uu tien doan chua request cue
-- uu tien doan chua business keyword
-- giu lai phan cuoi quan trong neu prompt rat dai
-
-Sau do skill matcher dung `routingFoldedQuestion` thay vi chi dung toan bo prompt tho.
-
-Ket qua:
-
-- prompt dai nhung chi co 1 y chinh van co the di deterministic skill
-- giam kha nang dinh keyword sai do boi canh dai dong
-
-## D. Prompt dai va nhieu y
+### D. Classifier fail
 
 Vi du:
 
-`Team nao dang dan dau doanh thu va nhom nguon nao co conversion cao nhat?`
+- model timeout
+- API key khong hop le
+- output khong parse duoc JSON
 
-V1 khong co gang ep 1 skill nhan ca hai y nay.
+Luong chay:
 
-Runtime lam nhu sau:
+1. runtime danh dau `intent_source = legacy_rules`
+2. fallback ve logic intent/routing compatibility
+3. response debug van cho thay classifier path da fail
 
-1. `questionAnalysis` danh dau `isMultiIntent=true` neu prompt dai/co nhieu domain
-2. `SkillRegistry` thu tim tat ca skills co the match
-3. neu co nhieu hon 1 skill hop le, runtime khong chon bua 1 skill
-4. route se nghieng sang `llm_fallback`
+## He thong "hieu" prompt nhu the nao
 
-Ly do:
+Sau Round 1, co 3 lop hieu:
 
-- tra loi sai 1 nua nguy hiem hon cham hon mot chut
-- fallback co kha nang tong hop prompt phuc tap tot hon deterministic skill
+### Lop 1. Intent Classifier
 
-## Vi sao he thong "hieu" prompt de boc skill
+Day la lop hieu chinh.
 
-Co 2 co che hieu khac nhau:
+No giai quyet:
 
-### Co che 1. Hieu bang rule code
+- seller vs team
+- summary vs comparison
+- prompt mo ho
+- follow-up co history ngan
 
-Day la deterministic skill routing.
+### Lop 2. Legacy rules
 
-He thong khong "suy nghi nhu nguoi".
-No check cac dau hieu ro rang:
+Day khong con la noi route chinh.
 
-- keyword
-- entity co detect duoc khong
-- view hien tai la gi
-- month/date co resolve duoc khong
-- prompt co qua nhieu y hay khong
+No chi ton tai de:
 
-Neu du dieu kien thi skill duoc chon.
+- offline fallback
+- compatibility path
+- giu runtime van chay duoc khi classifier khong san sang
 
-Uu diem:
+### Lop 3. Fallback LLM
 
-- nhanh
-- re token
-- de test
-- on dinh
+Day la lop hieu sau nhat cho:
 
-### Co che 2. Hieu bang model
-
-Day la fallback route.
-
-Luc nay system prompt + lich su chat + schema summary + tool policy duoc gui vao model.
-Model se:
-
-- hieu prompt phuc tap hon
-- quyet dinh can query gi
-- goi SQL tool
-- tong hop cau tra loi
-
-Uu diem:
-
-- linh hoat
-- xu ly duoc prompt dai, prompt mo, prompt drill-down
-
-Nhuoc diem:
-
-- ton token hon
-- kho predict hon
-- can guardrails chat hon
-
-## Query chay nhu the nao
-
-## Skill path
-
-Skill tu build SQL co chu dich.
-
-Vi du `seller-month-revenue`:
-
-- detect seller name tu prompt
-- resolve month window
-- query `orders`
-- loai don huy
-- tinh tong doanh thu, so don, binh quan/don
-
-Vi du `conversion-source-summary`:
-
-- group raw source thanh business source groups
-- dung `customers` va `orders`
-- tinh `lead_count`, `customer_count`, `conversion_rate`
-
-Vi du `team-performance-summary`:
-
-- join `orders` voi `staffs`
-- map `dept_name` thanh nhom team business
-- tinh doanh thu, so don, seller active
-
-## Fallback path
-
-Fallback khong query truc tiep.
-
-Trinh tu la:
-
-1. model tao SQL theo ten bang canonical
-2. connector check:
-   - chi `SELECT/WITH`
-   - khong multi-statement
-   - khong dung bang ngoai allowlist
-   - row limit
-3. connector chay query
-4. rows tra lai model
-5. model tong hop thanh cau tra loi cuoi
-
-## Prompt dai thi sao
-
-Day la cau hoi rat quan trong cho production.
-
-## Hanh vi hien tai trong V1
-
-- He thong van luu toi da 20 messages gan nhat.
-- Skill routing khong con dua thuần vao full prompt; no dua vao `routingQuestion`.
-- Neu prompt dai nhung 1 muc tieu ro rang, skill van co the an toan match.
-- Neu prompt dai va co nhieu y, runtime uu tien fallback thay vi bat bua mot skill.
-- Fallback LLM nhin duoc full normalized conversation, khong chi mot cau rut gon.
+- query chua co skill
+- prompt phuc tap
+- phan tich mo rong
 
 ## Gioi han hien tai
 
-- Skill routing van la rule-based, chua co mot lop intent parser rieng.
-- Neu user viet 1 prompt rat dai, rat mo, co nhieu rang buoc mem, fallback moi la noi "hieu" sau hon.
-- Neu user nhieu lan doi muc tieu trong cung 1 prompt, V1 chua co co che tu tach thanh nhieu sub-task.
-- Neu user muon mot ban phan tich dai va nhieu bang so trong 1 message, fallback se lam duoc nhieu hon skill.
-
-## Chien luoc dung cho prompt dai
-
-Nen nghi theo 3 tang:
-
-1. Prompt dai nhung chi co 1 cau hoi chinh
-   - co the van di deterministic skill
-
-2. Prompt dai, nhieu boi canh, 1 request chinh + nhieu rang buoc
-   - thuong di fallback
-
-3. Prompt dai, nhieu cau hoi khac domain
-   - nen de fallback tong hop, hoac ve sau tach thanh multi-step planner
-
-## Huong nang cap tiep theo neu can
-
-Neu beta gap nhieu prompt dai, 3 nang cap hop ly nhat la:
-
-1. Them `intent extraction` nho chi cho prompt dai
-   - khong dung cho moi request
-   - muc tieu la rut ra `primary ask`, `entities`, `time window`
-
-2. Them `clarifying response`
-   - neu prompt co 2-3 y canh tranh nhau, agent hoi lai 1 cau de chot muc tieu chinh
-
-3. Them `multi-part response planner`
-   - tach 1 prompt dai thanh nhieu skill calls co truot tu
-   - day la viec phu hop hon cho V2, khong nen bat buoc vao V1
+- Khong co persistent server-side memory; follow-up chi dua vao `messages` request hien tai
+- Khong phai tat ca skills da migrate sang structured facts + formatter
+- Nhieu intent van chua co skill rieng:
+  - customer lookup
+  - lead geography
+  - cohort summary
+  - richer custom analytics
+- Khi khong co model API key hop le, classifier va formatter se roi ve compatibility behavior
 
 ## Ket luan ngan
 
-- Skill khong phai la AI agent doc lap.
-- Skill la business shortcut de chat nhanh, re, on dinh.
-- System prompt khong phai noi chua het business logic.
-- Runtime moi la bo nao dieu phoi.
-- Prompt dai van xu ly duoc, nhung he thong se uu tien an toan:
-  - 1 y ro rang -> co the di skill
-  - nhieu y / prompt phuc tap -> fallback LLM
+- Round 1 da dua he thong tu `regex-first` sang `intent-first`
+- Skill van la deterministic shortcut cho query business on dinh
+- Clarify duoc nang len thanh route rieng
+- Prompt layer khong con chi phuc vu fallback; no con duoc dung de format skill reply
+- Legacy rules van con, nhung chi la compatibility fallback

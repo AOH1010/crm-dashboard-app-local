@@ -9,6 +9,7 @@ import { renewDueSummarySkill } from "../skills/renew-due-summary.js";
 import { operationsStatusSummarySkill } from "../skills/operations-status-summary.js";
 import { conversionSourceSummarySkill } from "../skills/conversion-source-summary.js";
 import { teamPerformanceSummarySkill } from "../skills/team-performance-summary.js";
+import { ROUTABLE_SKILL_INTENTS } from "./intent-catalog.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,15 +43,56 @@ export class SkillRegistry {
       .sort((left, right) => Number(right.priority || 0) - Number(left.priority || 0));
   }
 
-  findMatch(context) {
-    const matchedSkills = this.skills.filter((skill) => skill.handler.canHandle(context, skill));
-    if (matchedSkills.length === 0) {
+  findLegacyCandidates(context) {
+    return this.skills.filter((skill) => skill.handler.canHandle(context, skill));
+  }
+
+  findSkillForIntent(intent) {
+    const skillId = ROUTABLE_SKILL_INTENTS[intent?.primary_intent];
+    if (!skillId) {
       return null;
+    }
+    return this.skills.find((skill) => skill.id === skillId) || null;
+  }
+
+  findMatch(context) {
+    const intentMappedSkill = this.findSkillForIntent(context.intent);
+    if (context.intentSource === "legacy_rules" && intentMappedSkill && !context.intent?.ambiguity_flag) {
+      return {
+        skill: intentMappedSkill,
+        matchedSkillCandidates: [intentMappedSkill.id],
+        routeReason: "legacy_intent_skill_mapping"
+      };
+    }
+
+    if (context.intentSource !== "legacy_rules") {
+      return {
+        skill: intentMappedSkill,
+        matchedSkillCandidates: intentMappedSkill ? [intentMappedSkill.id] : [],
+        routeReason: intentMappedSkill ? "intent_skill_mapping" : "no_skill_for_intent"
+      };
+    }
+
+    const matchedSkills = this.findLegacyCandidates(context);
+    if (matchedSkills.length === 0) {
+      return {
+        skill: null,
+        matchedSkillCandidates: [],
+        routeReason: "legacy_no_match"
+      };
     }
     if (context.questionAnalysis?.isMultiIntent && matchedSkills.length > 1) {
-      return null;
+      return {
+        skill: null,
+        matchedSkillCandidates: matchedSkills.map((skill) => skill.id),
+        routeReason: "legacy_multi_intent_conflict"
+      };
     }
-    return matchedSkills[0];
+    return {
+      skill: matchedSkills[0],
+      matchedSkillCandidates: matchedSkills.map((skill) => skill.id),
+      routeReason: "legacy_priority_match"
+    };
   }
 
   list() {

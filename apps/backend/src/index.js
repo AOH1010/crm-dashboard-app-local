@@ -1,4 +1,5 @@
 import path from "node:path";
+import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import express from "express";
@@ -62,6 +63,19 @@ app.options("*", (_, res) => {
 
 app.get("/api/health", (_, res) => {
   res.json({ ok: true });
+});
+
+app.get("/api/agent/chat-lab/scenarios", (_req, res) => {
+  try {
+    const payloadPath = path.join(projectRoot, "docs", "eval", "eval-50-chat-lab.json");
+    const payload = JSON.parse(fs.readFileSync(payloadPath, "utf8"));
+    res.status(200).type("application/json").send(JSON.stringify(payload));
+  } catch (error) {
+    console.error("[chat-lab-api] failed to load scenarios", error instanceof Error ? error.stack : error);
+    res.status(500).type("application/json").send(JSON.stringify({
+      error: "Failed to load Chat Lab scenarios.",
+    }));
+  }
 });
 
 app.get("/api/debug/env-status", (_req, res) => {
@@ -251,6 +265,8 @@ app.post("/api/agent/chat", async (req, res) => {
       : null;
     const sessionId = typeof req.body?.session_id === "string" ? req.body.session_id : null;
     const debug = req.body?.debug === true;
+    const useIntentClassifier = req.body?.use_intent_classifier !== false;
+    const useSkillFormatter = req.body?.use_skill_formatter !== false;
 
     const payload = await chatWithCrmAgent({
       messages,
@@ -258,6 +274,8 @@ app.post("/api/agent/chat", async (req, res) => {
       selectedFilters,
       sessionId,
       debug,
+      useIntentClassifier,
+      useSkillFormatter,
     });
 
     res.status(200).type("application/json").send(JSON.stringify(payload));

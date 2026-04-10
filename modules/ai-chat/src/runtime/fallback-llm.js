@@ -337,10 +337,10 @@ async function runNvidiaFallback({ normalizedMessages, connector, systemInstruct
   };
 }
 
-export async function runFallbackLlm({ normalizedMessages, connector, promptRegistry, viewId }) {
-  const systemInstruction = promptRegistry.buildSystemPrompt({
+export async function runFallbackLlm({ normalizedMessages, connector, promptRegistry, viewId, requestContext = {} }) {
+  const systemInstruction = promptRegistry.buildFallbackPrompt({
     viewId,
-    route: "llm_fallback"
+    requestContext
   });
   const usage = createUsage(getDefaultProvider());
   if (getDefaultProvider() === "nvidia") {

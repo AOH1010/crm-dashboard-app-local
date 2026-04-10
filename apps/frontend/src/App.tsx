@@ -13,6 +13,7 @@ import ConversionView from "./views/ConversionView";
 import ActiveMapView from "./views/ActiveMapView";
 import CohortActiveUserView from "./views/CohortActiveUserView";
 import TeamView from "./views/TeamView";
+import ChatLabView from "./views/ChatLabView";
 
 function FallbackView({
   viewId,
@@ -67,13 +68,15 @@ export default function App() {
         return <CohortActiveUserView />;
       case "team":
         return <TeamView />;
+      case "chat-lab":
+        return <ChatLabView />;
       default:
         return <FallbackView viewId={viewId} onNavigate={setActiveId} />;
     }
   };
 
   return (
-    <DashboardLayout activeId={activeId} onNavigate={setActiveId}>
+    <DashboardLayout activeId={activeId} onNavigate={setActiveId} showAgentWidget={activeId !== "chat-lab"}>
       {visitedIds.map((viewId) => (
         <div key={viewId} className={viewId === activeId ? "block" : "hidden"}>
           {renderView(viewId)}

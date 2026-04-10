@@ -35,8 +35,50 @@ export class PromptRegistry {
     return fs.readFileSync(targetPath, "utf8").trim();
   }
 
-  buildSystemPrompt({ viewId, route = "skill" }) {
-    const cacheKey = `${viewId}:${route}`;
+  buildIntentClassifierPrompt({ viewId, requestContext }) {
+    const cacheKey = `intent:${viewId}:${requestContext.latestUserMessage?.content || ""}:${JSON.stringify(requestContext.selectedFilters || {})}`;
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
+    const sections = [
+      readPromptFile("intent-classifier.md")
+    ];
+    const viewHint = this.getViewHint(viewId);
+    if (viewHint) {
+      sections.push(viewHint);
+    }
+    if (requestContext.selectedFilters) {
+      sections.push(`Selected filters:\n${JSON.stringify(requestContext.selectedFilters, null, 2)}`);
+    }
+    const prompt = sections.filter(Boolean).join("\n\n");
+    this.cache.set(cacheKey, prompt);
+    return prompt;
+  }
+
+  buildSkillFormatterPrompt({ viewId, requestContext, skillResult }) {
+    const intentId = requestContext.intent?.primary_intent || "unknown";
+    const cacheKey = `formatter:${viewId}:${intentId}:${skillResult.skill_id || "unknown"}`;
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
+    const sections = [
+      readPromptFile("answer-style.md"),
+      readPromptFile("skill-formatter.md")
+    ];
+    const viewHint = this.getViewHint(viewId);
+    if (viewHint) {
+      sections.push(viewHint);
+    }
+    const prompt = sections.filter(Boolean).join("\n\n");
+    this.cache.set(cacheKey, prompt);
+    return prompt;
+  }
+
+  buildFallbackPrompt({ viewId, requestContext }) {
+    const intentId = requestContext.intent?.primary_intent || "unknown";
+    const cacheKey = `fallback:${viewId}:${intentId}:${requestContext.intentConfidence || "na"}`;
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey);
     }
@@ -51,15 +93,37 @@ export class PromptRegistry {
       sections.push(viewHint);
     }
 
-    if (route === "llm_fallback") {
-      sections.push(readPromptFile("fallback-sql.md"));
-      sections.push("Schema summary:");
-      sections.push(this.connector.buildSchemaSummary(viewId));
+    sections.push(readPromptFile("fallback-sql.md"));
+    if (requestContext.intent) {
+      sections.push("Resolved intent:");
+      sections.push(JSON.stringify(requestContext.intent, null, 2));
     }
+    if (requestContext.selectedFilters) {
+      sections.push("Selected filters:");
+      sections.push(JSON.stringify(requestContext.selectedFilters, null, 2));
+    }
+    sections.push("Schema summary:");
+    sections.push(this.connector.buildSchemaSummary(viewId));
 
     const prompt = sections.filter(Boolean).join("\n\n");
     this.cache.set(cacheKey, prompt);
     return prompt;
+  }
+
+  buildSystemPrompt({ viewId, route = "skill", requestContext = {} }) {
+    if (route === "llm_fallback") {
+      return this.buildFallbackPrompt({
+        viewId,
+        requestContext
+      });
+    }
+    return this.buildSkillFormatterPrompt({
+      viewId,
+      requestContext,
+      skillResult: {
+        skill_id: "default"
+      }
+    });
   }
 
   getPromptVersion() {

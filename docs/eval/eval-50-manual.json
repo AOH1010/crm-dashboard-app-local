@@ -1,0 +1,450 @@
+[
+  {
+    "id": "tc01-seller-revenue-basic",
+    "title": "Seller revenue co ban",
+    "group": "A",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Doanh thu cua Hoang Van Huy thang 3/2026 la bao nhieu?"
+      }
+    ],
+    "expectedRoute": "skill",
+    "expectedSkillId": "seller-month-revenue",
+    "normalizedExpectedIntent": "seller_revenue_month",
+    "reviewFocus": [
+      "grounding",
+      "no_hallucination"
+    ],
+    "notes": "Expected ~183,285,000d, 17 don. Must not hallucinate."
+  },
+  {
+    "id": "tc05-compare-periods-explicit",
+    "title": "So sanh 2 thang cu the",
+    "group": "A",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "So sanh doanh thu thang 3 voi thang 2 nam 2026"
+      }
+    ],
+    "expectedRoute": "skill",
+    "expectedSkillId": "compare-periods",
+    "normalizedExpectedIntent": "period_comparison",
+    "reviewFocus": [
+      "grounding",
+      "comparison_math"
+    ],
+    "notes": "T3: ~1.38 ty vs T2: ~643tr."
+  },
+  {
+    "id": "tc17-long-prompt-single-intent",
+    "title": "Prompt dai nhung chi 1 y chinh",
+    "group": "C",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Toi dang chuan bi cho cuoc hop sang mai. Dang review lai so lieu thang 3. Quan trong nhat la cho toi biet Pham Van Hoang dat bao nhieu doanh thu thang 3/2026."
+      }
+    ],
+    "expectedRoute": "skill",
+    "expectedSkillId": "seller-month-revenue",
+    "normalizedExpectedIntent": "seller_revenue_month",
+    "reviewFocus": [
+      "routing",
+      "grounding"
+    ],
+    "notes": "~230,878,000d, 23 don. Long prompt must not confuse routing."
+  },
+  {
+    "id": "tc19-trend-analysis",
+    "title": "Phan tich xu huong 6 thang",
+    "group": "C",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Doanh thu 6 thang gan nhat dang tang hay giam? Co thang nao bat thuong khong?"
+      }
+    ],
+    "expectedRoute": "llm_fallback",
+    "expectedSkillId": null,
+    "normalizedExpectedIntent": "custom_analytical_query",
+    "reviewFocus": [
+      "reasoning",
+      "grounding"
+    ],
+    "notes": "T10:844M, T11:597M, T12:1.13B, T1:381M, T2:643M, T3:1.38B. T1 low (Tet?)."
+  },
+  {
+    "id": "tc20-causal-why-question",
+    "title": "Cau hoi tai sao",
+    "group": "C",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Tai sao doanh thu thang 1/2026 giam manh so voi thang 12/2025?"
+      }
+    ],
+    "expectedRoute": "llm_fallback",
+    "expectedSkillId": null,
+    "normalizedExpectedIntent": "custom_analytical_query",
+    "reviewFocus": [
+      "reasoning",
+      "no_fabrication"
+    ],
+    "notes": "T12:1.13ty -> T1:381tr (-66%). Must provide data, may hypothesize Tet but NOT fabricate."
+  },
+  {
+    "id": "tc21-customer-ranking",
+    "title": "Customer ranking - fallback",
+    "group": "D",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Customer nao mua nhieu nhat tu dau nam 2026?"
+      }
+    ],
+    "expectedRoute": "llm_fallback",
+    "expectedSkillId": null,
+    "normalizedExpectedIntent": "custom_analytical_query",
+    "reviewFocus": [
+      "sql_shape",
+      "top_n_result"
+    ],
+    "notes": "Needs GROUP BY on orders table."
+  },
+  {
+    "id": "tc22-recent-orders",
+    "title": "5 don hang moi nhat",
+    "group": "D",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "5 don hang moi nhat la gi?"
+      }
+    ],
+    "expectedRoute": "llm_fallback",
+    "expectedSkillId": null,
+    "normalizedExpectedIntent": "custom_analytical_query",
+    "reviewFocus": [
+      "sql_shape",
+      "table_output"
+    ],
+    "notes": "Should return order_code, customer, amount, seller."
+  },
+  {
+    "id": "tc23-lead-geography",
+    "title": "Lead theo tinh thanh",
+    "group": "D",
+    "viewId": "leads",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Tinh nao co nhieu lead nhat?"
+      }
+    ],
+    "expectedRoute": "llm_fallback",
+    "expectedSkillId": null,
+    "normalizedExpectedIntent": "lead_geography",
+    "reviewFocus": [
+      "sql_shape",
+      "group_by"
+    ],
+    "notes": "Query customers GROUP BY province_name."
+  },
+  {
+    "id": "tc24-source-revenue-drilldown",
+    "title": "Revenue theo nguon cu the",
+    "group": "D",
+    "viewId": "conversion",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Nguon Tele sale outbound mang ve bao nhieu revenue?"
+      }
+    ],
+    "expectedRoute": "llm_fallback",
+    "expectedSkillId": null,
+    "normalizedExpectedIntent": "custom_analytical_query",
+    "reviewFocus": [
+      "join_correctness",
+      "grounding"
+    ],
+    "notes": "Needs JOIN customers + orders."
+  },
+  {
+    "id": "tc25-orders-filter-amount",
+    "title": "Loc don hang theo so tien",
+    "group": "D",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Liet ke don hang tren 50 trieu trong thang 3/2026"
+      }
+    ],
+    "expectedRoute": "llm_fallback",
+    "expectedSkillId": null,
+    "normalizedExpectedIntent": "custom_analytical_query",
+    "reviewFocus": [
+      "filter_correctness",
+      "table_output"
+    ],
+    "notes": "SELECT FROM orders WHERE real_amount > 50000000 AND month=2026-03."
+  },
+  {
+    "id": "tc27-nonexistent-seller",
+    "title": "Seller khong ton tai",
+    "group": "E",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Doanh thu cua Elon Musk thang 3"
+      }
+    ],
+    "expectedRoute": "skill",
+    "expectedSkillId": "seller-month-revenue",
+    "normalizedExpectedIntent": "seller_revenue_month",
+    "reviewFocus": [
+      "no_hallucination",
+      "not_found_copy"
+    ],
+    "notes": "Seller not found. Must say 'khong tim thay'. Must NOT hallucinate numbers."
+  },
+  {
+    "id": "tc28-future-forecast",
+    "title": "Du bao tuong lai",
+    "group": "E",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Du bao doanh thu thang 12/2026"
+      }
+    ],
+    "expectedRoute": "llm_fallback",
+    "expectedSkillId": null,
+    "normalizedExpectedIntent": "custom_analytical_query",
+    "reviewFocus": [
+      "no_fabrication",
+      "safe_refusal"
+    ],
+    "notes": "System has no forecasting. Must NOT fabricate predictions."
+  },
+  {
+    "id": "tc30-very-long-prompt",
+    "title": "Prompt rat dai 500+ tu",
+    "group": "E",
+    "viewId": "team",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Toi la giam doc cong ty, hien dang ngoi review lai toan bo so lieu kinh doanh cua quy 1 nam 2026. Trong buoi hop sang nay, ban giam doc da bao cao rang tinh hinh kinh doanh co nhieu bien dong, dac biet la thang 1 rat thap do nghi Tet, thang 2 hoi phuc nhe, va thang 3 tang manh tro lai. Toi can xac nhan lai mot so thu. Truoc het la tinh hinh nhan su ben sale, roi la cac chi so KPI chinh, va sau cung la pipeline renew. Nhung truoc mat, hay cho toi biet top 3 seller thang 3 la ai, doanh thu cu the tung nguoi."
+      }
+    ],
+    "expectedRoute": "skill",
+    "expectedSkillId": "top-sellers-period",
+    "normalizedExpectedIntent": "top_sellers_period",
+    "reviewFocus": [
+      "routing",
+      "intent_focus"
+    ],
+    "notes": "Long prompt but last sentence is clear: top 3 seller thang 3. Must extract correctly."
+  },
+  {
+    "id": "tc39-verify-wrong-number",
+    "title": "Xac nhan so lieu sai",
+    "group": "G",
+    "viewId": "team",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Hoang Van Huy co phai dat 200 trieu thang 3 khong?"
+      }
+    ],
+    "expectedRoute": "skill",
+    "expectedSkillId": "seller-month-revenue",
+    "normalizedExpectedIntent": "seller_revenue_month",
+    "reviewFocus": [
+      "fact_check",
+      "correction"
+    ],
+    "notes": "Huy got ~183M not 200M. Must correct, NOT confirm wrong number."
+  },
+  {
+    "id": "tc42-followup-drilldown",
+    "title": "Follow-up drill-down",
+    "group": "H",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Tong quan KPI thang 3"
+      },
+      {
+        "role": "assistant",
+        "content": "KPI thang 3/2026: Doanh thu 1.38 ty, 128 don, 64 leads moi."
+      },
+      {
+        "role": "user",
+        "content": "Phan tich them ve doanh thu"
+      }
+    ],
+    "expectedRoute": "llm_fallback",
+    "expectedSkillId": null,
+    "normalizedExpectedIntent": "custom_analytical_query",
+    "reviewFocus": [
+      "context_carryover",
+      "fallback_quality"
+    ],
+    "notes": "Drill-down beyond skill capability. Must carry time=2026-03 from context."
+  },
+  {
+    "id": "tc44-cross-verify-leaderboard",
+    "title": "Cross-verify so lieu leaderboard vs orders",
+    "group": "I",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Pham Van Hoang dat bao nhieu doanh thu thang 3/2026?"
+      }
+    ],
+    "expectedRoute": "skill",
+    "expectedSkillId": "seller-month-revenue",
+    "normalizedExpectedIntent": "seller_revenue_month",
+    "reviewFocus": [
+      "cross_db_grounding",
+      "consistency"
+    ],
+    "notes": "Must match leaderboard: 230,878,000d, 23 don. Cross-verify with raw orders SUM."
+  },
+  {
+    "id": "tc45-zero-result-seller",
+    "title": "Seller khong co data trong ky",
+    "group": "I",
+    "viewId": "team",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Doanh thu Dang Quynh Anh thang 3/2026"
+      }
+    ],
+    "expectedRoute": "skill",
+    "expectedSkillId": "seller-month-revenue",
+    "normalizedExpectedIntent": "seller_revenue_month",
+    "reviewFocus": [
+      "no_hallucination",
+      "not_found_copy"
+    ],
+    "notes": "Quynh Anh has no data after 2025-07. Must say 'khong tim thay', NOT fabricate."
+  },
+  {
+    "id": "tc46-total-revenue-month",
+    "title": "Tong doanh thu thang - cross-verify 2 DB",
+    "group": "I",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Tong doanh thu thang 3/2026"
+      }
+    ],
+    "expectedRoute": "skill",
+    "expectedSkillId": "kpi-overview",
+    "normalizedExpectedIntent": "kpi_overview",
+    "reviewFocus": [
+      "cross_db_grounding",
+      "aggregation"
+    ],
+    "notes": "Expected ~1,379,845,900d. Must match revenue_series SUM and orders SUM."
+  },
+  {
+    "id": "tc47-renew-renewed-count",
+    "title": "Due accounts da gia han",
+    "group": "J",
+    "viewId": "renew",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Bao nhieu account den han thang nay da gia han roi?"
+      }
+    ],
+    "expectedRoute": "skill",
+    "expectedSkillId": "renew-due-summary",
+    "normalizedExpectedIntent": "renew_summary",
+    "reviewFocus": [
+      "filter_correctness",
+      "grounding"
+    ],
+    "notes": "Query ops_due_accounts with renewed=1 filter."
+  },
+  {
+    "id": "tc48-activation-trend",
+    "title": "Activation trend so sanh 2 ky",
+    "group": "J",
+    "viewId": "user-map",
+    "messages": [
+      {
+        "role": "user",
+        "content": "So activation 3 thang gan nhat so voi 3 thang truoc do"
+      }
+    ],
+    "expectedRoute": "llm_fallback",
+    "expectedSkillId": null,
+    "normalizedExpectedIntent": "custom_analytical_query",
+    "reviewFocus": [
+      "comparison_math",
+      "time_window"
+    ],
+    "notes": "Recent: T2:45, T3:128, T4:24. Previous: T11:67, T12:113, T1:44."
+  },
+  {
+    "id": "tc49-sale-owner-account-count",
+    "title": "Sale owner account count + active ratio",
+    "group": "J",
+    "viewId": "user-map",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Hien Sale quan ly bao nhieu account? Ty le active the nao?"
+      }
+    ],
+    "expectedRoute": "llm_fallback",
+    "expectedSkillId": null,
+    "normalizedExpectedIntent": "custom_analytical_query",
+    "reviewFocus": [
+      "join_correctness",
+      "ratio_math"
+    ],
+    "notes": "Hien Sale has 149 accounts. Needs JOIN activation + monthly_status."
+  },
+  {
+    "id": "tc50-ceo-full-picture",
+    "title": "CEO full picture - 4 sub-questions",
+    "group": "J",
+    "viewId": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Cho toi buc tranh toan canh: doanh thu thang 3 la bao nhieu, top 3 seller la ai, co bao nhieu account moi activate, va ty le renew the nao?"
+      }
+    ],
+    "expectedRoute": "llm_fallback",
+    "expectedSkillId": null,
+    "normalizedExpectedIntent": "unknown",
+    "reviewFocus": [
+      "completeness",
+      "multi_answer"
+    ],
+    "notes": "Must answer ALL 4: Revenue ~1.38ty, Top: Hoang/Huy/Phuc, Activations: 128 (T3), Renew rate from due_accounts. Missing any = FAIL."
+  }
+]

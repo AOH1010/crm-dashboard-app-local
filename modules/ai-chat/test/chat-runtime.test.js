@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import { chatWithCrmAgent } from "../src/runtime/chat-runtime.js";
 import { SkillRegistry } from "../src/runtime/skill-registry.js";
 import { SQLiteConnector } from "../src/connectors/sqlite-connector.js";
-import { analyzeQuestionComplexity } from "../src/tooling/question-analysis.js";
 import { foldText } from "../src/tooling/common.js";
 
 const connector = new SQLiteConnector();
@@ -25,6 +24,7 @@ test("seller revenue route uses deterministic skill", async () => {
   assert.equal(payload.skill_id, "seller-month-revenue");
   assert.equal(typeof payload.trace_id, "string");
   assert.equal(typeof payload.prompt_version, "string");
+  assert.equal(payload.intent?.primary_intent, "seller_revenue_month");
   assert.match(payload.reply, new RegExp(sellerName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
 });
 
@@ -43,6 +43,7 @@ test("long seller prompt still routes to deterministic seller skill", async () =
 
   assert.equal(payload.route, "skill");
   assert.equal(payload.skill_id, "seller-month-revenue");
+  assert.equal(payload.intent?.primary_intent, "seller_revenue_month");
 });
 
 test("seller revenue skill handles no-data period gracefully", async () => {
@@ -70,6 +71,7 @@ test("dashboard overview uses kpi skill", async () => {
 
   assert.equal(payload.route, "skill");
   assert.equal(payload.skill_id, "kpi-overview");
+  assert.equal(payload.intent?.primary_intent, "kpi_overview");
   assert.match(payload.reply, /Tong doanh thu/i);
 });
 
@@ -84,6 +86,7 @@ test("compare route uses compare skill", async () => {
 
   assert.equal(payload.route, "skill");
   assert.equal(payload.skill_id, "compare-periods");
+  assert.equal(payload.intent?.primary_intent, "period_comparison");
   assert.match(payload.reply, /\| Chi so \|/);
 });
 
@@ -98,6 +101,7 @@ test("renew summary uses renew skill", async () => {
 
   assert.equal(payload.route, "skill");
   assert.equal(payload.skill_id, "renew-due-summary");
+  assert.equal(payload.intent?.primary_intent, "renew_summary");
   assert.match(payload.reply, /Tong hop renew/i);
 });
 
@@ -112,6 +116,7 @@ test("operations summary uses operations skill", async () => {
 
   assert.equal(payload.route, "skill");
   assert.equal(payload.skill_id, "operations-status-summary");
+  assert.equal(payload.intent?.primary_intent, "operations_summary");
   assert.match(payload.reply, /Tong hop operations/i);
 });
 
@@ -126,6 +131,7 @@ test("conversion source summary uses deterministic skill", async () => {
 
   assert.equal(payload.route, "skill");
   assert.equal(payload.skill_id, "conversion-source-summary");
+  assert.equal(payload.intent?.primary_intent, "conversion_source_summary");
   assert.match(payload.reply, /Nhom nguon co conversion cao nhat/i);
 });
 
@@ -140,19 +146,72 @@ test("team performance summary uses deterministic skill", async () => {
 
   assert.equal(payload.route, "skill");
   assert.equal(payload.skill_id, "team-performance-summary");
+  assert.equal(payload.intent?.primary_intent, "team_revenue_summary");
   assert.match(payload.reply, /Team dan dau doanh thu/i);
 });
 
-test("multi-intent long prompt avoids forcing a deterministic skill", () => {
+test("multi-intent long prompt asks for clarification instead of forcing a deterministic skill", async () => {
+  const payload = await chatWithCrmAgent({
+    viewId: "dashboard",
+    messages: [{
+      role: "user",
+      content: "Toi dang review doanh thu. Team nao dang dan dau doanh thu va nhom nguon nao co conversion cao nhat?"
+    }]
+  });
+
+  assert.equal(payload.route, "clarify_required");
+  assert.equal(payload.skill_id, null);
+  assert.ok((payload.clarification_question || payload.reply || "").length > 0);
+});
+
+test("follow-up prompt can reuse recent turns for intent detection", async () => {
+  const payload = await chatWithCrmAgent({
+    viewId: "team",
+    messages: [
+      {
+        role: "user",
+        content: "Doanh thu team thang 3 nhu the nao?"
+      },
+      {
+        role: "assistant",
+        content: "Toi dang xem doanh thu team trong thang 3."
+      },
+      {
+        role: "user",
+        content: "Con thang 4?"
+      }
+    ]
+  });
+
+  assert.equal(payload.intent?.primary_intent, "team_revenue_summary");
+  assert.notEqual(payload.route, "llm_fallback");
+});
+
+test("SkillRegistry can map classifier intent directly to a skill", () => {
+  const registry = new SkillRegistry();
+  const match = registry.findMatch({
+    intentSource: "classifier",
+    intent: {
+      primary_intent: "team_revenue_summary"
+    }
+  });
+
+  assert.equal(match.skill?.id, "team-performance-summary");
+  assert.deepEqual(match.matchedSkillCandidates, ["team-performance-summary"]);
+});
+
+test("legacy SkillRegistry path still keeps ambiguity-safe behavior", () => {
   const registry = new SkillRegistry();
   const latestQuestion = "Toi dang review doanh thu. Team nao dang dan dau doanh thu va nhom nguon nao co conversion cao nhat?";
-  const questionAnalysis = analyzeQuestionComplexity(latestQuestion);
-  const matchedSkill = registry.findMatch({
+  const match = registry.findMatch({
+    intentSource: "legacy_rules",
     latestQuestion,
     foldedQuestion: foldText(latestQuestion),
-    routingQuestion: questionAnalysis.routingQuestion,
-    routingFoldedQuestion: foldText(questionAnalysis.routingQuestion),
-    questionAnalysis,
+    routingQuestion: latestQuestion,
+    routingFoldedQuestion: foldText(latestQuestion),
+    questionAnalysis: {
+      isMultiIntent: true
+    },
     connector: {
       detectSellerName() {
         return null;
@@ -160,6 +219,6 @@ test("multi-intent long prompt avoids forcing a deterministic skill", () => {
     }
   });
 
-  assert.equal(questionAnalysis.isMultiIntent, true);
-  assert.equal(matchedSkill, null);
+  assert.equal(match.skill, null);
+  assert.ok(match.matchedSkillCandidates.length >= 2);
 });

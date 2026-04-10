@@ -1,0 +1,26 @@
+[
+  {
+    "id": "c001",
+    "view_id": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Cho toi biet tinh hinh chung"
+      }
+    ],
+    "expected_route": "clarify_required",
+    "expected_clarification_pattern": "KPI|team|renew|operations"
+  },
+  {
+    "id": "c002",
+    "view_id": "dashboard",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Team nao dang dan dau doanh thu va nhom nguon nao co conversion cao nhat?"
+      }
+    ],
+    "expected_route": "clarify_required",
+    "expected_clarification_pattern": "team|nguon|conversion"
+  }
+]

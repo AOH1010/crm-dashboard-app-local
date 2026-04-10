@@ -58,6 +58,23 @@ export const sellerMonthRevenueSkill = {
 
     return {
       reply,
+      fallback_reply: reply,
+      format_hint: orderCount > 0 ? "summary" : "no_data",
+      summary_facts: {
+        seller_name: sellerName,
+        month_label: resolvedMonth.label,
+        month_key: resolvedMonth.month_key,
+        inferred_year: resolvedMonth.inferred_year,
+        total_revenue: totalRevenue,
+        order_count: orderCount,
+        average_order_value: orderCount > 0 ? totalRevenue / orderCount : 0
+      },
+      data: orderCount > 0 ? {
+        non_cancelled_orders: nonCancelledRows.map((row) => ({
+          amount: Number(row.amount || 0),
+          order_code: row.order_code
+        }))
+      } : null,
       sqlLogs: [{
         name: this.id,
         sql: result.sql,

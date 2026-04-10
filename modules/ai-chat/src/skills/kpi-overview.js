@@ -63,9 +63,32 @@ export const kpiOverviewSkill = {
     if (topSeller) {
       replyLines.push(`- Seller dan dau: ${topSeller.seller_name} voi ${formatCurrency(topSeller.revenue_amount)}.`);
     }
+    const reply = replyLines.join("\n");
 
     return {
-      reply: replyLines.join("\n"),
+      reply,
+      fallback_reply: reply,
+      format_hint: "summary",
+      summary_facts: {
+        period_from: period.from,
+        period_to: period.to,
+        total_revenue: Number(kpis.total_revenue || 0),
+        new_leads: Number(kpis.new_leads || 0),
+        new_customers: Number(kpis.new_customers || 0),
+        conversion_rate: conversionRate,
+        top_seller: topSeller ? {
+          seller_name: topSeller.seller_name,
+          revenue_amount: Number(topSeller.revenue_amount || 0)
+        } : null
+      },
+      data: {
+        kpis: {
+          total_revenue: Number(kpis.total_revenue || 0),
+          new_leads: Number(kpis.new_leads || 0),
+          new_customers: Number(kpis.new_customers || 0),
+          conversion_rate: conversionRate
+        }
+      },
       sqlLogs: [
         {
           name: `${this.id}_kpis`,
