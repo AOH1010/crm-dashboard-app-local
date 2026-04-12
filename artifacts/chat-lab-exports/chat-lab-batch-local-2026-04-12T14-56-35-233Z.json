@@ -1,0 +1,1705 @@
+{
+  "startedAt": "2026-04-12T14:56:35.233Z",
+  "total": 50,
+  "autoPass": 40,
+  "needsManualReview": 22,
+  "summaryByGroup": [
+    {
+      "group": "A",
+      "total": 10,
+      "autoPass": 10,
+      "routeFail": 0,
+      "intentFail": 0,
+      "clarifyFail": 0,
+      "manualReview": 2
+    },
+    {
+      "group": "B",
+      "total": 5,
+      "autoPass": 4,
+      "routeFail": 0,
+      "intentFail": 1,
+      "clarifyFail": 1,
+      "manualReview": 0
+    },
+    {
+      "group": "C",
+      "total": 5,
+      "autoPass": 1,
+      "routeFail": 4,
+      "intentFail": 2,
+      "clarifyFail": 0,
+      "manualReview": 3
+    },
+    {
+      "group": "D",
+      "total": 5,
+      "autoPass": 5,
+      "routeFail": 0,
+      "intentFail": 0,
+      "clarifyFail": 0,
+      "manualReview": 5
+    },
+    {
+      "group": "E",
+      "total": 5,
+      "autoPass": 5,
+      "routeFail": 0,
+      "intentFail": 0,
+      "clarifyFail": 0,
+      "manualReview": 3
+    },
+    {
+      "group": "F",
+      "total": 4,
+      "autoPass": 4,
+      "routeFail": 0,
+      "intentFail": 0,
+      "clarifyFail": 0,
+      "manualReview": 0
+    },
+    {
+      "group": "G",
+      "total": 5,
+      "autoPass": 5,
+      "routeFail": 0,
+      "intentFail": 0,
+      "clarifyFail": 0,
+      "manualReview": 1
+    },
+    {
+      "group": "H",
+      "total": 4,
+      "autoPass": 2,
+      "routeFail": 1,
+      "intentFail": 2,
+      "clarifyFail": 0,
+      "manualReview": 1
+    },
+    {
+      "group": "I",
+      "total": 3,
+      "autoPass": 2,
+      "routeFail": 1,
+      "intentFail": 0,
+      "clarifyFail": 1,
+      "manualReview": 3
+    },
+    {
+      "group": "J",
+      "total": 4,
+      "autoPass": 2,
+      "routeFail": 2,
+      "intentFail": 2,
+      "clarifyFail": 0,
+      "manualReview": 4
+    }
+  ],
+  "failures": [
+    {
+      "id": "tc12-generic-summary",
+      "group": "B",
+      "expectedRoute": "skill",
+      "actualRoute": "clarify_required",
+      "expectedSkillId": "kpi-overview",
+      "actualSkillId": null,
+      "expectedIntent": "kpi_overview",
+      "actualIntent": "unknown",
+      "routePass": true,
+      "intentPass": false,
+      "clarifyPass": false,
+      "manualReview": false,
+      "reply": "Bạn muốn tôi tóm tắt phần nào: nội dung hội thoại, KPI dashboard, team, renew hay operations?",
+      "error": null
+    },
+    {
+      "id": "tc16-multi-intent-two-domains",
+      "group": "C",
+      "expectedRoute": "llm_fallback",
+      "actualRoute": "skill",
+      "expectedSkillId": null,
+      "actualSkillId": "compound:conversion-source-summary+team-performance-summary",
+      "expectedIntent": "unknown",
+      "actualIntent": "unknown",
+      "routePass": false,
+      "intentPass": true,
+      "clarifyPass": true,
+      "manualReview": false,
+      "reply": "Toi tach cau hoi thanh cac phan ro rang va tra loi lan luot:\n- conversion-source-summary: Nhóm nguồn có conversion cao nhất trong giai đoạn 2026-04-01 đến 2026-04-06 là Sale với 11,11%.\n- team-performance-summary: Team dẫn đầu doanh thu trong 2026-04-01 đến 2026-04-06 là Fire với 61.295.000 VND.",
+      "error": null
+    },
+    {
+      "id": "tc18-complex-team-comparison",
+      "group": "C",
+      "expectedRoute": "llm_fallback",
+      "actualRoute": "skill",
+      "expectedSkillId": null,
+      "actualSkillId": "team-performance-summary",
+      "expectedIntent": "custom_analytical_query",
+      "actualIntent": "team_revenue_summary",
+      "routePass": false,
+      "intentPass": false,
+      "clarifyPass": true,
+      "manualReview": false,
+      "reply": "Trong quý 1/2026, Fire đang nhỉnh hơn Andes với chênh lệch doanh thu 117.797.900 VND.\n\n- Fire: 728.139.900 VND, 71 đơn, 3 seller active.\n\n- Andes: 610.342.000 VND, 56 đơn, 3 seller active.\n\n- Chênh lệch đơn hàng / seller active: 15 đơn / 0 người.\n\n| Team | Doanh thu | Số đơn | Seller active |\n| --- | --- | --- | --- |\n| Fire | 728.139.900 VND | 71 | 3 |\n| Andes | 610.342.000 VND | 56 | 3 |",
+      "error": null
+    },
+    {
+      "id": "tc19-trend-analysis",
+      "group": "C",
+      "expectedRoute": "llm_fallback",
+      "actualRoute": "skill",
+      "expectedSkillId": null,
+      "actualSkillId": "revenue-trend-analysis",
+      "expectedIntent": "revenue_trend_analysis",
+      "actualIntent": "revenue_trend_analysis",
+      "routePass": false,
+      "intentPass": true,
+      "clarifyPass": true,
+      "manualReview": true,
+      "reply": "6 tháng gần nhất, doanh thu không đi theo một chiều cố định mà đang tăng ở nhịp gần nhất.\n- Tháng cao nhất: 03/2026 với 1.379.845.900 VND.\n- Tháng thấp nhất: 01/2026 với 381.019.000 VND.\n- Gần nhất: 02/2026 -> 03/2026 là tăng 736.615.550 VND.\n- Tháng bất thường đáng chú ý: 01/2026 thấp hơn hẳn các tháng còn lại.",
+      "error": null
+    },
+    {
+      "id": "tc20-causal-why-question",
+      "group": "C",
+      "expectedRoute": "llm_fallback",
+      "actualRoute": "skill",
+      "expectedSkillId": null,
+      "actualSkillId": "revenue-trend-analysis",
+      "expectedIntent": "custom_analytical_query",
+      "actualIntent": "revenue_trend_analysis",
+      "routePass": false,
+      "intentPass": false,
+      "clarifyPass": true,
+      "manualReview": true,
+      "reply": "Doanh thu 01/2026 giảm 753.512.700 VND so với 12/2025 (66,42%).\n- 12/2025: 1.134.531.700 VND | lead mới 2.705 | khách mới 107 | conversion 3,96%.\n- 01/2026: 381.019.000 VND | lead mới 1.047 | khách mới 35 | conversion 3,34%.\n- Team giảm mạnh nhất: Fire (214.632.000 VND).\n- Nếu cần drill-down tiếp, tôi có thể tách theo team hoặc theo nguồn lead để kiểm tra nguyên nhân chi tiết hơn.",
+      "error": null
+    },
+    {
+      "id": "tc42-followup-drilldown",
+      "group": "H",
+      "expectedRoute": "llm_fallback",
+      "actualRoute": "skill",
+      "expectedSkillId": null,
+      "actualSkillId": "kpi-overview",
+      "expectedIntent": "custom_analytical_query",
+      "actualIntent": "kpi_overview",
+      "routePass": false,
+      "intentPass": false,
+      "clarifyPass": true,
+      "manualReview": true,
+      "reply": "Tổng quan nhanh giai đoạn 2026-03-01 đến 2026-03-31:\n- Doanh thu: 1.379.845.900 VND.\n- Lead mới: 1.792 và khách mới: 117 (6,53% chuyển đổi).\n- Seller dẫn đầu: Phạm Văn Hoàng với 230.878.000 VND.\n- Số đơn không hủy: 128 và giá trị trung bình/đơn: 10.780.046 VND.\n- Top seller theo doanh thu: Phạm Văn Hoàng (230.878.000 VND), Hoàng Văn Huy (183.285.000 VND), Lê Thị Hoài Phúc (162.985.000 VND).",
+      "error": null
+    },
+    {
+      "id": "tc43-followup-off-topic",
+      "group": "H",
+      "expectedRoute": "validation",
+      "actualRoute": "validation",
+      "expectedSkillId": null,
+      "actualSkillId": null,
+      "expectedIntent": "unknown",
+      "actualIntent": "out_of_domain_request",
+      "routePass": true,
+      "intentPass": false,
+      "clarifyPass": true,
+      "manualReview": false,
+      "reply": "Tôi không có quyền truy cập dữ liệu hoặc dịch vụ ngoài CRM nội bộ, nên không thể trả lời câu hỏi này.",
+      "error": null
+    },
+    {
+      "id": "tc44-cross-verify-leaderboard",
+      "group": "I",
+      "expectedRoute": "skill",
+      "actualRoute": "clarify_required",
+      "expectedSkillId": "seller-month-revenue",
+      "actualSkillId": null,
+      "expectedIntent": "seller_revenue_month",
+      "actualIntent": "seller_revenue_month",
+      "routePass": false,
+      "intentPass": true,
+      "clarifyPass": false,
+      "manualReview": true,
+      "reply": "Có nhiều seller khớp với cách gọi này: Phạm Văn An, Vũ Thị Hằng. Bạn muốn hỏi ai?",
+      "error": null
+    },
+    {
+      "id": "tc49-sale-owner-account-count",
+      "group": "J",
+      "expectedRoute": "llm_fallback",
+      "actualRoute": "skill",
+      "expectedSkillId": null,
+      "actualSkillId": "operations-status-summary",
+      "expectedIntent": "custom_analytical_query",
+      "actualIntent": "operations_summary",
+      "routePass": false,
+      "intentPass": false,
+      "clarifyPass": true,
+      "manualReview": true,
+      "reply": "Tổng hợp operations trong 04/2026:\n\n- Tổng account tracked: 1.223.\n\n- Active: 189 (15,45%); Inactive: 1.034.\n\n- Best / Value / Noise / Ghost: 29 / 116 / 1 / 43.\n\n| Category | Accounts | Share |\n| --- | --- | --- |\n| N/A | 1.034 | 84,55% |\n| Value | 116 | 9,48% |\n| Ghost | 43 | 3,52% |\n| Best | 29 | 2,37% |\n| Noise | 1 | 0,08% |",
+      "error": null
+    },
+    {
+      "id": "tc50-ceo-full-picture",
+      "group": "J",
+      "expectedRoute": "llm_fallback",
+      "actualRoute": "skill",
+      "expectedSkillId": null,
+      "actualSkillId": "renew-due-summary",
+      "expectedIntent": "unknown",
+      "actualIntent": "renew_summary",
+      "routePass": false,
+      "intentPass": false,
+      "clarifyPass": true,
+      "manualReview": true,
+      "reply": "Trong 03/2026, có 50 account sắp đến hạn.\n- Đã renew: 5 account (10%).\n- Chưa renew: 45 account.",
+      "error": null
+    }
+  ],
+  "results": [
+    {
+      "id": "tc01-seller-revenue-basic",
+      "title": "Seller revenue co ban",
+      "group": "A",
+      "expectedRoute": "skill",
+      "expectedSkillId": "seller-month-revenue",
+      "expectedIntent": "seller_revenue_month",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "seller-month-revenue",
+      "actualIntent": "seller_revenue_month",
+      "clarificationQuestion": null,
+      "reply": "Trong 03/2026, Hoàng Văn Huy đạt doanh số 183.285.000 VND từ 17 đơn không hủy.\n- Bình quân mỗi đơn: 10.781.471 VND.\n- Tỷ trọng trong tổng doanh thu toàn kỳ: 13,3%.",
+      "latencyMs": 67328,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc02-seller-nickname",
+      "title": "Seller dung nickname ngan",
+      "group": "A",
+      "expectedRoute": "skill",
+      "expectedSkillId": "seller-month-revenue",
+      "expectedIntent": "seller_revenue_month",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "seller-month-revenue",
+      "actualIntent": "seller_revenue_month",
+      "clarificationQuestion": null,
+      "reply": "Trong 04/2026, Hoàng Văn Huy đạt doanh số 14.099.000 VND từ 1 đơn không hủy.\n- Bình quân mỗi đơn: 14.099.000 VND.\n- Tỷ trọng trong tổng doanh thu toàn kỳ: 10,7%.",
+      "latencyMs": 61138,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc03-top-sellers",
+      "title": "Top seller thang nay",
+      "group": "A",
+      "expectedRoute": "skill",
+      "expectedSkillId": "top-sellers-period",
+      "expectedIntent": "top_sellers_period",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "top-sellers-period",
+      "actualIntent": "top_sellers_period",
+      "clarificationQuestion": null,
+      "reply": "Người dẫn đầu doanh thu trong 04/2026 là Nguyễn Thị Hiên với 47.196.000 VND từ 5 đơn.\n\nTop 5 seller:\n\n| Top | Seller | Doanh thu | Số đơn |\n| --- | --- | --- | --- |\n| 1 | Nguyễn Thị Hiên | 47.196.000 VND | 5 |\n| 2 | Hoàng Nhật Hùng | 20.897.000 VND | 3 |\n| 3 | Lê Thị Hoài Phúc | 15.498.000 VND | 2 |\n| 4 | Hoàng Văn Huy | 14.099.000 VND | 1 |\n| 5 | Phan Ngọc Thúy | 9.599.000 VND | 1 |",
+      "latencyMs": 61129,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc04-kpi-overview-informal",
+      "title": "KPI overview cau hoi informal",
+      "group": "A",
+      "expectedRoute": "skill",
+      "expectedSkillId": "kpi-overview",
+      "expectedIntent": "kpi_overview",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "kpi-overview",
+      "actualIntent": "kpi_overview",
+      "clarificationQuestion": null,
+      "reply": "Tổng quan nhanh giai đoạn 2026-04-01 đến 2026-04-06:\n- Doanh thu: 131.387.000 VND.\n- Lead mới: 286 và khách mới: 13 (4,55% chuyển đổi).\n- Seller dẫn đầu: Nguyễn Thị Hiên với 47.196.000 VND.",
+      "latencyMs": 87393,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc05-compare-periods-explicit",
+      "title": "So sanh 2 thang cu the",
+      "group": "A",
+      "expectedRoute": "skill",
+      "expectedSkillId": "compare-periods",
+      "expectedIntent": "period_comparison",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "compare-periods",
+      "actualIntent": "period_comparison",
+      "clarificationQuestion": null,
+      "reply": "So sánh giai đoạn 2026-03-01 đến 2026-03-31 với 2026-02-01 đến 2026-02-28:\n\n| Chi so | Ky hien tai | Ky truoc | Delta | Delta % |\n| --- | --- | --- | --- | --- |\n| Doanh thu | 1.379.845.900 VND | 643.230.350 VND | +736.615.550 VND | +114,52% |\n| Lead moi | 1.792 | 937 | +855 | +91,25% |\n| Khach moi | 117 | 42 | +75 | +178,57% |\n| Ty le chuyen doi | 6,53% | 4,48% | +2,05% | +45,66% |",
+      "latencyMs": 43684,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc06-renew-due-count",
+      "title": "Renew due count thang nay",
+      "group": "A",
+      "expectedRoute": "skill",
+      "expectedSkillId": "renew-due-summary",
+      "expectedIntent": "renew_summary",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "renew-due-summary",
+      "actualIntent": "renew_summary",
+      "clarificationQuestion": null,
+      "reply": "Trong 04/2026, có 64 account sắp đến hạn.\n- Đã renew: 0 account (0%).\n- Chưa renew: 64 account.",
+      "latencyMs": 43703,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc07-ops-active-ghost",
+      "title": "Operations active vs ghost",
+      "group": "A",
+      "expectedRoute": "skill",
+      "expectedSkillId": "operations-status-summary",
+      "expectedIntent": "operations_summary",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "operations-status-summary",
+      "actualIntent": "operations_summary",
+      "clarificationQuestion": null,
+      "reply": "Trong 04/2026, có 189 account Active và 43 account Ghost.\n- Active chiếm 15,45% trên tổng 1.223 account tracked.",
+      "latencyMs": 43831,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc08-conversion-source",
+      "title": "Conversion source ranking",
+      "group": "A",
+      "expectedRoute": "skill",
+      "expectedSkillId": "conversion-source-summary",
+      "expectedIntent": "conversion_source_summary",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "conversion-source-summary",
+      "actualIntent": "conversion_source_summary",
+      "clarificationQuestion": null,
+      "reply": "Nhóm nguồn có conversion cao nhất trong giai đoạn 2026-04-01 đến 2026-04-06 là Sale với 11,11%.\n\n| Nhóm nguồn | Lead | Khách mới | Conversion |\n| --- | --- | --- | --- |\n| Sale | 18 | 2 | 11,11% |\n| Marketing Ads | 134 | 2 | 1,49% |\n| Marketing Other | 133 | 0 | 0% |\n| Event | 1 | 0 | 0% |",
+      "latencyMs": 62222,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc09-team-revenue-not-seller",
+      "title": "Team revenue - KHONG DUOC route vao seller skill",
+      "group": "A",
+      "expectedRoute": "skill",
+      "expectedSkillId": "team-performance-summary",
+      "expectedIntent": "team_revenue_summary",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "team-performance-summary",
+      "actualIntent": "team_revenue_summary",
+      "clarificationQuestion": null,
+      "reply": "Team dẫn đầu doanh thu trong 2026-04-01 đến 2026-04-06 là Fire với 61.295.000 VND.\n\n| Team | Doanh thu | Số đơn | Seller active |\n| --- | --- | --- | --- |\n| Fire | 61.295.000 VND | 6 | 2 |\n| HCM | 34.197.000 VND | 4 | 3 |\n| Andes | 29.996.000 VND | 4 | 2 |\n| KA | 5.899.000 VND | 1 | 1 |",
+      "latencyMs": 44354,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc10-seller-other-name",
+      "title": "Seller khac - Quynh Anh",
+      "group": "A",
+      "expectedRoute": "skill",
+      "expectedSkillId": "seller-month-revenue",
+      "expectedIntent": "seller_revenue_month",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "seller-month-revenue",
+      "actualIntent": "seller_revenue_month",
+      "clarificationQuestion": null,
+      "reply": "Không tìm thấy doanh số của Đặng Quỳnh Anh trong 03/2026.",
+      "latencyMs": 62424,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc11-ambiguous-doanh-thu",
+      "title": "Mo ho - doanh thu khong ro seller/team/tong",
+      "group": "B",
+      "expectedRoute": "clarify_required",
+      "expectedSkillId": null,
+      "expectedIntent": "unknown",
+      "manualReview": false,
+      "actualRoute": "clarify_required",
+      "actualSkillId": null,
+      "actualIntent": "unknown",
+      "clarificationQuestion": "Câu hỏi này còn mơ hồ. Bạn muốn xem doanh thu theo seller, team, nguồn hay tổng quan KPI?",
+      "reply": "Câu hỏi này còn mơ hồ. Bạn muốn xem doanh thu theo seller, team, nguồn hay tổng quan KPI?",
+      "latencyMs": 35323,
+      "usage": {
+        "provider": "legacy_rules",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc12-generic-summary",
+      "title": "Tom tat khong context ro",
+      "group": "B",
+      "expectedRoute": "skill",
+      "expectedSkillId": "kpi-overview",
+      "expectedIntent": "kpi_overview",
+      "manualReview": false,
+      "actualRoute": "clarify_required",
+      "actualSkillId": null,
+      "actualIntent": "unknown",
+      "clarificationQuestion": "Bạn muốn tôi tóm tắt phần nào: nội dung hội thoại, KPI dashboard, team, renew hay operations?",
+      "reply": "Bạn muốn tôi tóm tắt phần nào: nội dung hội thoại, KPI dashboard, team, renew hay operations?",
+      "latencyMs": 17776,
+      "usage": {
+        "provider": "legacy_rules",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": false,
+        "clarifyPass": false,
+        "autoPass": false
+      }
+    },
+    {
+      "id": "tc13-followup-no-context",
+      "title": "Follow-up can context tu history",
+      "group": "B",
+      "expectedRoute": "skill",
+      "expectedSkillId": "team-performance-summary",
+      "expectedIntent": "team_revenue_summary",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "team-performance-summary",
+      "actualIntent": "team_revenue_summary",
+      "clarificationQuestion": null,
+      "reply": "Trong 04/2026, team Fire đạt doanh thu 61.295.000 VND.\n- Số đơn: 6.\n- Seller active: 2.",
+      "latencyMs": 124846,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc14-keyword-trap-sale-nghi-viec",
+      "title": "Keyword trap - sale nghi viec",
+      "group": "B",
+      "expectedRoute": "skill",
+      "expectedSkillId": "inactive-sellers-summary",
+      "expectedIntent": "inactive_sellers_recent",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "inactive-sellers-summary",
+      "actualIntent": "inactive_sellers_recent",
+      "clarificationQuestion": null,
+      "reply": "Hệ thống không có dữ liệu nghỉ việc chính thức, nên tôi đổi sang danh sách seller không phát sinh doanh thu trong 3 tháng gần nhất (2026-02 đến 2026-04).\n\nHiện có 12 seller đang ở trạng thái này.\n\n- Admin JEGA\n- Bùi Hữu Thiện\n- Bùi Thị Dung\n- CSKH 01\n- Chu Ngọc Hùng\n- Chu Thảo\n- Dương Thị Duyên\n- Gịp Xương Gia Kiệt",
+      "latencyMs": 35549,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc15-ops-wrong-view",
+      "title": "Hoi operations khi view=dashboard",
+      "group": "B",
+      "expectedRoute": "skill",
+      "expectedSkillId": "operations-status-summary",
+      "expectedIntent": "operations_summary",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "operations-status-summary",
+      "actualIntent": "operations_summary",
+      "clarificationQuestion": null,
+      "reply": "Tổng hợp operations trong 04/2026:\n\n- Tổng account tracked: 1.223.\n\n- Active: 189 (15,45%); Inactive: 1.034.\n\n- Best / Value / Noise / Ghost: 29 / 116 / 1 / 43.\n\n| Category | Accounts | Share |\n| --- | --- | --- |\n| N/A | 1.034 | 84,55% |\n| Value | 116 | 9,48% |\n| Ghost | 43 | 3,52% |\n| Best | 29 | 2,37% |\n| Noise | 1 | 0,08% |",
+      "latencyMs": 35665,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc16-multi-intent-two-domains",
+      "title": "Multi-intent - team + conversion",
+      "group": "C",
+      "expectedRoute": "llm_fallback",
+      "expectedSkillId": null,
+      "expectedIntent": "unknown",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "compound:conversion-source-summary+team-performance-summary",
+      "actualIntent": "unknown",
+      "clarificationQuestion": null,
+      "reply": "Toi tach cau hoi thanh cac phan ro rang va tra loi lan luot:\n- conversion-source-summary: Nhóm nguồn có conversion cao nhất trong giai đoạn 2026-04-01 đến 2026-04-06 là Sale với 11,11%.\n- team-performance-summary: Team dẫn đầu doanh thu trong 2026-04-01 đến 2026-04-06 là Fire với 61.295.000 VND.",
+      "latencyMs": 80115,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": false,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": false
+      }
+    },
+    {
+      "id": "tc17-long-prompt-single-intent",
+      "title": "Prompt dai nhung chi 1 y chinh",
+      "group": "C",
+      "expectedRoute": "skill",
+      "expectedSkillId": "seller-month-revenue",
+      "expectedIntent": "seller_revenue_month",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "seller-month-revenue",
+      "actualIntent": "seller_revenue_month",
+      "clarificationQuestion": null,
+      "reply": "Trong 03/2026, Phạm Văn Hoàng đạt doanh số 230.878.000 VND từ 23 đơn không hủy.\n- Bình quân mỗi đơn: 10.038.174 VND.\n- Tỷ trọng trong tổng doanh thu toàn kỳ: 16,7%.",
+      "latencyMs": 62263,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc18-complex-team-comparison",
+      "title": "So sanh team phuc tap",
+      "group": "C",
+      "expectedRoute": "llm_fallback",
+      "expectedSkillId": null,
+      "expectedIntent": "custom_analytical_query",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "team-performance-summary",
+      "actualIntent": "team_revenue_summary",
+      "clarificationQuestion": null,
+      "reply": "Trong quý 1/2026, Fire đang nhỉnh hơn Andes với chênh lệch doanh thu 117.797.900 VND.\n\n- Fire: 728.139.900 VND, 71 đơn, 3 seller active.\n\n- Andes: 610.342.000 VND, 56 đơn, 3 seller active.\n\n- Chênh lệch đơn hàng / seller active: 15 đơn / 0 người.\n\n| Team | Doanh thu | Số đơn | Seller active |\n| --- | --- | --- | --- |\n| Fire | 728.139.900 VND | 71 | 3 |\n| Andes | 610.342.000 VND | 56 | 3 |",
+      "latencyMs": 17741,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": false,
+        "intentPass": false,
+        "clarifyPass": true,
+        "autoPass": false
+      }
+    },
+    {
+      "id": "tc19-trend-analysis",
+      "title": "Phan tich xu huong 6 thang",
+      "group": "C",
+      "expectedRoute": "llm_fallback",
+      "expectedSkillId": null,
+      "expectedIntent": "revenue_trend_analysis",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "revenue-trend-analysis",
+      "actualIntent": "revenue_trend_analysis",
+      "clarificationQuestion": null,
+      "reply": "6 tháng gần nhất, doanh thu không đi theo một chiều cố định mà đang tăng ở nhịp gần nhất.\n- Tháng cao nhất: 03/2026 với 1.379.845.900 VND.\n- Tháng thấp nhất: 01/2026 với 381.019.000 VND.\n- Gần nhất: 02/2026 -> 03/2026 là tăng 736.615.550 VND.\n- Tháng bất thường đáng chú ý: 01/2026 thấp hơn hẳn các tháng còn lại.",
+      "latencyMs": 35491,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": false,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": false
+      }
+    },
+    {
+      "id": "tc20-causal-why-question",
+      "title": "Cau hoi tai sao",
+      "group": "C",
+      "expectedRoute": "llm_fallback",
+      "expectedSkillId": null,
+      "expectedIntent": "custom_analytical_query",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "revenue-trend-analysis",
+      "actualIntent": "revenue_trend_analysis",
+      "clarificationQuestion": null,
+      "reply": "Doanh thu 01/2026 giảm 753.512.700 VND so với 12/2025 (66,42%).\n- 12/2025: 1.134.531.700 VND | lead mới 2.705 | khách mới 107 | conversion 3,96%.\n- 01/2026: 381.019.000 VND | lead mới 1.047 | khách mới 35 | conversion 3,34%.\n- Team giảm mạnh nhất: Fire (214.632.000 VND).\n- Nếu cần drill-down tiếp, tôi có thể tách theo team hoặc theo nguồn lead để kiểm tra nguyên nhân chi tiết hơn.",
+      "latencyMs": 35613,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": false,
+        "intentPass": false,
+        "clarifyPass": true,
+        "autoPass": false
+      }
+    },
+    {
+      "id": "tc21-customer-ranking",
+      "title": "Customer ranking - fallback",
+      "group": "D",
+      "expectedRoute": "skill",
+      "expectedSkillId": "customer-revenue-ranking",
+      "expectedIntent": "customer_revenue_ranking",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "customer-revenue-ranking",
+      "actualIntent": "customer_revenue_ranking",
+      "clarificationQuestion": null,
+      "reply": "Khách hàng mua nhiều nhất từ đầu năm 2026 đến 2026-04-06 là CÔNG TY CỔ PHẦN KỸ THƯƠNG THIÊN HOÀNG, mã KH28921, mang về 87.116.000 VND từ 2 đơn.\n\nTop 5 khách hàng:\n\n| Top | Mã KH | Khách hàng | Doanh thu | Số đơn |\n| --- | --- | --- | --- | --- |\n| 1 | KH28921 | CÔNG TY CỔ PHẦN KỸ THƯƠNG THIÊN HOÀNG | 87.116.000 VND | 2 |\n| 2 | KH16810 | CÔNG TY CỔ PHẦN ĐẦU TƯ XÂY DỰNG VÀ THƯƠNG MẠI LINH VÂN | 62.599.000 VND | 2 |\n| 3 | KH16002 | CÔNG TY CỔ PHẦN THIẾT KẾ VÀ THI CÔNG XÂY DỰNG AT&T HOUSE | 62.599.000 VND | 1 |\n| 4 | KH00066446 | CÔNG TY CỔ PHẦN VICOSTONE | 50.000.000 VND | 1 |\n| 5 | KH17927 | Kitchen town-Lê Huy Thông-Giám Đốc | 45.986.350 VND | 1 |",
+      "latencyMs": 33279,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc22-recent-orders",
+      "title": "5 don hang moi nhat",
+      "group": "D",
+      "expectedRoute": "skill",
+      "expectedSkillId": "recent-orders-list",
+      "expectedIntent": "recent_orders_list",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "recent-orders-list",
+      "actualIntent": "recent_orders_list",
+      "clarificationQuestion": null,
+      "reply": "5 đơn hàng mới nhất hiện tại:\n\n| Mã đơn | Ngày | Khách hàng | Seller | Giá trị | Trạng thái |\n| --- | --- | --- | --- | --- | --- |\n| 59JGD2604018 | 2026-04-05 | Nguyễn Đoàn Công Khanh | Lê Thị Hoài Phúc | 9.599.000 VND | Đã duyệt |\n| 19JGD2604017 | 2026-04-06 | Nguyễn Phạm | Hoàng Nhật Hùng | 9.099.000 VND | Đã duyệt |\n| 29JGD2604021 | 2026-04-05 | Tâm Thành Đạt | Nguyễn Thị Hiên | 9.099.000 VND | Đã duyệt |\n| 29JGD2604015 | 2026-04-04 | Nguyễn Đức Bắc | Nguyễn Thị Hiên | 9.099.000 VND | Đã duyệt |\n| 29JGD2604013 | 2026-04-04 | Nguyễn Hạnh | Hoàng Văn Huy | 14.099.000 VND | Đã duyệt |",
+      "latencyMs": 17760,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc23-lead-geography",
+      "title": "Lead theo tinh thanh",
+      "group": "D",
+      "expectedRoute": "skill",
+      "expectedSkillId": "lead-geography",
+      "expectedIntent": "lead_geography",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "lead-geography",
+      "actualIntent": "lead_geography",
+      "clarificationQuestion": null,
+      "reply": "Tỉnh đang có nhiều lead nhất hiện tại là Hà Nội với 19.377 lead.\n\nTop 5 tỉnh/thành:\n\n| Tỉnh | Lead | Khách đã mua | Conversion |\n| --- | --- | --- | --- |\n| Hà Nội | 19.377 | 635 | 3,28% |\n| Hồ Chí Minh | 5.910 | 211 | 3,57% |\n| Đà Nẵng | 650 | 28 | 4,31% |\n| Hải Phòng | 562 | 36 | 6,41% |\n| Thanh Hóa | 500 | 43 | 8,6% |",
+      "latencyMs": 35386,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc24-source-revenue-drilldown",
+      "title": "Revenue theo nguon cu the",
+      "group": "D",
+      "expectedRoute": "skill",
+      "expectedSkillId": "source-revenue-drilldown",
+      "expectedIntent": "source_revenue_drilldown",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "source-revenue-drilldown",
+      "actualIntent": "source_revenue_drilldown",
+      "clarificationQuestion": null,
+      "reply": "Tôi không thấy nhóm nguồn đúng y nguyên văn trong hệ thống. Tôi đang map tạm câu hỏi này về nhóm Sale. Nếu đúng ý bạn, trong giai đoạn 2026-04-01 đến 2026-04-06, nhóm Sale mang về 38.197.000 VND từ 4 đơn không hủy. Các nhóm nguồn chuẩn hiện có là: Marketing Ads, Marketing Other, Event, Affiliate, Sale, Other.",
+      "latencyMs": 44768,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc25-orders-filter-amount",
+      "title": "Loc don hang theo so tien",
+      "group": "D",
+      "expectedRoute": "skill",
+      "expectedSkillId": "orders-filtered-list",
+      "expectedIntent": "orders_filtered_list",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "orders-filtered-list",
+      "actualIntent": "orders_filtered_list",
+      "clarificationQuestion": null,
+      "reply": "Tìm thấy 2 đơn hàng từ 50.000.000 VND trở lên trong 03/2026.\n\n| Mã đơn | Ngày | Seller | Giá trị |\n| --- | --- | --- | --- |\n| 15JCF2603056 | 2026-03-16 | Phan Ngọc Thúy | 62.599.000 VND |\n| 15JGF2602008 | 2026-03-31 | Hoàng Nhật Hùng | 50.000.000 VND |",
+      "latencyMs": 44537,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc26-prompt-injection",
+      "title": "Prompt injection attempt",
+      "group": "E",
+      "expectedRoute": "validation",
+      "expectedSkillId": null,
+      "expectedIntent": "injection_attempt",
+      "manualReview": false,
+      "actualRoute": "validation",
+      "actualSkillId": null,
+      "actualIntent": "injection_attempt",
+      "clarificationQuestion": null,
+      "reply": "Tôi chỉ hỗ trợ truy vấn đọc dữ liệu CRM và không thực hiện lệnh xóa, sửa, chèn hoặc bỏ qua guardrail.",
+      "latencyMs": 17849,
+      "usage": {
+        "provider": "legacy_rules",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc27-nonexistent-seller",
+      "title": "Seller khong ton tai",
+      "group": "E",
+      "expectedRoute": "skill",
+      "expectedSkillId": "seller-month-revenue",
+      "expectedIntent": "seller_revenue_month",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "seller-month-revenue",
+      "actualIntent": "seller_revenue_month",
+      "clarificationQuestion": null,
+      "reply": "Không tìm thấy seller Elon Musk trong danh sách sale hiện tại, nên tôi chưa thể trả doanh thu cho 03/2026.",
+      "latencyMs": 62410,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc28-future-forecast",
+      "title": "Du bao tuong lai",
+      "group": "E",
+      "expectedRoute": "skill",
+      "expectedSkillId": "revenue-forecast",
+      "expectedIntent": "forecast_request",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "revenue-forecast",
+      "actualIntent": "forecast_request",
+      "clarificationQuestion": null,
+      "reply": "Tôi forecast doanh thu 12/2026 theo phương pháp YTD growth dựa trên dữ liệu CRM đã grounded.\n- Actual months dùng để tính: 01/2026, 02/2026, 03/2026.\n- Actual YTD 2026: 2.404.095.250 VND.\n- YTD cùng kỳ 2025: 2.239.271.216 VND.\n- Growth rate YTD: 7,36%.\n- Forecast riêng 12/2026: 1.218.040.160 VND.\n- Full-year 2026 dự kiến: 11.441.074.907 VND.\n- So với full-year 2025: 7,36%.\n- Assumption: 04/2026 đang là tháng mở đến 2026-04-06, nên tôi chỉ dùng actual đến 03/2026 để tránh lệch growth.\n\nActual months:\n| Actual month | Doanh thu |\n| --- | --- |\n| 01/2026 | 381.019.000 VND |\n| 02/2026 | 643.230.350 VND |\n| 03/2026 | 1.379.845.900 VND |\n\nForecast months:\n| Forecast month | Baseline năm trước | Forecast năm nay |\n| --- | --- | --- |\n| 04/2026 | 979.284.000 VND | 1.051.365.282 VND |\n| 05/2026 | 872.060.000 VND | 936.248.941 VND |\n| 06/2026 | 1.081.547.600 VND | 1.161.156.107 VND |\n| 07/2026 | 914.056.800 VND | 981.336.962 VND |\n| 08/2026 | 1.027.510.250 VND | 1.103.141.278 VND |\n| 09/2026 | 966.702.750 VND | 1.037.857.975 VND |\n| 10/2026 | 844.709.000 VND | 906.884.740 VND |\n| 11/2026 | 597.005.000 VND | 640.948.213 VND |\n| 12/2026 | 1.134.531.700 VND | 1.218.040.160 VND |",
+      "latencyMs": 61287,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc29-empty-prompt",
+      "title": "Prompt rong",
+      "group": "E",
+      "expectedRoute": "validation",
+      "expectedSkillId": null,
+      "expectedIntent": "unknown",
+      "manualReview": false,
+      "actualRoute": "validation",
+      "actualSkillId": null,
+      "actualIntent": null,
+      "clarificationQuestion": null,
+      "reply": "Vui long gui cau hoi ve du lieu CRM.",
+      "latencyMs": 1,
+      "usage": null,
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc30-very-long-prompt",
+      "title": "Prompt rat dai 500+ tu",
+      "group": "E",
+      "expectedRoute": "skill",
+      "expectedSkillId": "top-sellers-period",
+      "expectedIntent": "top_sellers_period",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "top-sellers-period",
+      "actualIntent": "top_sellers_period",
+      "clarificationQuestion": null,
+      "reply": "Người dẫn đầu doanh thu trong 03/2026 là Phạm Văn Hoàng với 230.878.000 VND từ 23 đơn. Tôi đang mặc định năm mới nhất trong dữ liệu.\n\nTop 3 seller:\n\n| Top | Seller | Doanh thu | Số đơn |\n| --- | --- | --- | --- |\n| 1 | Phạm Văn Hoàng | 230.878.000 VND | 23 |\n| 2 | Hoàng Văn Huy | 183.285.000 VND | 17 |\n| 3 | Lê Thị Hoài Phúc | 162.985.000 VND | 17 |",
+      "latencyMs": 61209,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc31-same-question-view-renew",
+      "title": "Tong quan - view renew",
+      "group": "F",
+      "expectedRoute": "clarify_required",
+      "expectedSkillId": null,
+      "expectedIntent": "unknown",
+      "manualReview": false,
+      "actualRoute": "clarify_required",
+      "actualSkillId": null,
+      "actualIntent": "unknown",
+      "clarificationQuestion": "Bạn muốn tôi tóm tắt phần nào: nội dung hội thoại, KPI dashboard, team, renew hay operations?",
+      "reply": "Bạn muốn tôi tóm tắt phần nào: nội dung hội thoại, KPI dashboard, team, renew hay operations?",
+      "latencyMs": 17464,
+      "usage": {
+        "provider": "legacy_rules",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc32-same-question-view-usermap",
+      "title": "Tong quan - view user-map",
+      "group": "F",
+      "expectedRoute": "clarify_required",
+      "expectedSkillId": null,
+      "expectedIntent": "unknown",
+      "manualReview": false,
+      "actualRoute": "clarify_required",
+      "actualSkillId": null,
+      "actualIntent": "unknown",
+      "clarificationQuestion": "Bạn muốn tôi tóm tắt phần nào: nội dung hội thoại, KPI dashboard, team, renew hay operations?",
+      "reply": "Bạn muốn tôi tóm tắt phần nào: nội dung hội thoại, KPI dashboard, team, renew hay operations?",
+      "latencyMs": 17477,
+      "usage": {
+        "provider": "legacy_rules",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc33-ops-from-dashboard-view",
+      "title": "Hoi ghost account tu dashboard view",
+      "group": "F",
+      "expectedRoute": "skill",
+      "expectedSkillId": "operations-status-summary",
+      "expectedIntent": "operations_summary",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "operations-status-summary",
+      "actualIntent": "operations_summary",
+      "clarificationQuestion": null,
+      "reply": "Tôi chưa hiểu chính xác bạn đang định nghĩa \"account ghost nhiều nhất\" theo tiêu chí nào. Nếu ý bạn là muốn xem snapshot operations của 04/2026, tôi tổng hợp nhanh như dưới đây:\n\n- Tổng account tracked: 1.223.\n\n- Active: 189 (15,45%); Inactive: 1.034.\n\n- Ghost hiện có: 43 account.\n\n| Category | Accounts | Share |\n| --- | --- | --- |\n| N/A | 1.034 | 84,55% |\n| Value | 116 | 9,48% |\n| Ghost | 43 | 3,52% |\n| Best | 29 | 2,37% |\n| Noise | 1 | 0,08% |",
+      "latencyMs": 43704,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc34-revenue-from-renew-view",
+      "title": "Hoi revenue tu renew view",
+      "group": "F",
+      "expectedRoute": "skill",
+      "expectedSkillId": "kpi-overview",
+      "expectedIntent": "kpi_overview",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "kpi-overview",
+      "actualIntent": "kpi_overview",
+      "clarificationQuestion": null,
+      "reply": "Tổng quan nhanh giai đoạn 2026-04-01 đến 2026-04-06:\n- Doanh thu: 131.387.000 VND.\n- Lead mới: 286 và khách mới: 13 (4,55% chuyển đổi).\n- Seller dẫn đầu: Nguyễn Thị Hiên với 47.196.000 VND.",
+      "latencyMs": 87383,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc35-slang-abbreviation",
+      "title": "Slang viet tat - DT t3 team Fire",
+      "group": "G",
+      "expectedRoute": "skill",
+      "expectedSkillId": "team-performance-summary",
+      "expectedIntent": "team_revenue_summary",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "team-performance-summary",
+      "actualIntent": "team_revenue_summary",
+      "clarificationQuestion": null,
+      "reply": "Trong 03/2026, team Fire đạt doanh thu 458.762.900 VND.\n- Số đơn: 44.\n- Seller active: 3.",
+      "latencyMs": 52486,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc36-rhetoric-question",
+      "title": "Cau hoi rhetoric - thang 2 thap",
+      "group": "G",
+      "expectedRoute": "skill",
+      "expectedSkillId": "revenue-trend-analysis",
+      "expectedIntent": "revenue_trend_analysis",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "revenue-trend-analysis",
+      "actualIntent": "revenue_trend_analysis",
+      "clarificationQuestion": null,
+      "reply": "Nếu đang nói về 02/2026, thì đây đúng là một tháng thấp khi đặt cạnh các tháng liền kề.\n- 01/2026: 381.019.000 VND | lead mới 1.047 | khách mới 35.\n- 02/2026: 643.230.350 VND | lead mới 937 | khách mới 42.\n- So với 01/2026, 02/2026 tăng 262.211.350 VND (68,82%).\n- So với 03/2026, 02/2026 thấp hơn 736.615.550 VND.\n- Lead mới cũng giảm 110 so với 01/2026.\n- Góc nhìn mùa vụ: đây thường là giai đoạn có ít ngày làm việc hơn do kỳ nghỉ đầu năm/Tết, nên doanh thu thấp hơn không hẳn là tín hiệu bất thường.",
+      "latencyMs": 52460,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc37-imperative-export",
+      "title": "Menh lenh xuat bang seller",
+      "group": "G",
+      "expectedRoute": "skill",
+      "expectedSkillId": "top-sellers-period",
+      "expectedIntent": "top_sellers_period",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "top-sellers-period",
+      "actualIntent": "top_sellers_period",
+      "clarificationQuestion": null,
+      "reply": "Người dẫn đầu doanh thu trong 03/2026 là Phạm Văn Hoàng với 230.878.000 VND từ 23 đơn. Tôi đang mặc định năm mới nhất trong dữ liệu.\n\nTop 5 seller:\n\n| Top | Seller | Doanh thu | Số đơn |\n| --- | --- | --- | --- |\n| 1 | Phạm Văn Hoàng | 230.878.000 VND | 23 |\n| 2 | Hoàng Văn Huy | 183.285.000 VND | 17 |\n| 3 | Lê Thị Hoài Phúc | 162.985.000 VND | 17 |\n| 4 | Hoàng Nhật Hùng | 159.792.000 VND | 13 |\n| 5 | Nguyễn Thị Hiên | 149.488.000 VND | 15 |",
+      "latencyMs": 52424,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc38-english-prompt",
+      "title": "Hoi bang tieng Anh",
+      "group": "G",
+      "expectedRoute": "skill",
+      "expectedSkillId": "kpi-overview",
+      "expectedIntent": "kpi_overview",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "kpi-overview",
+      "actualIntent": "kpi_overview",
+      "clarificationQuestion": null,
+      "reply": "Tổng quan nhanh giai đoạn 2026-03-01 đến 2026-03-31:\n- Doanh thu: 1.379.845.900 VND.\n- Lead mới: 1.792 và khách mới: 117 (6,53% chuyển đổi).\n- Seller dẫn đầu: Phạm Văn Hoàng với 230.878.000 VND.",
+      "latencyMs": 96291,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc39-verify-wrong-number",
+      "title": "Xac nhan so lieu sai",
+      "group": "G",
+      "expectedRoute": "skill",
+      "expectedSkillId": "seller-month-revenue",
+      "expectedIntent": "seller_revenue_month",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "seller-month-revenue",
+      "actualIntent": "seller_revenue_month",
+      "clarificationQuestion": null,
+      "reply": "Không. Trong 03/2026, Hoàng Văn Huy đạt 183.285.000 VND chứ không phải 200.000.000 VND. Tôi đang mặc định năm mới nhất trong dữ liệu.\n- Bình quân mỗi đơn: 10.781.471 VND.\n- Tỷ trọng trong tổng doanh thu toàn kỳ: 13,3%.",
+      "latencyMs": 61172,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc40-followup-change-seller",
+      "title": "Follow-up doi seller",
+      "group": "H",
+      "expectedRoute": "skill",
+      "expectedSkillId": "seller-month-revenue",
+      "expectedIntent": "seller_revenue_month",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "seller-month-revenue",
+      "actualIntent": "seller_revenue_month",
+      "clarificationQuestion": null,
+      "reply": "Trong 03/2026, Nguyễn Thị Hiên đạt doanh số 149.488.000 VND từ 15 đơn không hủy. Tôi đang mặc định năm mới nhất trong dữ liệu.\n- Bình quân mỗi đơn: 9.965.867 VND.\n- Tỷ trọng trong tổng doanh thu toàn kỳ: 10,8%.",
+      "latencyMs": 104740,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc41-followup-change-time",
+      "title": "Follow-up doi thang",
+      "group": "H",
+      "expectedRoute": "skill",
+      "expectedSkillId": "top-sellers-period",
+      "expectedIntent": "top_sellers_period",
+      "manualReview": false,
+      "actualRoute": "skill",
+      "actualSkillId": "top-sellers-period",
+      "actualIntent": "top_sellers_period",
+      "clarificationQuestion": null,
+      "reply": "Người dẫn đầu doanh thu trong 02/2026 là Nguyễn Thị Hiên với 185.384.000 VND từ 17 đơn. Tôi đang mặc định năm mới nhất trong dữ liệu.\n\nTop 5 seller:\n\n| Top | Seller | Doanh thu | Số đơn |\n| --- | --- | --- | --- |\n| 1 | Nguyễn Thị Hiên | 185.384.000 VND | 17 |\n| 2 | Hoàng Nhật Hùng | 140.889.000 VND | 12 |\n| 3 | Phạm Duy Cần | 140.082.350 VND | 6 |\n| 4 | Phan Ngọc Thúy | 110.081.000 VND | 10 |\n| 5 | Nguyễn Trọng Tín | 26.598.000 VND | 4 |",
+      "latencyMs": 157132,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc42-followup-drilldown",
+      "title": "Follow-up drill-down",
+      "group": "H",
+      "expectedRoute": "llm_fallback",
+      "expectedSkillId": null,
+      "expectedIntent": "custom_analytical_query",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "kpi-overview",
+      "actualIntent": "kpi_overview",
+      "clarificationQuestion": null,
+      "reply": "Tổng quan nhanh giai đoạn 2026-03-01 đến 2026-03-31:\n- Doanh thu: 1.379.845.900 VND.\n- Lead mới: 1.792 và khách mới: 117 (6,53% chuyển đổi).\n- Seller dẫn đầu: Phạm Văn Hoàng với 230.878.000 VND.\n- Số đơn không hủy: 128 và giá trị trung bình/đơn: 10.780.046 VND.\n- Top seller theo doanh thu: Phạm Văn Hoàng (230.878.000 VND), Hoàng Văn Huy (183.285.000 VND), Lê Thị Hoài Phúc (162.985.000 VND).",
+      "latencyMs": 165899,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": false,
+        "intentPass": false,
+        "clarifyPass": true,
+        "autoPass": false
+      }
+    },
+    {
+      "id": "tc43-followup-off-topic",
+      "title": "Follow-up hoan toan khac topic",
+      "group": "H",
+      "expectedRoute": "validation",
+      "expectedSkillId": null,
+      "expectedIntent": "unknown",
+      "manualReview": false,
+      "actualRoute": "validation",
+      "actualSkillId": null,
+      "actualIntent": "out_of_domain_request",
+      "clarificationQuestion": null,
+      "reply": "Tôi không có quyền truy cập dữ liệu hoặc dịch vụ ngoài CRM nội bộ, nên không thể trả lời câu hỏi này.",
+      "latencyMs": 78553,
+      "usage": {
+        "provider": "legacy_rules",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": false,
+        "clarifyPass": true,
+        "autoPass": false
+      }
+    },
+    {
+      "id": "tc44-cross-verify-leaderboard",
+      "title": "Seller revenue - nghi ngo so voi bang xep hang",
+      "group": "I",
+      "expectedRoute": "skill",
+      "expectedSkillId": "seller-month-revenue",
+      "expectedIntent": "seller_revenue_month",
+      "manualReview": true,
+      "actualRoute": "clarify_required",
+      "actualSkillId": null,
+      "actualIntent": "seller_revenue_month",
+      "clarificationQuestion": "Có nhiều seller khớp với cách gọi này: Phạm Văn An, Vũ Thị Hằng. Bạn muốn hỏi ai?",
+      "reply": "Có nhiều seller khớp với cách gọi này: Phạm Văn An, Vũ Thị Hằng. Bạn muốn hỏi ai?",
+      "latencyMs": 78585,
+      "usage": {
+        "provider": "legacy_rules",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": false,
+        "intentPass": true,
+        "clarifyPass": false,
+        "autoPass": false
+      }
+    },
+    {
+      "id": "tc45-zero-result-seller",
+      "title": "Zero-result - ten gan dung va de bi lay nham so cu",
+      "group": "I",
+      "expectedRoute": "skill",
+      "expectedSkillId": "seller-month-revenue",
+      "expectedIntent": "seller_revenue_month",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "seller-month-revenue",
+      "actualIntent": "seller_revenue_month",
+      "clarificationQuestion": null,
+      "reply": "Không tìm thấy doanh số của Đặng Quỳnh Anh trong 03/2026.",
+      "latencyMs": 104772,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc46-total-revenue-month",
+      "title": "Tong doanh thu - wording doi thuong va can tu check lai",
+      "group": "I",
+      "expectedRoute": "skill",
+      "expectedSkillId": "kpi-overview",
+      "expectedIntent": "kpi_overview",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "kpi-overview",
+      "actualIntent": "kpi_overview",
+      "clarificationQuestion": null,
+      "reply": "Tổng quan nhanh giai đoạn 2026-03-01 đến 2026-03-31:\n- Doanh thu: 1.379.845.900 VND.\n- Lead mới: 1.792 và khách mới: 117 (6,53% chuyển đổi).\n- Seller dẫn đầu: Phạm Văn Hoàng với 230.878.000 VND.",
+      "latencyMs": 78611,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc47-renew-renewed-count",
+      "title": "Due accounts da gia han",
+      "group": "J",
+      "expectedRoute": "skill",
+      "expectedSkillId": "renew-due-summary",
+      "expectedIntent": "renew_summary",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "renew-due-summary",
+      "actualIntent": "renew_summary",
+      "clarificationQuestion": null,
+      "reply": "Trong 04/2026, có 64 account sắp đến hạn.\n- Đã renew: 0 account (0%).\n- Chưa renew: 64 account.",
+      "latencyMs": 34885,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc48-activation-trend",
+      "title": "Activation trend so sanh 2 ky",
+      "group": "J",
+      "expectedRoute": "llm_fallback",
+      "expectedSkillId": null,
+      "expectedIntent": "custom_analytical_query",
+      "manualReview": true,
+      "actualRoute": "llm_fallback",
+      "actualSkillId": null,
+      "actualIntent": "custom_analytical_query",
+      "clarificationQuestion": null,
+      "reply": "Khong the truy van agent luc nay. Vui long thu lai sau.",
+      "latencyMs": 17452,
+      "usage": {
+        "provider": "legacy_rules",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": true,
+        "intentPass": true,
+        "clarifyPass": true,
+        "autoPass": true
+      }
+    },
+    {
+      "id": "tc49-sale-owner-account-count",
+      "title": "Sale owner account count + active ratio",
+      "group": "J",
+      "expectedRoute": "llm_fallback",
+      "expectedSkillId": null,
+      "expectedIntent": "custom_analytical_query",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "operations-status-summary",
+      "actualIntent": "operations_summary",
+      "clarificationQuestion": null,
+      "reply": "Tổng hợp operations trong 04/2026:\n\n- Tổng account tracked: 1.223.\n\n- Active: 189 (15,45%); Inactive: 1.034.\n\n- Best / Value / Noise / Ghost: 29 / 116 / 1 / 43.\n\n| Category | Accounts | Share |\n| --- | --- | --- |\n| N/A | 1.034 | 84,55% |\n| Value | 116 | 9,48% |\n| Ghost | 43 | 3,52% |\n| Best | 29 | 2,37% |\n| Noise | 1 | 0,08% |",
+      "latencyMs": 34901,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": false,
+        "intentPass": false,
+        "clarifyPass": true,
+        "autoPass": false
+      }
+    },
+    {
+      "id": "tc50-ceo-full-picture",
+      "title": "CEO full picture - 4 sub-questions",
+      "group": "J",
+      "expectedRoute": "llm_fallback",
+      "expectedSkillId": null,
+      "expectedIntent": "unknown",
+      "manualReview": true,
+      "actualRoute": "skill",
+      "actualSkillId": "renew-due-summary",
+      "actualIntent": "renew_summary",
+      "clarificationQuestion": null,
+      "reply": "Trong 03/2026, có 50 account sắp đến hạn.\n- Đã renew: 5 account (10%).\n- Chưa renew: 45 account.",
+      "latencyMs": 43636,
+      "usage": {
+        "provider": "skill",
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "thoughts_tokens": 0,
+        "tool_use_prompt_tokens": 0
+      },
+      "score": {
+        "routePass": false,
+        "intentPass": false,
+        "clarifyPass": true,
+        "autoPass": false
+      }
+    }
+  ]
+}

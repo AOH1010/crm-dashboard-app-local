@@ -18,7 +18,8 @@ export function buildTelemetryResponse({
   matchedSkillCandidates = null,
   fallbackReason = null,
   formatterSource = null,
-  debugTimeline = null
+  debugTimeline = null,
+  conversationState = null
 }) {
   const latencyMs = getLatencyMs(traceContext);
   return {
@@ -40,6 +41,7 @@ export function buildTelemetryResponse({
     matched_skill_candidates: matchedSkillCandidates,
     fallback_reason: fallbackReason,
     formatter_source: formatterSource,
-    execution_timeline: debugTimeline
+    execution_timeline: debugTimeline,
+    conversation_state: conversationState
   };
 }

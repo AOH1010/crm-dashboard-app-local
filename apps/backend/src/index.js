@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import express from "express";
 import { chatWithCrmAgent } from "./lib/agent-chat.js";
-import { evaluateChatLabResults } from "./lib/chat-lab-evaluator.js";
 import {
   ensureDashboardSalesDb,
   getDashboardPayload,
@@ -145,36 +144,6 @@ app.post("/api/agent/chat-lab/export", (req, res) => {
     console.error("[chat-lab-api] failed to export csv", error instanceof Error ? error.stack : error);
     res.status(500).json({
       error: "Failed to export Chat Lab CSV artifact.",
-    });
-  }
-});
-
-app.post("/api/agent/chat-lab/evaluate", (req, res) => {
-  try {
-    const items = Array.isArray(req.body?.items)
-      ? req.body.items.filter((item) => item && typeof item === "object" && !Array.isArray(item))
-      : [];
-
-    if (items.length === 0) {
-      res.status(400).json({
-        error: "Chat Lab evaluate_test requires at least one result item.",
-      });
-      return;
-    }
-
-    const evaluations = evaluateChatLabResults({
-      items,
-      knowHowPath: path.join(projectRoot, "docs", "eval", "chat-lab-know-how.md"),
-    });
-
-    res.status(200).json({
-      ok: true,
-      evaluations,
-    });
-  } catch (error) {
-    console.error("[chat-lab-api] failed to evaluate results", error instanceof Error ? error.stack : error);
-    res.status(500).json({
-      error: "Failed to evaluate Chat Lab results.",
     });
   }
 });

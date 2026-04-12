@@ -261,6 +261,248 @@ Moi entry nen tra loi du 6 cau hoi:
 - `Regression added`: long seller prompt regression van pass tren deterministic skill
 - `Applies to`: seller lookup, direct metric asks, long internal meeting prompts
 
+### KH-021: Nhung analytical ask co SQL shape rat ro nen nang thanh deterministic skill som
+
+- `Date`: 2026-04-12
+- `Cases`: `tc21`, `tc22`, `tc23`, `tc25`
+- `Symptom`: customer ranking, recent orders, lead geography, va order filter deu roi vao clarify/fallback du query shape qua obvious
+- `True root cause`: classifier / skill catalog chua cover nhung ask co template on dinh du du lieu de tra loi bang SQL deterministic
+- `Fix applied`: them skill `customer-revenue-ranking`, `recent-orders-list`, `lead-geography`, `orders-filtered-list`; map classifier intent truc tiep vao cac skill nay
+- `Rule learned`: neu testcase co the viet thanh 1 query on dinh voi 1-2 bang va rule ro, uu tien nang thanh skill thay vi tiep tuc fallback
+- `Regression added`: smoke + unit regressions cho `tc21`, `tc22`, `tc23`, `tc25`
+- `Applies to`: ranking, list, filter, group-by asks co schema ro rang
+
+### KH-022: Near-match source group khong duoc tu y xem nhu exact match
+
+- `Date`: 2026-04-12
+- `Cases`: `tc24`
+- `Symptom`: prompt `Tele sale outbound` bi runtime tu map thang thanh nhom `Sale` va tra revenue ngay
+- `True root cause`: detect source group dang coi substring `sale` la exact match, trong khi day chi la alias gan dung
+- `Fix applied`: tach `exact` va `suggested` source-group detection; chi coi la exact khi user noi ro kieu `nguon Sale`; con near-match thi reply goi y cac nhom hop le va hoi lai co phai `Sale` khong
+- `Rule learned`: entity normalization phai giu 2 muc `grounded exact` va `suggested`, khong duoc nhay thang sang query khi entity chua du chac chan
+- `Regression added`: smoke regression cho `tc24`
+- `Applies to`: source group, category alias, near-match business labels
+
+### KH-023: Validation route phai cat som prompt injection, khong de roi sang fallback
+
+- `Date`: 2026-04-12
+- `Cases`: `tc26`
+- `Symptom`: prompt co `DELETE FROM` van di vao `llm_fallback`
+- `True root cause`: guardrail chi ton tai o connector SQL, den luc do runtime da route sai va ton token fallback roi
+- `Fix applied`: them deterministic intent `injection_attempt`; router dua thang ve `validation` va tra copy chan som
+- `Rule learned`: SQL safety o connector la hang phong thu cuoi; runtime van can co tang validation de chan prompt injection truoc khi classifier/fallback ton chi phi
+- `Regression added`: test `prompt injection routes to validation before fallback`
+- `Applies to`: delete/update/insert/truncate/drop, ignore-rules prompts, malicious tool steering
+
+### KH-024: Seller khong ton tai van nen giu intent seller lookup va tra grounded not-found
+
+- `Date`: 2026-04-12
+- `Cases`: `tc27`
+- `Symptom`: `Doanh thu cua Elon Musk thang 3` bi clarify thay vi route vao seller skill
+- `True root cause`: seller detection cu chi hoat dong khi ten seller da ton tai trong DB; entity extraction khong giu duoc ten seller raw tu prompt
+- `Fix applied`: bo sung explicit seller candidate extraction tu cau hoi; `seller-month-revenue` v2 nhan entity nay, check seller ton tai hay khong, va tra copy `khong tim thay seller ...`
+- `Rule learned`: not-found la mot ket qua hop le; khong nen bien not-found thanh ambiguity neu intent va entity van ro
+- `Regression added`: test `nonexistent seller still routes to seller skill and returns not-found copy`
+- `Applies to`: seller lookup, customer lookup, entity-based metrics voi raw named entity
+
+### KH-025: Forecast request nen vao guarded fallback thay vi clarify
+
+- `Date`: 2026-04-12
+- `Cases`: `tc28`
+- `Symptom`: user hoi du bao doanh thu nhung runtime lai hoi lai, trong khi y dinh da ro
+- `True root cause`: classifier khong co intent rieng cho forecast va coi day la ask mo ho
+- `Fix applied`: them intent `forecast_request`; route ve `llm_fallback` co guard text tach `actual` va `forecast`, nhac ro pham vi grounded den ngay du lieu cuoi
+- `Rule learned`: voi ask ma business intent ro nhung he thong chua co skill an toan, fallback co guardrail se dung hon clarify
+- `Regression added`: test `forecast request stays on guarded fallback path`
+- `Applies to`: forecast, projection, scenario planning asks
+
+### KH-026: Long prompt nen route theo routing slice / ask cuoi, khong route theo cum domain som hon
+
+- `Date`: 2026-04-12
+- `Cases`: `tc30`
+- `Symptom`: prompt dai nhieu domain nhung ask cuoi ro la `top 3 seller thang 3`; runtime lai route sang renew
+- `True root cause`: legacy classifier va skill date parsing doc toan bo prompt, nen bi bat boi domain / month xuat hien som hon
+- `Fix applied`: them `routingQuestion` slice uu tien doan sau cue nhu `truoc mat`; legacy classifier doc `routingQuestion`; `top-sellers-period` va `seller-month-revenue` uu tien parse thoi gian tu routing slice
+- `Rule learned`: trong long prompt, "ask duoc uu tien thi hanh ngay" can co lop rut gon rieng cho router, khong de parser metric/time doc toan bo context ke chuyen
+- `Regression added`: test `very long prompt prefers the last explicit ask for top sellers`
+- `Applies to`: long prompts, meeting-context asks, prompts co nhieu domain nhung 1 actionable ask cuoi
+
+### KH-027: Neu testcase can bang/list grounded thi deterministic reply phai duoc uu tien hon formatter
+
+- `Date`: 2026-04-12
+- `Cases`: `tc21`, `tc22`, `tc25`
+- `Symptom`: route va SQL dung nhung Chat Lab review van fail vi bang xep hang / danh sach bi mat hoac bi lam mem qua muc
+- `True root cause`: skill formatter LLM co xu huong tom tat lai thay vi giu bang deterministic, trong khi nhung testcase nay can output co cau truc de review
+- `Fix applied`: dua `customer-revenue-ranking`, `recent-orders-list`, `orders-filtered-list` vao nhom `prefer deterministic reply`
+- `Rule learned`: voi ranking/list/filter ask ma bang la phan chinh cua dap an, formatter la optional polish, khong phai default path
+- `Regression added`: replay `tc21`, `tc22`, `tc25` voi `useSkillFormatter=true` van ra `template_fallback` va giu bang
+- `Applies to`: top-N, list recent items, filtered order lists, any manual-review-heavy output
+
+### KH-028: Group-by text field phai normalize sau query neu raw source co nhieu cach viet
+
+- `Date`: 2026-04-12
+- `Cases`: `tc23`
+- `Symptom`: `Hồ Chí Minh` bi lap 2 dong do raw data co mixed casing / spelling gan nhau
+- `True root cause`: SQL group theo raw province value, nen `HỒ CHÍ MINH` va `Hồ CHí MINH` thanh 2 bucket khac nhau
+- `Fix applied`: `lead-geography` query lay raw value, sau do collapse bang normalized province key va format lai display label
+- `Rule learned`: voi dimension text den tu data nhap tay, `GROUP BY raw text` la chua du; can co lop canonicalization sau query neu chua co dimension table sach
+- `Regression added`: test `lead geography uses deterministic skill instead of clarify` nay assert `Hồ Chí Minh` chi xuat hien 1 lan
+- `Applies to`: province, source label, customer type, team alias, free-text dimension
+
+### KH-029: Near-match business label nen map co kiem soat, va neu du chac chan thi tra luôn fact da map
+
+- `Date`: 2026-04-12
+- `Cases`: `tc24`
+- `Symptom`: goi y nhom `Sale` la dung huong, nhung van chua du gia tri vi user phai hoi them moi lay duoc so
+- `True root cause`: runtime dung lai o buoc suggest label, khong tan dung du certainty de tra luon metric cho nhom de xuat
+- `Fix applied`: `source-revenue-drilldown-v2` giu ro day la map tam / suggested, nhung neu du lieu cho phep thi tra luon doanh thu cua nhom de xuat kem danh sach nhom chuan
+- `Rule learned`: near-match khong nhat thiet phai ket thuc bang clarify; neu agent biet day la map tam va noi ro assumption, co the tra luon fact grounded de giam 1 turn
+- `Regression added`: test `source revenue drilldown maps near-match groups and still returns grounded revenue`
+- `Applies to`: source group, category alias, informal internal naming
+
+### KH-030: Forecast revenue co the la deterministic skill neu khoa chat phuong phap va assumption
+
+- `Date`: 2026-04-12
+- `Cases`: `tc28`
+- `Symptom`: guarded fallback an toan nhung chua dap ung nhu cau business review
+- `True root cause`: runtime truoc day coi forecast la vung qua mo, nen chi nhac lai guardrail thay vi thuc thi phuong phap forecast co kiem soat
+- `Fix applied`: them skill `revenue-forecast`; dung YTD growth nam hien tai vs cung ky nam truoc, bo qua thang mo neu du lieu chua chot, tach ro `actual months`, `forecast months`, `full-year total`, `growth vs last year`
+- `Rule learned`: forecast chi nen nang thanh skill khi cong thuc da duoc khoa, khong tu y bo sung bien ngoai du lieu, va assumption partial month duoc noi thang trong answer
+- `Regression added`: test `forecast request uses deterministic forecast skill`
+- `Applies to`: forecast revenue trong nam hien tai, projection co baseline lich su ro
+
+### KH-031: Top-N parser phai di theo ask cuoi, khong hardcode Top 5
+
+- `Date`: 2026-04-12
+- `Cases`: `tc30`
+- `Symptom`: route dung nhung answer van tra `Top 5` du user hoi `Top 3`
+- `True root cause`: `top-sellers-period` hardcode row limit = 5 va label `Top 5 seller`
+- `Fix applied`: parse `top N` / `N seller` tu routing question, query va render dung so luong do
+- `Rule learned`: mot long prompt co the route dung nhung van fail manual review neu post-route parameter extraction con hardcode
+- `Regression added`: test `very long prompt prefers the last explicit ask for top sellers` nay assert `Top 3`, khong con `Top 5`
+- `Applies to`: ranking asks, long prompts, any skill co tham so implicit trong user wording
+
+### KH-032: Prompt tong quan qua mo ho thi phai clarify, khong duoc bind theo view hien tai
+
+- `Date`: 2026-04-12
+- `Cases`: `tc31`, `tc32`
+- `Symptom`: cung mot cau `Cho toi tong quan` nhung runtime auto route theo `view_id`, lam user bi ep vao renew / operations du y cua ho chua ro
+- `True root cause`: classifier dang co view-scoped overview fallback qua som, trong khi prompt nay thieu domain ro rang
+- `Fix applied`: mo rong generic summary detection de bat ca dang `Cho toi tong quan` va `Tom tat cho toi`; route ve `clarify_required`
+- `Rule learned`: `view_id` chi la soft hint. Neu user chua noi ro phan nao can tong quan, phai hoi lai thay vi doan y theo trang hien tai
+- `Regression added`: test `generic overview in renew view now asks for clarification instead of binding to the view`
+- `Applies to`: tong quan, overview, tom tat, recap prompts khong co domain
+
+### KH-033: Operations ask mo ho co the van giu deterministic path neu mo dau noi ro limitation
+
+- `Date`: 2026-04-12
+- `Cases`: `tc33`
+- `Symptom`: prompt `Account nao dang ghost nhieu nhat?` khong du dinh nghia de tra loi exact, nhung fallback rong cung khong can thiet
+- `True root cause`: skill operations chi co hai mode: tra loi exact hoac tong hop thang. Chua co tang giao tiep cho nhom cau hoi mo ho nhung van nam trong domain operations
+- `Fix applied`: `operations-status-summary` them soft clarify line o dau, noi ro chua hieu dinh nghia `ghost nhieu nhat`, sau do moi tra snapshot operations cua thang hien tai
+- `Rule learned`: co nhung prompt khong can clarify route rieng; mot deterministic answer co caveat ngắn o đầu se thuc dung hon
+- `Regression added`: replay `tc33` phai co limitation line + snapshot operations
+- `Applies to`: operations detail asks, category asks, under-specified domain questions
+
+### KH-034: Parser thoi gian dung chung phai hieu slang va tieng Anh, neu khong deterministic skill se tray sang fallback
+
+- `Date`: 2026-04-12
+- `Cases`: `tc35`, `tc38`
+- `Symptom`: `t3` bi hieu sai thanh thang hien tai; `March 2026` khong duoc parse nen prompt tieng Anh roi vao clarify
+- `True root cause`: parser thang chi hieu dang `thang 3`, khong hieu shorthand `t3` hoac month name tieng Anh
+- `Fix applied`: `extractMonthYear` nay hieu `t3`, `this month`, `last month`, va month names nhu `March 2026`
+- `Rule learned`: parser time nen duoc harden o lop dung chung thay vi sua tung skill
+- `Regression added`: tests cho `DT team Fire t3...` va `What's the revenue for March 2026?`
+- `Applies to`: slang prompts, English prompts, mixed-language prompts
+
+### KH-035: Prompt rhetoric ve doanh thu co the deterministic neu so sanh thang lien ke va them 1 goc nhin mua vu
+
+- `Date`: 2026-04-12
+- `Cases`: `tc36`
+- `Symptom`: prompt `Thang 2 lai thap the a?` roi vao fallback rong, ton token va de fail neu local khong co key
+- `True root cause`: classifier va skill trend chi bat khi user noi ro `doanh thu`, `trend`, `tai sao`; cau rhetoric doi thuong thi khong
+- `Fix applied`: classifier map dang `thap the a / lai thap / sao thap` + month reference sang `revenue_trend_analysis`; skill trend them mode `single_month_probe` de so sanh thang duoc hoi voi thang truoc va thang sau, kem note mua vu khi phu hop
+- `Rule learned`: nhieu prompt nghe nhu cam than nhung thuc chat la ask phan tich. Neu quy tac so sanh da ro, deterministic skill van dat chat luong tot hon fallback
+- `Regression added`: test `rhetorical low-month prompt routes to deterministic trend analysis`
+- `Applies to`: rhetoric asks, conversational analysis prompts, business review language
+
+### KH-036: Menh lenh xuat bang seller va verify so lieu sai deu la deterministic asks
+
+- `Date`: 2026-04-12
+- `Cases`: `tc37`, `tc39`
+- `Symptom`: `Xuat cho toi bang seller thang 3 di` va `Hoang Van Huy co phai dat 200 trieu thang 3 khong?` deu roi vao fallback du query shape rat ro
+- `True root cause`: classifier dang can keyword qua hep; khong hieu imperative export tone va khong nhan ra verify amount prompt la seller revenue check
+- `Fix applied`: them rule map `export/xuat ... bang seller` sang `top_sellers_period`; map `co phai / verify` + seller + amount sang `seller_revenue_month`; seller skill moi con so sanh va noi ro `dung / khong` theo con so claim
+- `Rule learned`: verify/correction prompts la mot lop deterministic rat quan trong vi user thuong chat theo kieu nay trong thuc te
+- `Regression added`: tests cho imperative export va seller verification correction
+- `Applies to`: export asks, correction asks, confirm-deny data prompts
+
+### KH-037: Follow-up chain phai tim "anchor turn", khong duoc chi copy user turn ngay truoc
+
+- `Date`: 2026-04-12
+- `Cases`: `tc40`, `tc41`
+- `Symptom`: turn dau follow-up co the dung, nhung sang turn tiep theo kieu `Hoang thi sao?` hoac `thang 1 thi sao` lai roi ve fallback hoac mat context
+- `True root cause`: follow-up inference dang suy nguoc tu user turn ngay truoc, trong khi turn do co the chinh no cung la mot follow-up rat ngan va khong con domain cue ro rang
+- `Fix applied`: them co che tim `anchor turn` trong history: di nguoc den user turn gan nhat con giu duoc intent xac dinh, roi moi carry intent/entity/time tu do
+- `Rule learned`: voi multi-turn chain, "turn ngay truoc" va "turn goc cua chu de" la hai khái niệm khác nhau; neu khong tach ra thi carry-over se vo sau 2-3 luot
+- `Regression added`: tests cho `Con Hien thi sao?`, `Hoang thi sao?`, `thang 1 thi sao`, `thang 5/2026 thi sao`
+- `Applies to`: group `H`, follow-up ngan, session stress test
+
+### KH-038: Skill can giu month tu history, neu khong follow-up doi entity se troi ve thang moi nhat
+
+- `Date`: 2026-04-12
+- `Cases`: `tc40`, `tc42`
+- `Symptom`: route dung seller/KPI skill nhung thoi gian lai nhay ve thang hien tai hoac latest month trong data
+- `True root cause`: nhieu skill van resolve month chi tu `latestQuestion`; khi follow-up chi doi seller hoac yeu cau drill-down thi month cue nam o turn truoc nen bi mat
+- `Fix applied`: bo sung helper `resolveMonthlyWindowFromContext()` de uu tien month hien trong turn hien tai, roi den `intent.time_window`, roi den user history gan nhat co cue ve thang
+- `Rule learned`: carry-over khong chi nam o classifier; skill layer cung phai doc context lich su neu khong answer van sai nghia hoi thoai
+- `Regression added`: tests cho seller follow-up giu `03/2026` va KPI drill-down giu thang 3
+- `Applies to`: seller revenue, top sellers, team summary, KPI follow-up
+
+### KH-039: Off-topic ngoai CRM phai bi chan bang validation re token, khong duoc roi fallback rong
+
+- `Date`: 2026-04-12
+- `Cases`: `tc43`
+- `Symptom`: cau kieu `Thoi tiet hom nay the nao?` van tieu ton token fallback du khong lien quan den CRM
+- `True root cause`: classifier khong co lop guardrail cho out-of-domain request; cau hoi ngoai CRM bi coi la `custom_analytical_query`
+- `Fix applied`: them nhan dien out-of-domain nhu weather/news va route thang sang `validation`, tra loi ngay rang khong co quyen truy cap du lieu/dich vu ngoai CRM noi bo
+- `Rule learned`: nhung cau hoi ngoai pham vi he thong can bi cat o tang route som nhat de tranh ton token va tranh lam loang session context
+- `Regression added`: test `out-of-domain weather follow-up is blocked by validation without fallback`
+- `Applies to`: off-topic reset, session stress test, guardrail group `E/H`
+
+### KH-040: Group H khong the harden ben vung neu chi nhin `recent turns`; can coi hoi thoai nhu mot topic dang mo
+
+- `Date`: 2026-04-12
+- `Cases`: `tc40`, `tc41`, `tc42`
+- `Symptom`: doi nhe 1 bien nhu `thang 4 cua Hien thi sao`, `thang 12 2025 thi sao`, hoac drill sang `lead moi` la runtime mat chu de va roi vao fallback hoac tra lai snapshot cu
+- `True root cause`: carry-over cu van mang tu duy "nhin vai turn gan nhat"; no chua luu duoc `topic dang mo` gom intent, entity, time, metric/focus cua cuoc hoi thoai
+- `Fix applied`: deterministic follow-up nay uu tien scan toan transcript hien co de tim `anchor turn`, sau do patch entity/time/focus moi len topic do; `kpi-overview` cung duoc nang cap de drill theo hạng muc thay vi lap lai reply tong quan
+- `Rule learned`: muon hoi thoai nuot thi phai co notion of `conversation topic state`; neu khong he thong se luon "thong minh gia" trong 1-2 turn dau roi sap sau do
+- `Regression added`: tests cho `thang 4 cua Hien thi sao`, `thang 12 2025 thi sao`, `phan tich them ve lead moi`
+- `Applies to`: nhom `H`, conversation stress mode, future compound orchestration
+
+### KH-041: Long-session QA phai co state theo turn, khong chi xem text reply
+
+- `Date`: 2026-04-12
+- `Cases`: `tc40`, `tc41`, `tc42`, `tc43`
+- `Symptom`: cung mot hoi thoai co luc reply trong co ve dung, nhung rat kho biet runtime dang giu topic, patch entity/time hay da reset topic sai
+- `True root cause`: Chat Lab truoc day chi show route/intent/reply, nen review session dai phai doan tay va rat kho noi fail nam o carry-over hay o formatter
+- `Fix applied`: runtime tra them `conversation_state`; Chat Lab Conversation tab show `continuity_mode`, active topic label, focus/entity/time, patched fields, anchor question, va export nhung truong nay ra CSV
+- `Rule learned`: muon harden nhom `H` ben vung thi phai bien memory thanh metadata quan sat duoc; neu memory van an trong heuristic thi manual review se rat cham va de sua sai tang
+- `Regression added`: tests assert `conversation_state` cho seller follow-up patch va out-of-domain topic reset
+- `Applies to`: long-session QA, conversation stress mode, handoff review
+
+### KH-042: KPI follow-up nhieu hang muc nen duoc giai quyet trong cung mot deterministic topic
+
+- `Date`: 2026-04-12
+- `Cases`: `tc42` va bien the stress prompt
+- `Symptom`: user drill them kieu `lead moi va khach moi` de lam runtime chi bat 1 focus hoac lap lai overview, lam hoi thoai bi cut va thieu y
+- `True root cause`: `kpi-overview` truoc day chi support mot `drilldown_focus` don le, nen prompt nhieu focus cung topic khong duoc hop nhat
+- `Fix applied`: `kpi-overview` nay support `drilldown_focuses[]`, co the tra cung luc phan lead funnel + customer/conversion hoac them revenue/seller trong cung topic KPI
+- `Rule learned`: khong phai moi prompt nhieu y deu can planner rieng; trong mot topic deterministic ro, compound follow-up nen duoc giai ngay trong skill de giu hoi thoai nuot va re token
+- `Regression added`: test `follow-up KPI drilldown can analyze multiple focuses in the same topic`
+- `Applies to`: KPI overview, compound follow-up trong cung domain, V1.5 controlled orchestration
+
 ## Quy tac bo loc truoc khi sua case moi
 
 Truoc khi sua mot testcase fail, agent nen di qua bo loc nay:
@@ -273,6 +515,15 @@ Truoc khi sua mot testcase fail, agent nen di qua bo loc nay:
 6. `Manual review note` dang noi ve bug runtime hay bug dataset?
 
 Neu khong qua bo loc nay, agent rat de sua sai tang.
+
+### KH-043: Seller alias heuristic neu mo qua rong se pha huong route cua ca nhom follow-up va cross-view
+
+- `Symptom`: cac cau nhu `Seller nao dang dan dau DT thang nay?`, `What's the revenue for March 2026?`, hoac `Doanh thu he thong hien tai la bao nhieu?` bi route thanh `seller_revenue_month`; follow-up seller ngan thi luc dung luc sai, de bat nham `Dang`, `The`, `Hien`, `Thai` thanh ten nguoi.
+- `True root cause`: heuristic seller alias dang match theo token qua tho (`dang`, `the`, `hien`, `tai`...), va history-based seller ranking van chay ca o first turn khong co topic mo.
+- `Fix applied`: tach ro `generic query stopwords` ra khoi alias detection; chi cho history-based seller resolution chay khi da co transcript truoc do va current turn thuc su la follow-up ngan; neu prompt mang `system scope` (`he thong`, `tong quan`, `toan cong ty`) thi khong duoc giu seller entity.
+- `Rule learned`: alias seller la patch cho follow-up tu nhien, khong phai bo phan route chinh cho moi cau hoi revenue. Neu de heuristic nay chay tu do, no se pha ca `kpi_overview`, `top_sellers_period`, `revenue_trend_analysis`.
+- `Regression added`: `top seller shorthand still routes to top sellers skill`, `cross-view revenue ask does not get trapped by operations view context`, `cross-view revenue paraphrase still prefers kpi overview`, `english revenue prompt is understood and stays deterministic`, `rhetorical low-month prompt routes to deterministic trend analysis`, va cac test seller follow-up `Con Hien`, `Hoang`, `Hung`.
+- `Applies to`: group `F`, group `G`, group `H`, seller follow-up, cross-view revenue, prompt variation hardening
 
 ## De xuat dong goi thanh skill sau nay
 

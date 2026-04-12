@@ -1,0 +1,10 @@
+{
+  "id": "inactive-sellers-summary",
+  "description": "List sellers with zero non-cancelled revenue in the recent three-month window when HR-status questions cannot be grounded directly.",
+  "priority": 87,
+  "triggers": ["nghi viec", "thoi viec", "sale", "seller"],
+  "supported_views": ["dashboard", "team"],
+  "required_entities": [],
+  "output_mode": "summary",
+  "fallback_policy": "prefer_skill_over_out_of_scope_when_user_asks_about_idle_sellers"
+}

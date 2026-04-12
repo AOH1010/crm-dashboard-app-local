@@ -16,14 +16,14 @@ export const renewDueSummarySkill = {
     const foldedQuestion = context.routingFoldedQuestion || context.foldedQuestion;
     return /(renew|gia han|sap het han|den han)/.test(foldedQuestion);
   },
-  run(context, connector) {
+  async run(context, connector) {
     const monthContext = resolveMonthEndKey({
       question: context.latestQuestion,
       selectedFilters: context.selectedFilters,
       latestDateKey: connector.getLatestOperationsMonthEndKey() || connector.getLatestOrderDateKey()
     });
 
-    const result = connector.runReadQuery({
+    const result = await connector.runReadQueryAsync({
       sql: `
         SELECT
           COUNT(*) AS due_count,
@@ -36,7 +36,7 @@ export const renewDueSummarySkill = {
       maxRows: 1
     });
 
-    const expiringSoon = connector.runReadQuery({
+    const expiringSoon = await connector.runReadQueryAsync({
       sql: `
         SELECT
           customer_name,

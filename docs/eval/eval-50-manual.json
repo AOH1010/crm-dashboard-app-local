@@ -72,7 +72,7 @@
     ],
     "expectedRoute": "llm_fallback",
     "expectedSkillId": null,
-    "normalizedExpectedIntent": "custom_analytical_query",
+    "normalizedExpectedIntent": "revenue_trend_analysis",
     "reviewFocus": [
       "reasoning",
       "grounding"
@@ -110,14 +110,14 @@
         "content": "Customer nao mua nhieu nhat tu dau nam 2026?"
       }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "normalizedExpectedIntent": "custom_analytical_query",
+    "expectedRoute": "skill",
+    "expectedSkillId": "customer-revenue-ranking",
+    "normalizedExpectedIntent": "customer_revenue_ranking",
     "reviewFocus": [
       "sql_shape",
       "top_n_result"
     ],
-    "notes": "Needs GROUP BY on orders table."
+    "notes": "Deterministic GROUP BY orders theo customer trong YTD."
   },
   {
     "id": "tc22-recent-orders",
@@ -130,14 +130,14 @@
         "content": "5 don hang moi nhat la gi?"
       }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "normalizedExpectedIntent": "custom_analytical_query",
+    "expectedRoute": "skill",
+    "expectedSkillId": "recent-orders-list",
+    "normalizedExpectedIntent": "recent_orders_list",
     "reviewFocus": [
       "sql_shape",
       "table_output"
     ],
-    "notes": "Should return order_code, customer, amount, seller."
+    "notes": "Deterministic recent orders list. Ho tro so luong 5/10/15/20."
   },
   {
     "id": "tc23-lead-geography",
@@ -150,14 +150,14 @@
         "content": "Tinh nao co nhieu lead nhat?"
       }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
+    "expectedRoute": "skill",
+    "expectedSkillId": "lead-geography",
     "normalizedExpectedIntent": "lead_geography",
     "reviewFocus": [
       "sql_shape",
       "group_by"
     ],
-    "notes": "Query customers GROUP BY province_name."
+    "notes": "Deterministic GROUP BY province_name tren customers."
   },
   {
     "id": "tc24-source-revenue-drilldown",
@@ -170,14 +170,14 @@
         "content": "Nguon Tele sale outbound mang ve bao nhieu revenue?"
       }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "normalizedExpectedIntent": "custom_analytical_query",
+    "expectedRoute": "skill",
+    "expectedSkillId": "source-revenue-drilldown",
+    "normalizedExpectedIntent": "source_revenue_drilldown",
     "reviewFocus": [
       "join_correctness",
       "grounding"
     ],
-    "notes": "Needs JOIN customers + orders."
+    "notes": "Neu source group chi la near-match thi phai goi y nhom hop le, khong fallback rong."
   },
   {
     "id": "tc25-orders-filter-amount",
@@ -190,14 +190,14 @@
         "content": "Liet ke don hang tren 50 trieu trong thang 3/2026"
       }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "normalizedExpectedIntent": "custom_analytical_query",
+    "expectedRoute": "skill",
+    "expectedSkillId": "orders-filtered-list",
+    "normalizedExpectedIntent": "orders_filtered_list",
     "reviewFocus": [
       "filter_correctness",
       "table_output"
     ],
-    "notes": "SELECT FROM orders WHERE real_amount > 50000000 AND month=2026-03."
+    "notes": "Deterministic filter theo real_amount va month."
   },
   {
     "id": "tc27-nonexistent-seller",
@@ -230,14 +230,14 @@
         "content": "Du bao doanh thu thang 12/2026"
       }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "normalizedExpectedIntent": "custom_analytical_query",
+    "expectedRoute": "skill",
+    "expectedSkillId": "revenue-forecast",
+    "normalizedExpectedIntent": "forecast_request",
     "reviewFocus": [
-      "no_fabrication",
-      "safe_refusal"
+      "forecast_ytd_method",
+      "grounding"
     ],
-    "notes": "System has no forecasting. Must NOT fabricate predictions."
+    "notes": "Forecast phai dung YTD growth grounded, tach actual months / forecast months / full-year total va neu thang hien tai dang mo thi phai noi ro assumption."
   },
   {
     "id": "tc30-very-long-prompt",
@@ -309,13 +309,21 @@
   },
   {
     "id": "tc44-cross-verify-leaderboard",
-    "title": "Cross-verify so lieu leaderboard vs orders",
+    "title": "Seller revenue - nghi ngo so voi bang xep hang",
     "group": "I",
     "viewId": "dashboard",
     "messages": [
       {
         "role": "user",
-        "content": "Pham Van Hoang dat bao nhieu doanh thu thang 3/2026?"
+        "content": "Chot giup toi doanh thu Pham Van Hoang thang 3/2026 de toi dua vao slide."
+      },
+      {
+        "role": "assistant",
+        "content": "Pham Van Hoang dat doanh so 230,878,000d trong thang 03/2026."
+      },
+      {
+        "role": "user",
+        "content": "Check lai giup toi nhe, toi nho bang xep hang seller ben team dang ra hoi khac. Neu so nay van khop thi noi la khop, con neu lech thi noi ro giup toi."
       }
     ],
     "expectedRoute": "skill",
@@ -323,19 +331,29 @@
     "normalizedExpectedIntent": "seller_revenue_month",
     "reviewFocus": [
       "cross_db_grounding",
-      "consistency"
+      "consistency",
+      "followup_verify",
+      "source_disclosure"
     ],
-    "notes": "Must match leaderboard: 230,878,000d, 23 don. Cross-verify with raw orders SUM."
+    "notes": "Must carry seller=Pham Van Hoang and month=2026-03 from history. Reply should explicitly say whether the seller number still khop with the ranking report or is lech; a silent single-number replay fails review."
   },
   {
     "id": "tc45-zero-result-seller",
-    "title": "Seller khong co data trong ky",
+    "title": "Zero-result - ten gan dung va de bi lay nham so cu",
     "group": "I",
     "viewId": "team",
     "messages": [
       {
         "role": "user",
-        "content": "Doanh thu Dang Quynh Anh thang 3/2026"
+        "content": "Truoc toi nho Dang Quynh Anh thang 6/2025 van co doanh thu dung khong?"
+      },
+      {
+        "role": "assistant",
+        "content": "Dang Quynh Anh co doanh thu trong thang 06/2025."
+      },
+      {
+        "role": "user",
+        "content": "Vay con Quynh Anh thang 3/2026 thi sao? Neu ky nay khong co so thi cu noi thang la khong tim thay, dung lay nham so cu."
       }
     ],
     "expectedRoute": "skill",
@@ -343,19 +361,21 @@
     "normalizedExpectedIntent": "seller_revenue_month",
     "reviewFocus": [
       "no_hallucination",
-      "not_found_copy"
+      "not_found_copy",
+      "alias_resolution",
+      "time_carryover"
     ],
-    "notes": "Quynh Anh has no data after 2025-07. Must say 'khong tim thay', NOT fabricate."
+    "notes": "Must resolve 'Quynh Anh' back to Dang Quynh Anh from history, switch month to 2026-03, and return not-found/no-data. Reusing the older 2025-06 revenue is a fail."
   },
   {
     "id": "tc46-total-revenue-month",
-    "title": "Tong doanh thu thang - cross-verify 2 DB",
+    "title": "Tong doanh thu - wording doi thuong va can tu check lai",
     "group": "I",
     "viewId": "dashboard",
     "messages": [
       {
         "role": "user",
-        "content": "Tong doanh thu thang 3/2026"
+        "content": "Sep dang hoi gap tong doanh thu toan he thong T3/2026. Chot giup toi 1 so va check xem so tong nay co an voi phan cong tu don hang khong, neu lech thi nhac toi luon."
       }
     ],
     "expectedRoute": "skill",
@@ -363,9 +383,11 @@
     "normalizedExpectedIntent": "kpi_overview",
     "reviewFocus": [
       "cross_db_grounding",
-      "aggregation"
+      "aggregation",
+      "prompt_robustness",
+      "source_disclosure"
     ],
-    "notes": "Expected ~1,379,845,900d. Must match revenue_series SUM and orders SUM."
+    "notes": "Expected ~1,379,845,900d. Reply should survive shorthand/noisy wording and explicitly disclose whether the dashboard total still matches the total when summed from orders."
   },
   {
     "id": "tc47-renew-renewed-count",

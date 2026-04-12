@@ -1,7 +1,7 @@
 import { PromptRegistry } from "../runtime/prompt-registry.js";
-import { SQLiteConnector } from "../connectors/sqlite-connector.js";
+import { createDefaultConnector } from "../connectors/index.js";
 
-const connector = new SQLiteConnector();
+const connector = createDefaultConnector();
 const promptRegistry = new PromptRegistry(connector);
 
 export function getViewContext(viewId) {

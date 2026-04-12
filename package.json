@@ -18,6 +18,12 @@
     "build": "npm run build --workspace @crm/frontend",
     "build:dashboard-db": "npm run build:dashboard-db --workspace @crm/backend",
     "lint": "npm run lint --workspace @crm/frontend",
-    "check": "powershell -ExecutionPolicy Bypass -File .\\tools\\local-development\\verify-local-environment.ps1"
+    "check": "powershell -ExecutionPolicy Bypass -File .\\tools\\local-development\\verify-local-environment.ps1",
+    "v2:sql-audit": "node scripts/v2-sql-dialect-audit.mjs",
+    "v2:export-supabase-seed": "node --experimental-sqlite scripts/export-supabase-seed.mjs",
+    "v2:generate-supabase-seed-sql": "node scripts/generate-supabase-seed-sql.mjs",
+    "v2:seed-supabase": "node scripts/seed-supabase-from-export.mjs",
+    "v2:supabase-smoke": "node scripts/supabase-smoke-check.mjs",
+    "v2:supabase-parity-smoke": "node --experimental-sqlite scripts/supabase-parity-smoke.mjs"
   }
 }

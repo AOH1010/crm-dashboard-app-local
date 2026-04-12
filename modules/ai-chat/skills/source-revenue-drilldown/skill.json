@@ -1,0 +1,10 @@
+{
+  "id": "source-revenue-drilldown",
+  "description": "Summarize revenue by source group and suggest valid source groups when the ask is near-match only.",
+  "priority": 90,
+  "triggers": ["nguon", "source", "kenh", "revenue"],
+  "supported_views": ["conversion", "dashboard"],
+  "required_entities": [],
+  "output_mode": "summary",
+  "fallback_policy": "prefer_skill_before_broad_fallback"
+}

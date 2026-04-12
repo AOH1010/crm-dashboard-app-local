@@ -98,7 +98,7 @@ function getStatusTone(statusLabel: string) {
 
 function EmptyState() {
   return (
-    <div className="flex h-full min-h-64 items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white text-sm font-medium text-gray-400">
+    <div className="flex h-full min-h-64 items-center justify-center rounded-2xl border border-dashed border-border bg-card text-sm font-medium text-muted-foreground">
       No revenue data in this range.
     </div>
   );
@@ -222,10 +222,10 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-headline text-[length:var(--font-size-h-page)] font-bold tracking-tight text-[#1C1D21]">
+          <h1 className="font-headline text-[length:var(--font-size-h-page)] font-bold tracking-tight text-foreground">
             Sales Dashboard
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Current month by default. KPIs and revenue trend respond to the selected range.
           </p>
         </div>
@@ -234,9 +234,9 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
           <button
             type="button"
             onClick={handleResetToCurrentMonth}
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-[#1C1D21] shadow-ambient transition-colors hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-bold text-foreground shadow-sm transition-colors hover:bg-gray-50"
           >
-            <CalendarRange className="h-4 w-4 text-[#3c6600]" />
+            <CalendarRange className="h-4 w-4 text-primary" />
             Current month
           </button>
 
@@ -244,10 +244,10 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
             type="button"
             onClick={() => setShowFilters((value) => !value)}
             className={cn(
-              "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold shadow-ambient transition-colors",
+              "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold shadow-sm transition-colors",
               showFilters
-                ? "border-[#B8FF68] bg-[#B8FF68]/20 text-[#1C1D21]"
-                : "border-gray-200 bg-white text-[#1C1D21] hover:bg-gray-50",
+                ? "border-primary bg-primary/20 text-primary-foreground"
+                : "border-border bg-card text-foreground hover:bg-gray-50",
             )}
           >
             <Filter className="h-4 w-4" />
@@ -256,7 +256,7 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
         </div>
       </div>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 shadow-ambient">
+      <section className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-sm">
         {cacheSavedAt ? (
           <span>
             Dang hien cache luu luc <strong>{formatDateTime(cacheSavedAt)}</strong>. Backend chi duoc goi lai khi ban bam
@@ -273,26 +273,26 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
       </section>
 
       {showFilters ? (
-        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-ambient">
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="space-y-2 text-sm font-semibold text-[#1C1D21]">
+              <label className="space-y-2 text-sm font-semibold text-foreground">
                 <span>From</span>
                 <input
                   type="date"
                   value={draftFromDate}
                   onChange={(event) => setDraftFromDate(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#B8FF68]"
+                  className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary"
                 />
               </label>
 
-              <label className="space-y-2 text-sm font-semibold text-[#1C1D21]">
+              <label className="space-y-2 text-sm font-semibold text-foreground">
                 <span>To</span>
                 <input
                   type="date"
                   value={draftToDate}
                   onChange={(event) => setDraftToDate(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#B8FF68]"
+                  className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary"
                 />
               </label>
             </div>
@@ -301,7 +301,7 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
               <button
                 type="button"
                 onClick={() => setShowFilters(false)}
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-bold text-muted-foreground transition-colors hover:bg-gray-50"
               >
                 <X className="h-4 w-4" />
                 Close
@@ -309,7 +309,7 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
               <button
                 type="button"
                 onClick={handleApplyFilters}
-                className="rounded-xl bg-[#B8FF68] px-5 py-2 text-sm font-bold text-[#1C1D21] shadow-lg shadow-[#B8FF68]/20 transition-transform hover:scale-[1.01]"
+                className="rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground shadow-sm shadow-primary/20 transition-transform hover:scale-[1.01]"
               >
                 Apply
               </button>
@@ -354,18 +354,18 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
 
       <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-10">
         <div className="lg:col-span-7 flex h-full flex-col gap-6">
-          <section className="rounded-2xl bg-white p-8 shadow-ambient">
+          <section className="rounded-2xl bg-card p-6 shadow-sm">
             <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-xl font-bold text-[#1C1D21]">Revenue Trend</h2>
-                <p className="text-sm text-gray-500">
+                <h2 className="text-xl font-bold text-foreground">Revenue Trend</h2>
+                <p className="text-sm text-muted-foreground">
                   {dashboard?.revenue_series.compare_enabled
                     ? "Month view compares against the previous 12-month window."
                     : "Week and day views show fixed windows ending at the selected end date."}
                 </p>
               </div>
 
-              <div className="inline-flex rounded-full border border-gray-200 bg-[#F6F6F8] p-1">
+              <div className="inline-flex rounded-full border border-border bg-muted p-1">
                 {(["month", "week", "day"] as DashboardGrain[]).map((option) => (
                   <button
                     key={option}
@@ -373,7 +373,7 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
                     onClick={() => handleGrainChange(option)}
                     className={cn(
                       "rounded-full px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors",
-                      grain === option ? "bg-[#1C1D21] text-[#B8FF68]" : "text-gray-500 hover:text-[#1C1D21]",
+                      grain === option ? "bg-card text-card-foreground text-primary" : "text-muted-foreground hover:text-foreground",
                     )}
                   >
                     {option}
@@ -390,22 +390,22 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
                   <AreaChart data={revenuePoints}>
                     <defs>
                       <linearGradient id="dashboardRevenueCurrent" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#B8FF68" stopOpacity={0.28} />
-                        <stop offset="95%" stopColor="#B8FF68" stopOpacity={0.02} />
+                        <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.28} />
+                        <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid stroke="#f0f1f3" strokeDasharray="3 3" vertical={false} />
+                    <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" vertical={false} />
                     <XAxis
                       dataKey="label"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 11, fontWeight: 700, fill: "#9ca3af" }}
+                      tick={{ fontSize: 11, fontWeight: 700, fill: "var(--color-muted-foreground)" }}
                       dy={10}
                     />
                     <YAxis
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 11, fontWeight: 700, fill: "#9ca3af" }}
+                      tick={{ fontSize: 11, fontWeight: 700, fill: "var(--color-muted-foreground)" }}
                       tickFormatter={(value) => formatCompactCurrency(Number(value))}
                       width={90}
                     />
@@ -421,16 +421,16 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
                     <Area
                       type="monotone"
                       dataKey="current"
-                      stroke="#B8FF68"
+                      stroke="var(--color-primary)"
                       strokeWidth={4}
                       fill="url(#dashboardRevenueCurrent)"
-                      activeDot={{ r: 5, fill: "#B8FF68", stroke: "#fff", strokeWidth: 2 }}
+                      activeDot={{ r: 5, fill: "var(--color-primary)", stroke: "#fff", strokeWidth: 2 }}
                     />
                     {dashboard?.revenue_series.compare_enabled ? (
                       <Line
                         type="monotone"
                         dataKey="previous"
-                        stroke="#acadaf"
+                        stroke="var(--color-muted-foreground)"
                         strokeWidth={2}
                         strokeDasharray="6 4"
                         dot={false}
@@ -442,26 +442,26 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
             </div>
           </section>
 
-          <section className="flex flex-1 flex-col overflow-hidden rounded-2xl bg-white shadow-ambient">
-            <div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/60 px-6 py-5 md:flex-row md:items-center md:justify-between">
+          <section className="flex flex-1 flex-col overflow-hidden rounded-2xl bg-card shadow-sm">
+            <div className="flex flex-col gap-3 border-b border-border bg-gray-50/60 px-6 py-5 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-xl font-bold text-[#1C1D21]">Latest Orders Feed</h2>
-                <p className="text-sm text-gray-500">Loaded from local cache until you request a live refresh.</p>
+                <h2 className="text-xl font-bold text-foreground">Latest Orders Feed</h2>
+                <p className="text-sm text-muted-foreground">Loaded from local cache until you request a live refresh.</p>
               </div>
-              <div className="rounded-full bg-[#B8FF68]/20 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#3c6600]">
+              <div className="rounded-full bg-primary/20 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
                 {isRefreshing ? "Refreshing..." : isPending ? "Applying..." : "Cached"}
               </div>
             </div>
 
             <div className="flex-1 overflow-x-auto">
               <table className="w-full min-w-[820px] text-left">
-                <thead className="border-b border-gray-100 bg-gray-50/30">
+                <thead className="border-b border-border bg-gray-50/30">
                   <tr>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">Customer</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">Order Time</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">Amount</th>
-                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">Seller</th>
-                    <th className="px-6 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-gray-500">Status</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Customer</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Order Time</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Amount</th>
+                    <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Seller</th>
+                    <th className="px-6 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -469,20 +469,20 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
                     <tr key={order.order_id} className="transition-colors hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-[11px] font-black text-gray-500">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-[11px] font-black text-muted-foreground">
                             {order.customer_title.slice(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <div className="text-sm font-bold text-[#1C1D21]">{order.customer_title}</div>
-                            <div className="text-[11px] text-gray-500">
+                            <div className="text-sm font-bold text-foreground">{order.customer_title}</div>
+                            <div className="text-[11px] text-muted-foreground">
                               {order.order_code || order.customer_id || `Order #${order.order_id}`}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-xs font-medium text-gray-500">{formatDateTime(order.created_at)}</td>
-                      <td className="px-6 py-4 text-sm font-bold text-[#1C1D21]">{formatCurrency(order.amount)}</td>
-                      <td className="px-6 py-4 text-xs font-medium text-gray-500">{order.seller_name}</td>
+                      <td className="px-6 py-4 text-xs font-medium text-muted-foreground">{formatDateTime(order.created_at)}</td>
+                      <td className="px-6 py-4 text-sm font-bold text-foreground">{formatCurrency(order.amount)}</td>
+                      <td className="px-6 py-4 text-xs font-medium text-muted-foreground">{order.seller_name}</td>
                       <td className="px-6 py-4 text-center">
                         <span
                           className={cn(
@@ -501,9 +501,9 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
           </section>
         </div>
 
-        <aside className="lg:col-span-3 flex self-start flex-col rounded-2xl bg-[#1C1D21] p-6 shadow-xl">
+        <aside className="lg:col-span-3 flex self-start flex-col rounded-2xl bg-card text-card-foreground p-6 shadow-xl">
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-[#B8FF68]">Top 5 Sales</h2>
+            <h2 className="text-xl font-bold text-primary">Top 5 Sales</h2>
             <p className="mt-1 text-xs uppercase tracking-[0.2em] text-zinc-400">
               leaderboard for selected month
             </p>
@@ -511,30 +511,30 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
 
           <div className="space-y-4">
             {dashboard?.leaderboard?.map((entry) => (
-              <div key={`${entry.rank}-${entry.seller_name}`} className="rounded-2xl border border-white/5 bg-white/5 p-3.5">
+              <div key={`${entry.rank}-${entry.seller_name}`} className="rounded-2xl border border-border bg-muted p-3.5">
                 <div className="mb-2 flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">#{entry.rank}</p>
-                    <p className="mt-1 text-sm font-bold text-white">{entry.seller_name}</p>
+                    <p className="mt-1 text-sm font-bold ">{entry.seller_name}</p>
                     <p className="text-xs text-zinc-400">{entry.team_name}</p>
                   </div>
-                  <button className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white">
+                  <button className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-muted hover:">
                     <MoreVertical className="h-4 w-4" />
                   </button>
                 </div>
                 <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest">
                   <span className="text-zinc-400">{entry.order_count} orders</span>
-                  <span className="text-[#B8FF68]">{formatCompactCurrency(entry.revenue_amount)}</span>
+                  <span className="text-primary">{formatCompactCurrency(entry.revenue_amount)}</span>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-6 border-t border-white/5 pt-5">
+          <div className="mt-6 border-t border-border pt-5">
             <button
               type="button"
               onClick={() => onNavigate("team")}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#B8FF68]/30 py-3 text-xs font-bold uppercase tracking-[0.25em] text-[#B8FF68] transition-colors hover:bg-[#B8FF68]/10"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 py-3 text-xs font-bold uppercase tracking-[0.25em] text-primary transition-colors hover:bg-primary/10"
             >
               Team details
               <ArrowRight className="h-4 w-4" />
@@ -562,21 +562,21 @@ function KpiCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border-b-4 bg-white p-6 shadow-ambient transition-transform hover:-translate-y-0.5",
-        active ? "border-[#B8FF68]" : "border-transparent",
+        "rounded-2xl border-b-4 bg-card p-6 shadow-sm transition-transform hover:-translate-y-0.5",
+        active ? "border-primary" : "border-transparent",
       )}
     >
       <div className="mb-5 flex items-start justify-between gap-4">
-        <div className={cn("rounded-xl p-2.5", active ? "bg-[#B8FF68]/20" : "bg-gray-100")}>
-          <Icon className={cn("h-5 w-5", active ? "text-[#3c6600]" : "text-gray-500")} />
+        <div className={cn("rounded-xl p-2.5", active ? "bg-primary/20" : "bg-gray-100")}>
+          <Icon className={cn("h-5 w-5", active ? "text-primary" : "text-muted-foreground")} />
         </div>
-        <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
+        <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
           live
         </span>
       </div>
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">{title}</p>
-      <h3 className="mt-2 text-3xl font-extrabold text-[#1C1D21]">{value}</h3>
-      <p className="mt-2 text-xs font-medium text-gray-500">{subValue}</p>
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
+      <h3 className="mt-2 text-3xl font-extrabold text-foreground">{value}</h3>
+      <p className="mt-2 text-xs font-medium text-muted-foreground">{subValue}</p>
     </div>
   );
 }

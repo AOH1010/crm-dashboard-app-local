@@ -1,0 +1,10 @@
+{
+  "id": "lead-geography",
+  "description": "Rank provinces by lead volume using CRM customer geography data.",
+  "priority": 90,
+  "triggers": ["lead", "tinh", "thanh pho", "province"],
+  "supported_views": ["leads", "dashboard", "conversion"],
+  "required_entities": [],
+  "output_mode": "ranking",
+  "fallback_policy": "use_skill_when_geography_ask_is_clear"
+}

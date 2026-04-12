@@ -16,7 +16,7 @@ Chat Lab khong phai widget production. Day la man hinh kiem thu noi bo de:
 - Frontend Chat Lab view: [apps/frontend/src/views/ChatLabView.tsx](../../apps/frontend/src/views/ChatLabView.tsx)
 - Frontend scenario type va fallback scenarios: [apps/frontend/src/lib/chatLabScenarios.ts](../../apps/frontend/src/lib/chatLabScenarios.ts)
 - Backend endpoint tra scenario: [apps/backend/src/index.js](../../apps/backend/src/index.js)
-- Runtime chinh: [modules/ai-chat/src/runtime/chat-runtime.js](../../modules/ai-chat/src/runtime/chat-runtime.js)
+- Runtime chinh: [modules/ai-chat/src/runtime/chat-runtime-v2.js](../../modules/ai-chat/src/runtime/chat-runtime-v2.js)
 - Intent catalog va route threshold: [modules/ai-chat/src/runtime/intent-catalog.js](../../modules/ai-chat/src/runtime/intent-catalog.js)
 - Skill formatter runtime: [modules/ai-chat/src/runtime/skill-response-formatter.js](../../modules/ai-chat/src/runtime/skill-response-formatter.js)
 - Eval dataset cho Chat Lab: [docs/eval/eval-50-chat-lab.json](./eval-50-chat-lab.json)

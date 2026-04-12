@@ -1,5 +1,12 @@
 import { DatabaseSync } from "node:sqlite";
 import { CRM_DB_PATH } from "./dashboard-sales-db.js";
+import {
+  SOURCE_GROUP_ENTRIES as CANONICAL_SOURCE_GROUP_ENTRIES,
+  SOURCE_GROUP_ORDER as CANONICAL_SOURCE_GROUP_ORDER,
+} from "./source-group-config.js";
+
+// Canonical source-group mapping now lives in `source-group-config.js`.
+// Keep all normalization and option lists wired to that single source to avoid drift.
 
 const SOURCE_GROUP_ORDER = ["Marketing Ads", "Marketing Other", "Event", "Affiliate", "Sale", "Other"];
 
@@ -49,7 +56,7 @@ const SOURCE_GROUP_ENTRIES = [
 ];
 
 const SOURCE_GROUPS = new Map(
-  SOURCE_GROUP_ENTRIES.map(([groupName, values]) => [groupName, new Set(values.map((value) => foldText(value)))]),
+  CANONICAL_SOURCE_GROUP_ENTRIES.map(([groupName, values]) => [groupName, new Set(values.map((value) => foldText(value)))]),
 );
 
 const LOST_RELATIONS = new Set([
@@ -205,7 +212,7 @@ function formatWeekLabel(dateKey) {
 
 function normalizeSourceGroup(sourceName) {
   const normalized = foldText(sourceName);
-  for (const groupName of SOURCE_GROUP_ORDER) {
+  for (const groupName of CANONICAL_SOURCE_GROUP_ORDER) {
     if (SOURCE_GROUPS.get(groupName)?.has(normalized)) {
       return groupName;
     }
@@ -222,13 +229,13 @@ function sanitizeFilters({ from, to, selectedSourceGroups, sourceMode, cohortGra
   }
 
   const groups = Array.isArray(selectedSourceGroups)
-    ? selectedSourceGroups.filter((item) => SOURCE_GROUP_ORDER.includes(item))
+    ? selectedSourceGroups.filter((item) => CANONICAL_SOURCE_GROUP_ORDER.includes(item))
     : [];
 
   return {
     from: safeFrom,
     to: safeTo,
-    sourceGroups: sourceMode === "custom" ? groups : SOURCE_GROUP_ORDER,
+    sourceGroups: sourceMode === "custom" ? groups : CANONICAL_SOURCE_GROUP_ORDER,
     sourceMode: sourceMode === "custom" ? "custom" : "all",
     cohortGrain: cohortGrain === "week" ? "week" : "month",
   };
@@ -340,7 +347,7 @@ function buildCohortRows(customers, selectedSourceGroups, cohortGrain, endDateKe
 }
 
 function buildSourceRows(customers, filteredCustomers, selectedSourceGroups) {
-  return SOURCE_GROUP_ORDER
+  return CANONICAL_SOURCE_GROUP_ORDER
     .filter((groupName) => selectedSourceGroups.includes(groupName))
     .map((groupName) => {
       const leadCount = filteredCustomers.filter((customer) => customer.sourceGroup === groupName).length;
@@ -459,7 +466,7 @@ export function getConversionPayload({
     const saleOrderCount = customersInRange.filter((customer) => customer.hasNonCancelledOrderInRange).length;
     const lostCount = customersInRange.filter((customer) => isLostRelation(customer.relationName)).length;
     const inactiveCount = customersInRange.filter((customer) => isInactiveRelation(customer.relationName)).length;
-    const sourceRows = buildSourceRows(customers, customersInRange, SOURCE_GROUP_ORDER);
+    const sourceRows = buildSourceRows(customers, customersInRange, CANONICAL_SOURCE_GROUP_ORDER);
     const overallConversion = buildOverallMetrics(newLeads, saleOrderCount);
 
     return {
@@ -471,7 +478,7 @@ export function getConversionPayload({
         source_mode: filters.sourceMode,
         cohort_grain: filters.cohortGrain,
       },
-      source_group_options: SOURCE_GROUP_ORDER,
+      source_group_options: CANONICAL_SOURCE_GROUP_ORDER,
       funnel: {
         stages: [
           { key: "new_leads", label: "New Leads", value: newLeads, rate: newLeads > 0 ? 100 : 0 },

@@ -1,7 +1,8 @@
 import { createUsage } from "../contracts/chat-contracts.js";
 import { addMonthsToMonthKey, endOfMonthKey, formatMonthLabel, getSystemTodayDateKey, monthKey } from "../tooling/date-utils.js";
 import { foldText } from "../tooling/common.js";
-import { buildTeamCaseSql } from "./business-mappings.js";
+import { extractMonthYear, resolveMonthlyWindow } from "../tooling/question-analysis.js";
+import { buildTeamCaseSql } from "./business-mappings-v2.js";
 import { formatCurrency, formatPercent } from "./formatters.js";
 
 const teamCaseSql = buildTeamCaseSql("s.dept_name");
@@ -27,6 +28,21 @@ function resolveTrendScope(question, connector) {
     return {
       mode: "compare_pair",
       months: explicitMonths.slice(0, 2)
+    };
+  }
+
+  const explicitMonth = extractMonthYear(question);
+  if (explicitMonth) {
+    const monthWindow = resolveMonthlyWindow({
+      question,
+      selectedFilters: null,
+      latestMonthKey: connector.getLatestMonthKey(),
+      latestYear: connector.getLatestOrderYear()
+    });
+    return {
+      mode: "single_month_probe",
+      months: [addMonthsToMonthKey(monthWindow.month_key, -1), monthWindow.month_key, addMonthsToMonthKey(monthWindow.month_key, 1)],
+      focus_month: monthWindow.month_key
     };
   }
 
@@ -56,14 +72,19 @@ export const revenueTrendAnalysisSkill = {
   id: "revenue-trend-analysis",
   canHandle(context) {
     const foldedQuestion = context.routingFoldedQuestion || context.foldedQuestion;
-    return /(doanh thu|doanh so|revenue)/.test(foldedQuestion)
-      && /(xu huong|trend|tang hay giam|giam hay tang|bat thuong|tai sao|vi sao|nguyen nhan)/.test(foldedQuestion);
+    return (
+      /(doanh thu|doanh so|revenue)/.test(foldedQuestion)
+      && /(xu huong|trend|tang hay giam|giam hay tang|bat thuong|tai sao|vi sao|nguyen nhan)/.test(foldedQuestion)
+    ) || (
+      extractMonthYear(context.latestQuestion)
+      && /(thap the a|cao the a|lai thap|lai cao|sao thap|sao cao|thap vay|cao vay)/.test(foldedQuestion)
+    );
   },
-  run(context, connector) {
+  async run(context, connector) {
     const scope = resolveTrendScope(context.latestQuestion, connector);
     const questionText = foldText(context.latestQuestion || "");
 
-    const monthlyMetricsResult = connector.runReadQuery({
+    const monthlyMetricsResult = await connector.runReadQueryAsync({
       sql: `
         SELECT
           SUBSTR(day, 1, 7) AS month_key,
@@ -80,7 +101,7 @@ export const revenueTrendAnalysisSkill = {
       maxRows: 12
     });
 
-    const teamBreakdownResult = connector.runReadQuery({
+    const teamBreakdownResult = await connector.runReadQueryAsync({
       sql: `
         SELECT
           SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 7) AS month_key,
@@ -110,7 +131,43 @@ export const revenueTrendAnalysisSkill = {
     const metricsMap = buildMonthMetricsMap(metricsRows);
 
     let reply;
-    if (scope.mode === "compare_pair") {
+    if (scope.mode === "single_month_probe") {
+      const baseMonthKey = scope.months[0];
+      const focusMonthKey = scope.focus_month;
+      const nextMonthKey = scope.months[2];
+      const baseMetrics = metricsMap.get(baseMonthKey) || {
+        month_key: baseMonthKey,
+        total_revenue: 0,
+        new_leads: 0,
+        new_customers: 0
+      };
+      const focusMetrics = metricsMap.get(focusMonthKey) || {
+        month_key: focusMonthKey,
+        total_revenue: 0,
+        new_leads: 0,
+        new_customers: 0
+      };
+      const nextMetrics = metricsMap.get(nextMonthKey) || null;
+      const revenueDelta = focusMetrics.total_revenue - baseMetrics.total_revenue;
+      const revenueDeltaPercent = baseMetrics.total_revenue > 0 ? (revenueDelta / baseMetrics.total_revenue) * 100 : 0;
+      const leadDelta = focusMetrics.new_leads - baseMetrics.new_leads;
+      const customerDelta = focusMetrics.new_customers - baseMetrics.new_customers;
+      const seasonalNote = /-(01|02)$/.test(focusMonthKey)
+        ? "- Góc nhìn mùa vụ: đây thường là giai đoạn có ít ngày làm việc hơn do kỳ nghỉ đầu năm/Tết, nên doanh thu thấp hơn không hẳn là tín hiệu bất thường."
+        : null;
+      const nextDelta = nextMetrics ? focusMetrics.total_revenue - nextMetrics.total_revenue : null;
+
+      reply = [
+        `Nếu đang nói về ${formatMonthLabel(focusMonthKey)}, thì đây ${nextMetrics && nextDelta < 0 ? "đúng là" : "chưa hẳn là"} một tháng thấp khi đặt cạnh các tháng liền kề.`,
+        `- ${formatMonthLabel(baseMonthKey)}: ${formatCurrency(baseMetrics.total_revenue)} | lead mới ${baseMetrics.new_leads.toLocaleString("vi-VN")} | khách mới ${baseMetrics.new_customers.toLocaleString("vi-VN")}.`,
+        `- ${formatMonthLabel(focusMonthKey)}: ${formatCurrency(focusMetrics.total_revenue)} | lead mới ${focusMetrics.new_leads.toLocaleString("vi-VN")} | khách mới ${focusMetrics.new_customers.toLocaleString("vi-VN")}.`,
+        `- So với ${formatMonthLabel(baseMonthKey)}, ${formatMonthLabel(focusMonthKey)} ${revenueDelta < 0 ? "giảm" : revenueDelta > 0 ? "tăng" : "gần như không đổi"} ${formatCurrency(Math.abs(revenueDelta))} (${formatPercent(Math.abs(revenueDeltaPercent))}).`,
+        nextMetrics ? `- So với ${formatMonthLabel(nextMonthKey)}, ${formatMonthLabel(focusMonthKey)} ${nextDelta < 0 ? "thấp hơn" : nextDelta > 0 ? "cao hơn" : "gần như ngang"} ${formatCurrency(Math.abs(nextDelta))}.` : null,
+        leadDelta < 0 ? `- Lead mới cũng giảm ${Math.abs(leadDelta).toLocaleString("vi-VN")} so với ${formatMonthLabel(baseMonthKey)}.` : null,
+        customerDelta < 0 ? `- Khách mới giảm ${Math.abs(customerDelta).toLocaleString("vi-VN")}, nên đầu ra doanh thu thấp hơn là hợp logic.` : null,
+        seasonalNote
+      ].filter(Boolean).join("\n");
+    } else if (scope.mode === "compare_pair") {
       const [firstMonthKey, secondMonthKey] = scope.months;
       const baseMonthKey = /so voi/.test(questionText) ? secondMonthKey : firstMonthKey;
       const compareMonthKey = /so voi/.test(questionText) ? firstMonthKey : secondMonthKey;

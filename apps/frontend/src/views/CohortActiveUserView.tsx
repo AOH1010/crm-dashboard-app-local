@@ -74,15 +74,15 @@ function formatMonthLabel(dateKey: string) {
 function heatCellStyle(value: number | null) {
   if (value === null) {
     return {
-      backgroundColor: "#F8FAFC",
-      color: "#CBD5E1",
+      backgroundColor: "var(--muted)",
+      color: "var(--muted-foreground)",
     };
   }
 
   const alpha = Math.max(0.12, Math.min(0.92, value / 100));
   return {
-    backgroundColor: `rgba(184, 255, 104, ${alpha})`,
-    color: value >= 50 ? "#1E2C0C" : "#334155",
+    backgroundColor: `color-mix(in srgb, var(--primary) ${Math.round(alpha * 100)}%, transparent)`,
+    color: value >= 50 ? "var(--primary-foreground)" : "var(--foreground)",
   };
 }
 
@@ -167,10 +167,10 @@ export default function CohortActiveUserView() {
     <div className="space-y-8 pb-28">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-headline text-[length:var(--font-size-h-page)] font-bold tracking-tight text-[#1C1D21]">
+          <h1 className="font-headline text-[length:var(--font-size-h-page)] font-bold tracking-tight text-foreground">
             Cohort Active User
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Measure active retention by activation month with a dynamic rule over open, create, update, or render.
           </p>
         </div>
@@ -179,9 +179,9 @@ export default function CohortActiveUserView() {
           <button
             type="button"
             onClick={handleResetCurrentMonth}
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-[#1C1D21] shadow-ambient transition-colors hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-card px-4 py-2 text-sm font-bold text-foreground shadow-ambient transition-colors hover:bg-gray-50"
           >
-            <CalendarRange className="h-4 w-4 text-[#3c6600]" />
+            <CalendarRange className="h-4 w-4 text-primary" />
             Current month
           </button>
           <button
@@ -190,8 +190,8 @@ export default function CohortActiveUserView() {
             className={cn(
               "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold shadow-ambient transition-colors",
               showFilters
-                ? "border-[#B8FF68] bg-[#B8FF68]/20 text-[#1C1D21]"
-                : "border-gray-200 bg-white text-[#1C1D21] hover:bg-gray-50",
+                ? "border-primary bg-primary/20 text-foreground"
+                : "border-gray-200 bg-card text-foreground hover:bg-gray-50",
             )}
           >
             <Filter className="h-4 w-4" />
@@ -200,7 +200,7 @@ export default function CohortActiveUserView() {
         </div>
       </div>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 shadow-ambient">
+      <section className="rounded-2xl border border-gray-200 bg-card p-4 text-sm text-gray-600 shadow-ambient">
         {cacheSavedAt ? (
           <span>
             Dang hien cache local duoc luu luc <strong>{formatDateTime(cacheSavedAt)}</strong>. Bam <strong>Load live data</strong> tren top bar de cap nhat Cohort Active tu server.
@@ -213,19 +213,19 @@ export default function CohortActiveUserView() {
       </section>
 
       {showFilters ? (
-        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-ambient">
+        <section className="rounded-2xl border border-gray-200 bg-card p-5 shadow-ambient">
           <div className="grid gap-4 lg:grid-cols-[1fr_auto_auto] lg:items-end">
-            <label className="space-y-2 text-sm font-semibold text-[#1C1D21]">
+            <label className="space-y-2 text-sm font-semibold text-foreground">
               <span>Report month</span>
               <input
                 type="month"
                 value={draftMonth}
                 onChange={(event) => setDraftMonth(event.target.value)}
-                className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#B8FF68]"
+                className="rounded-xl border border-gray-200 bg-card px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary"
               />
             </label>
 
-            <label className="space-y-2 text-sm font-semibold text-[#1C1D21]">
+            <label className="space-y-2 text-sm font-semibold text-foreground">
               <span>Threshold</span>
               <input
                 type="number"
@@ -233,7 +233,7 @@ export default function CohortActiveUserView() {
                 step={1}
                 value={draftThreshold}
                 onChange={(event) => setDraftThreshold(event.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#B8FF68]"
+                className="w-full rounded-xl border border-gray-200 bg-card px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary"
               />
             </label>
 
@@ -241,7 +241,7 @@ export default function CohortActiveUserView() {
               <button
                 type="button"
                 onClick={() => setShowFilters(false)}
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-muted-foreground transition-colors hover:bg-gray-50"
               >
                 <X className="h-4 w-4" />
                 Close
@@ -249,7 +249,7 @@ export default function CohortActiveUserView() {
               <button
                 type="button"
                 onClick={handleApplyFilters}
-                className="rounded-xl bg-[#B8FF68] px-5 py-2 text-sm font-bold text-[#1C1D21] shadow-lg shadow-[#B8FF68]/20 transition-transform hover:scale-[1.01]"
+                className="rounded-xl bg-primary px-5 py-2 text-sm font-bold text-foreground shadow-lg shadow-primary/20 transition-transform hover:scale-[1.01]"
               >
                 Apply
               </button>
@@ -290,14 +290,14 @@ export default function CohortActiveUserView() {
               key={card.label}
               className={cn(
                 "rounded-[28px] border p-6 shadow-ambient",
-                index === 2 ? "border-[#1C1D21] bg-[#1C1D21] text-white" : "border-gray-100 bg-white text-[#1C1D21]",
+                index === 2 ? "border-border bg-card text-foreground" : "border-border bg-card text-foreground",
               )}
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className={cn(
                     "text-[11px] font-black uppercase tracking-[0.22em]",
-                    index === 2 ? "text-white/40" : "text-gray-400",
+                    index === 2 ? "text-muted-foreground" : "text-muted-foreground",
                   )}>
                     {card.label}
                   </p>
@@ -305,21 +305,21 @@ export default function CohortActiveUserView() {
                 </div>
                 <div className={cn(
                   "flex h-12 w-12 items-center justify-center rounded-2xl",
-                  index === 2 ? "bg-white/8 text-[#B8FF68]" : "bg-gray-50 text-[#1C1D21]",
+                  index === 2 ? "bg-muted text-primary" : "bg-gray-50 text-foreground",
                 )}>
                   <card.icon className="h-5 w-5" />
                 </div>
               </div>
-              <p className={cn("mt-6 text-sm", index === 2 ? "text-white/60" : "text-gray-500")}>{card.helper}</p>
+              <p className={cn("mt-6 text-sm", index === 2 ? "text-muted-foreground" : "text-muted-foreground")}>{card.helper}</p>
             </article>
           ))}
         </div>
 
-        <aside className="rounded-[32px] border border-white/5 bg-[#1C1D21] p-7 text-white shadow-2xl">
-          <p className="text-[11px] font-black uppercase tracking-[0.28em] text-[#B8FF68]">Dynamic Rule</p>
+        <aside className="rounded-[32px] border border-background/5 bg-card p-6 text-foreground shadow-sm">
+          <p className="text-[11px] font-black uppercase tracking-[0.28em] text-primary">Dynamic Rule</p>
           <h2 className="mt-2 font-headline text-3xl font-bold tracking-tight">Retention Control</h2>
-          <p className="mt-2 text-sm text-white/55">
-            {formatMonthLabel(payload?.applied_filters.report_month || reportMonth)} using <strong className="text-white">{metric}</strong> {">="} <strong className="text-white">{threshold}</strong> as the active rule.
+          <p className="mt-2 text-sm text-muted-foreground">
+            {formatMonthLabel(payload?.applied_filters.report_month || reportMonth)} using <strong className="text-foreground">{metric}</strong> {">="} <strong className="text-foreground">{threshold}</strong> as the active rule.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-2">
@@ -331,8 +331,8 @@ export default function CohortActiveUserView() {
                 className={cn(
                   "rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.2em] transition-colors",
                   metric === option.key
-                    ? "bg-[#B8FF68] text-[#1C1D21]"
-                    : "bg-white/8 text-white/65 hover:bg-white/12",
+                    ? "bg-primary text-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted",
                 )}
               >
                 {option.label}
@@ -340,20 +340,20 @@ export default function CohortActiveUserView() {
             ))}
           </div>
 
-          <div className="mt-6 rounded-[24px] border border-white/8 bg-white/5 p-4">
-            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/35">Cohort QA</p>
+          <div className="mt-6 rounded-[24px] border border-background/8 bg-card/5 p-4">
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-foreground/35">Cohort QA</p>
             <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
               <div>
-                <p className="text-white/45">Invalid rows</p>
-                <p className="mt-1 text-lg font-bold text-white">{payload?.qa.invalid_daily_rows_total || 0}</p>
+                <p className="text-foreground/45">Invalid rows</p>
+                <p className="mt-1 text-lg font-bold text-foreground">{payload?.qa.invalid_daily_rows_total || 0}</p>
               </div>
               <div>
-                <p className="text-white/45">Invalid account-months</p>
-                <p className="mt-1 text-lg font-bold text-white">{payload?.qa.invalid_account_months || 0}</p>
+                <p className="text-foreground/45">Invalid account-months</p>
+                <p className="mt-1 text-lg font-bold text-foreground">{payload?.qa.invalid_account_months || 0}</p>
               </div>
               <div>
-                <p className="text-white/45">Affected accounts</p>
-                <p className="mt-1 text-lg font-bold text-white">{payload?.qa.affected_accounts || 0}</p>
+                <p className="text-foreground/45">Affected accounts</p>
+                <p className="mt-1 text-lg font-bold text-foreground">{payload?.qa.affected_accounts || 0}</p>
               </div>
             </div>
           </div>
@@ -376,33 +376,33 @@ export default function CohortActiveUserView() {
         </section>
       ) : null}
 
-      <section className="rounded-[36px] border border-gray-100 bg-white p-7 shadow-ambient">
+      <section className="rounded-[36px] border border-border bg-card p-6 shadow-ambient">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="font-headline text-[length:var(--font-size-h-bento)] font-bold tracking-tight text-[#1C1D21]">
+            <h2 className="font-headline text-[length:var(--font-size-h-bento)] font-bold tracking-tight text-foreground">
               Cohort Retention Matrix
             </h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               Rows are activation cohorts. Columns track active retention from T0 to T12 using the current dynamic rule.
             </p>
           </div>
-          <p className="text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">
+          <p className="text-[11px] font-black uppercase tracking-[0.24em] text-muted-foreground">
             {cohortRows.length} cohort rows
           </p>
         </div>
 
         <div className="mt-6 overflow-x-auto pb-2">
-          <table className="min-w-[1060px] w-full border-separate border-spacing-2">
+          <table className="min-w-[1060px] w-full border-collapse">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 rounded-2xl bg-white px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.22em] text-gray-400">
+                <th className="sticky left-0 z-10 border-b border-border bg-card px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.22em] text-muted-foreground">
                   Cohort
                 </th>
-                <th className="rounded-2xl bg-gray-50 px-3 py-3 text-center text-[11px] font-black uppercase tracking-[0.22em] text-gray-400">
+                <th className="bg-muted/30 border-b border-border px-3 py-3 text-center text-[11px] font-black uppercase tracking-[0.22em] text-muted-foreground">
                   Leads
                 </th>
                 {Array.from({ length: 13 }, (_, index) => (
-                  <th key={index} className="rounded-2xl bg-gray-50 px-3 py-3 text-center text-[11px] font-black uppercase tracking-[0.22em] text-gray-400">
+                  <th key={index} className="bg-muted/30 border-b border-border px-3 py-3 text-center text-[11px] font-black uppercase tracking-[0.22em] text-muted-foreground">
                     T{index}
                   </th>
                 ))}
@@ -410,20 +410,20 @@ export default function CohortActiveUserView() {
             </thead>
             <tbody>
               {cohortRows.map((row) => (
-                <tr key={row.cohort_month}>
-                  <td className="sticky left-0 z-10 rounded-2xl border border-gray-100 bg-white px-4 py-4">
-                    <p className="font-bold text-[#1C1D21]">{row.label}</p>
-                    <p className="mt-1 text-xs text-gray-500">
+                <tr key={row.cohort_month} className="border-b border-border">
+                  <td className="sticky left-0 z-10 bg-card px-4 py-4">
+                    <p className="font-bold text-foreground">{row.label}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {maxEligible > 0 ? `${((row.account_count / maxEligible) * 100).toFixed(1)}% of largest cohort` : "0.0%"}
                     </p>
                   </td>
-                  <td className="rounded-2xl border border-gray-100 bg-[#F8FAFC] px-3 py-4 text-center text-sm font-bold text-[#1C1D21]">
+                  <td className="bg-muted/30 px-3 py-4 text-center text-sm font-bold text-foreground">
                     {row.account_count}
                   </td>
                   {row.cells.map((cell) => (
-                    <td key={`${row.cohort_month}:${cell.offset}`} className="p-0">
+                      <td key={`${row.cohort_month}:${cell.offset}`} className="p-0">
                       <div
-                        className="rounded-2xl border border-white px-3 py-4 text-center shadow-sm"
+                        className="px-3 py-4 text-center h-full w-full"
                         style={heatCellStyle(cell.active_rate)}
                         title={cell.active_rate === null ? "No eligible accounts yet" : `${cell.active_count}/${cell.eligible_count} active`}
                       >

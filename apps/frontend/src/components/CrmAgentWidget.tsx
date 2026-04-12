@@ -24,29 +24,125 @@ type MarkdownBlock = MarkdownTableBlock | MarkdownTextBlock;
 const USD_TO_VND = 26500;
 const INPUT_COST_PER_MILLION_TOKENS_USD = 0.3;
 const OUTPUT_COST_PER_MILLION_TOKENS_USD = 2.5;
+const AGENT_SESSION_STORAGE_KEY = "crm-agent-session-id";
 
-const QUICK_PROMPTS: Record<string, string[]> = {
-  dashboard: [
-    "Tom tat KPI chinh hom nay.",
-    "So sanh doanh thu thang nay voi thang truoc.",
-    "Top 5 seller theo doanh thu hien tai la ai?",
-  ],
-  conversion: [
-    "Ty le chuyen doi tong hien tai la bao nhieu?",
-    "So sanh conversion theo source_group.",
-    "Nhom nguon nao dang kem nhat can uu tien xu ly?",
-  ],
-  leads: [
-    "Top tinh co nhieu lead nhat la gi?",
-    "Nhom nganh nao co ty le chuyen doi cao nhat?",
-    "Loc giup cac segment co conversion duoi 10%.",
-  ],
-  default: [
-    "Tom tat nhanh so lieu quan trong trong view nay.",
-    "So sanh 2 chi so noi bat nhat hien tai.",
-    "Cho bang ngan cac diem can chu y.",
-  ],
+const VIEW_CACHE_PREFIXES: Record<string, string[]> = {
+  dashboard: ["crm_cache_dashboard:"],
+  team: ["crm_cache_team:"],
+  conversion: ["crm_cache_conversion:"],
+  renew: ["crm_cache_ops_renew:"],
+  "user-map": ["crm_cache_ops_user_map:"],
+  "active-map": ["crm_cache_ops_active_map:"],
+  "cohort-active": ["crm_cache_ops_cohort:"],
+  leads: ["crm_cache_leads"],
 };
+
+function safeParseJson<T>(value: string): T | null {
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+}
+
+function createLocalSessionId() {
+  return `crm-agent-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function getStableSessionId() {
+  if (typeof window === "undefined") {
+    return createLocalSessionId();
+  }
+
+  const existing = window.localStorage.getItem(AGENT_SESSION_STORAGE_KEY);
+  if (existing) {
+    return existing;
+  }
+
+  const created = createLocalSessionId();
+  window.localStorage.setItem(AGENT_SESSION_STORAGE_KEY, created);
+  return created;
+}
+
+function normalizeCachedFilters(viewId: string, cacheKey: string, data: Record<string, unknown> | null | undefined) {
+  const appliedFilters = data?.applied_filters;
+  if (appliedFilters && typeof appliedFilters === "object" && !Array.isArray(appliedFilters)) {
+    return { ...appliedFilters } as Record<string, unknown>;
+  }
+
+  if (viewId === "dashboard" || viewId === "team") {
+    const parts = cacheKey.split(":");
+    if (parts.length >= 3) {
+      const [from, to, extra] = parts.slice(-3);
+      return viewId === "dashboard"
+        ? { from, to, grain: extra }
+        : { from: parts[1], to: parts[2] };
+    }
+  }
+
+  if (viewId === "conversion") {
+    const parts = cacheKey.split(":");
+    if (parts.length >= 5) {
+      const sourceToken = parts.slice(4).join(":");
+      return {
+        from: parts[1],
+        to: parts[2],
+        cohort_grain: parts[3],
+        source_mode: sourceToken === "all" ? "all" : "custom",
+        source_groups: sourceToken === "all" || sourceToken === "none"
+          ? []
+          : sourceToken.split("|").filter(Boolean),
+      };
+    }
+  }
+
+  return null;
+}
+
+function inferSelectedFiltersFromViewCache(viewId: string) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const prefixes = VIEW_CACHE_PREFIXES[viewId] || [];
+  if (prefixes.length === 0) {
+    return null;
+  }
+
+  let latestMatch: { key: string; savedAt: string; data: Record<string, unknown> | null } | null = null;
+
+  for (let index = 0; index < window.localStorage.length; index += 1) {
+    const key = window.localStorage.key(index);
+    if (!key || !prefixes.some((prefix) => key.startsWith(prefix))) {
+      continue;
+    }
+
+    const raw = window.localStorage.getItem(key);
+    if (!raw) {
+      continue;
+    }
+
+    const parsed = safeParseJson<{ savedAt?: string; data?: Record<string, unknown> }>(raw);
+    const savedAt = String(parsed?.savedAt || "");
+    if (!savedAt) {
+      continue;
+    }
+
+    if (!latestMatch || savedAt > latestMatch.savedAt) {
+      latestMatch = {
+        key,
+        savedAt,
+        data: parsed?.data || null,
+      };
+    }
+  }
+
+  if (!latestMatch) {
+    return null;
+  }
+
+  return normalizeCachedFilters(viewId, latestMatch.key, latestMatch.data);
+}
 
 function isPotentialTableRow(line: string) {
   const trimmed = line.trim();
@@ -163,14 +259,14 @@ function AssistantContent({ content }: { content: string }) {
       {blocks.map((block, index) => {
         if (block.type === "text") {
           return (
-            <p key={`${block.type}-${index}`} className="whitespace-pre-wrap text-sm leading-relaxed text-[#1C1D21]">
+            <p key={`${block.type}-${index}`} className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
               {block.value}
             </p>
           );
         }
 
         return (
-          <div key={`${block.type}-${index}`} className="overflow-x-auto rounded-xl border border-gray-200">
+          <div key={`${block.type}-${index}`} className="overflow-x-auto rounded-xl border border-border">
             <table className="min-w-full text-left text-xs">
               <thead className="bg-gray-50">
                 <tr>
@@ -226,8 +322,8 @@ function MessageBubble({ message }: { message: AgentMessage }) {
         className={cn(
           "max-w-[90%] rounded-2xl px-4 py-3 shadow-sm",
           isUser
-            ? "bg-[#B8FF68] text-[#1C1D21]"
-            : "border border-gray-200 bg-white text-[#1C1D21]",
+            ? "bg-primary text-primary-foreground"
+            : "border border-border bg-card text-foreground",
         )}
       >
         {isUser ? (
@@ -260,7 +356,9 @@ export default function CrmAgentWidget({ viewId, selectedFilters = null }: CrmAg
   ]);
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  const quickPrompts = QUICK_PROMPTS[viewId] || QUICK_PROMPTS.default;
+  const inferredSelectedFilters = useMemo(() => inferSelectedFiltersFromViewCache(viewId), [viewId]);
+  const effectiveSelectedFilters = selectedFilters ?? inferredSelectedFilters;
+  const sessionId = useMemo(() => getStableSessionId(), []);
 
   useEffect(() => {
     if (open) {
@@ -314,7 +412,8 @@ export default function CrmAgentWidget({ viewId, selectedFilters = null }: CrmAg
       const payload = await sendAgentMessage({
         viewId,
         messages: nextMessages,
-        selectedFilters,
+        selectedFilters: effectiveSelectedFilters,
+        sessionId,
         debug: runtimeDebugEnabled,
       });
       const reply = String(payload.reply || "").trim();
@@ -349,32 +448,32 @@ export default function CrmAgentWidget({ viewId, selectedFilters = null }: CrmAg
     <>
       <div
         className={cn(
-          "fixed left-3 right-3 z-50 w-auto overflow-hidden rounded-3xl border border-gray-200 bg-[#F9F9FB] shadow-2xl transition-all duration-300 sm:left-auto sm:right-6 sm:w-[390px]",
+          "fixed left-3 right-3 z-50 w-auto overflow-hidden rounded-3xl border border-border bg-background shadow-2xl transition-all duration-300 sm:left-auto sm:right-6 sm:w-[460px]",
           open
             ? "bottom-24 pointer-events-auto translate-y-0 opacity-100"
             : "bottom-20 pointer-events-none translate-y-4 opacity-0",
         )}
       >
-        <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
+        <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1C1D21] text-[#B8FF68]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Bot className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#1C1D21]">CRM Data Agent</p>
-              <p className="text-[11px] text-gray-500">View: {viewId}</p>
+              <p className="text-sm font-bold text-foreground">CRM Data Agent</p>
+              <p className="text-[11px] text-muted-foreground">View: {viewId}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-[#1C1D21]"
+            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-gray-100 hover:text-foreground"
           >
             <Minimize2 className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="flex h-[460px] flex-col">
+        <div className="flex h-[540px] flex-col">
           <div className="custom-scrollbar flex-1 space-y-3 overflow-y-auto p-4">
             {messages.map((message, index) => (
               <MessageBubble key={`${message.role}-${index}`} message={message} />
@@ -382,7 +481,7 @@ export default function CrmAgentWidget({ viewId, selectedFilters = null }: CrmAg
 
             {isLoading ? (
               <div className="flex justify-start">
-                <div className="rounded-2xl border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-500">
+                <div className="rounded-2xl border border-border bg-card px-4 py-2 text-xs font-medium text-muted-foreground">
                   Dang truy van du lieu...
                 </div>
               </div>
@@ -391,21 +490,7 @@ export default function CrmAgentWidget({ viewId, selectedFilters = null }: CrmAg
             <div ref={endRef} />
           </div>
 
-          <div className="border-t border-gray-200 bg-white p-3">
-            <div className="mb-2 flex flex-wrap gap-2">
-              {quickPrompts.slice(0, 2).map((prompt) => (
-                <button
-                  key={prompt}
-                  type="button"
-                  onClick={() => void submitQuestion(prompt)}
-                  disabled={isLoading}
-                  className="rounded-full border border-gray-200 px-3 py-1 text-[11px] font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-
+          <div className="border-t border-border bg-card p-3">
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -418,12 +503,12 @@ export default function CrmAgentWidget({ viewId, selectedFilters = null }: CrmAg
                 onChange={(event) => setInput(event.target.value)}
                 placeholder="Hoi du lieu ngay..."
                 disabled={isLoading}
-                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#B8FF68] disabled:bg-gray-100"
+                className="flex-1 rounded-xl border border-border px-3 py-2 text-sm outline-none transition-colors focus:border-primary disabled:bg-gray-100"
               />
               <button
                 type="submit"
                 disabled={isLoading || input.trim().length === 0}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#1C1D21] text-[#B8FF68] transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-muted-foreground"
               >
                 <Send className="h-4 w-4" />
               </button>
@@ -435,7 +520,7 @@ export default function CrmAgentWidget({ viewId, selectedFilters = null }: CrmAg
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="fixed bottom-6 right-6 z-50 rounded-2xl shadow-xl transition-transform hover:scale-[1.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8FF68]"
+        className="fixed bottom-6 right-6 z-50 rounded-2xl shadow-xl transition-transform hover:scale-[1.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-[currentColor]"
         aria-label="Toggle CRM Agent"
       >
         <div className="relative">
@@ -444,7 +529,7 @@ export default function CrmAgentWidget({ viewId, selectedFilters = null }: CrmAg
             alt="CRM Agent trigger"
             className="h-14 w-14 rounded-2xl object-cover"
           />
-          <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#B8FF68] text-[#1C1D21]">
+          <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Sparkles className="h-3 w-3" />
           </div>
         </div>

@@ -1,0 +1,10 @@
+{
+  "id": "customer-revenue-ranking",
+  "description": "Return top customers by non-cancelled revenue for a grounded period.",
+  "priority": 92,
+  "triggers": ["customer", "khach hang", "mua nhieu nhat", "top customer"],
+  "supported_views": ["dashboard", "team"],
+  "required_entities": [],
+  "output_mode": "ranking",
+  "fallback_policy": "use_skill_when_customer_revenue_ranking_is_clear"
+}

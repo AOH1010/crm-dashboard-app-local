@@ -11,7 +11,7 @@
 - `PromptRegistry` loading prompt fragments from `modules/ai-chat/prompts/`
 - `SkillRegistry` loading manifests from `modules/ai-chat/skills/`
 - `SQLiteConnector` with canonical table names and schema registry config
-- New runtime orchestration in `modules/ai-chat/src/runtime/chat-runtime.js`
+- New runtime orchestration in `modules/ai-chat/src/runtime/chat-runtime-v2.js`
 - LLM fallback route in `modules/ai-chat/src/runtime/fallback-llm.js`
 - Long-prompt routing analysis that condenses `routingQuestion` for skill matching and avoids forcing one deterministic skill on multi-intent prompts
 - Deterministic V1 skills:

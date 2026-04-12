@@ -47,6 +47,22 @@ export interface AgentChatResponse {
     at: string;
     [key: string]: unknown;
   }> | null;
+  conversation_state?: {
+    active_topic_id?: string | null;
+    label?: string | null;
+    continuity_mode?: string | null;
+    primary_intent?: string | null;
+    route?: string | null;
+    skill_id?: string | null;
+    focuses?: string[] | null;
+    entities?: Array<{ type: string; value: string }> | null;
+    time_reference?: string | null;
+    patched_fields?: string[] | null;
+    user_turn_count?: number | null;
+    anchor_question?: string | null;
+    anchor_intent?: string | null;
+    state_confidence?: number | null;
+  } | null;
   usage?: {
     provider?: string;
     prompt_tokens: number;
@@ -71,35 +87,6 @@ export interface ChatLabExportResponse {
   relative_path: string;
   absolute_path: string;
   row_count: number;
-}
-
-export interface EvaluateTestResult {
-  scenario_id: string;
-  status: "pass" | "fail" | "needs_review";
-  layer: "route" | "intent" | "clarify" | "formatter" | "grounding" | "unknown";
-  summary: string;
-  recommendation: string;
-  should_review_manually: boolean;
-  generated_at: string;
-  knowledge_source: string;
-  matched_know_how: Array<{
-    id: string;
-    title: string;
-    rule_learned: string;
-  }>;
-  checks: {
-    expected_route: string;
-    expected_intent: string;
-    expected_skill_id: string;
-    expected_clarify: boolean | null;
-    actual_route: string;
-    actual_intent: string;
-    actual_skill_id: string;
-    actual_clarification: string;
-    route_pass: boolean;
-    intent_pass: boolean;
-    clarify_pass: boolean;
-  };
 }
 
 export async function sendAgentMessage(params: {
@@ -164,33 +151,4 @@ export async function exportChatLabCsvArtifact(params: {
   }
 
   return response.json();
-}
-
-export async function evaluateChatLabResults(params: {
-  items: Array<{
-    scenario: ChatLabScenario;
-    result: {
-      scenarioId: string;
-      response: AgentChatResponse | null;
-      error: string | null;
-      startedAt: string;
-    };
-  }>;
-}): Promise<EvaluateTestResult[]> {
-  const response = await fetch(buildApiUrl("/api/agent/chat-lab/evaluate"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      items: params.items,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error("Khong the chay Evaluate_test cho Chat Lab.");
-  }
-
-  const payload = await response.json();
-  return Array.isArray(payload?.evaluations) ? payload.evaluations : [];
 }

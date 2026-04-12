@@ -1,0 +1,10 @@
+{
+  "id": "recent-orders-list",
+  "description": "List the newest dashboard recent orders with a grounded count limit.",
+  "priority": 91,
+  "triggers": ["don hang moi nhat", "recent orders", "order moi nhat"],
+  "supported_views": ["dashboard", "team"],
+  "required_entities": [],
+  "output_mode": "table",
+  "fallback_policy": "use_skill_for_simple_recent_order_lists"
+}

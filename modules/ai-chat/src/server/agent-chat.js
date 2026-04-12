@@ -1,1 +1,1 @@
-export { chatWithCrmAgent } from "../runtime/chat-runtime.js";
+export { chatWithCrmAgent } from "../runtime/chat-runtime-v2.js";

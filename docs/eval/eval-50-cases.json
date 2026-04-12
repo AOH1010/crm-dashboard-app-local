@@ -185,14 +185,14 @@
     "title": "Keyword trap - sale nghi viec",
     "group": "B",
     "viewId": "team",
-    "messages": [
-      { "role": "user", "content": "Sale nao dang nghi viec?" }
-    ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "expectedIntent": "out_of_scope",
-    "expectedClarify": false,
-    "notes": "CRITICAL: 'Sale' must NOT trigger seller-month-revenue or top-sellers. This is HR data, not in CRM."
+      "messages": [
+        { "role": "user", "content": "Sale nao dang nghi viec?" }
+      ],
+      "expectedRoute": "skill",
+      "expectedSkillId": "inactive-sellers-summary",
+      "expectedIntent": "inactive_sellers_recent",
+      "expectedClarify": false,
+      "notes": "Khong co du lieu HR chinh thuc, nen phai doi sang danh sach seller 3 thang gan nhat khong phat sinh doanh thu."
   },
   {
     "id": "tc15-ops-wrong-view",
@@ -286,11 +286,11 @@
     "messages": [
       { "role": "user", "content": "Customer nao mua nhieu nhat tu dau nam 2026?" }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "expectedIntent": "customer_ranking",
-    "expectedClarify": false,
-    "notes": "Needs GROUP BY on orders table."
+      "expectedRoute": "skill",
+      "expectedSkillId": "customer-revenue-ranking",
+      "expectedIntent": "customer_revenue_ranking",
+      "expectedClarify": false,
+      "notes": "Deterministic GROUP BY orders theo customer trong YTD."
   },
   {
     "id": "tc22-recent-orders",
@@ -300,11 +300,11 @@
     "messages": [
       { "role": "user", "content": "5 don hang moi nhat la gi?" }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "expectedIntent": "recent_orders_list",
-    "expectedClarify": false,
-    "notes": "Should return order_code, customer, amount, seller."
+      "expectedRoute": "skill",
+      "expectedSkillId": "recent-orders-list",
+      "expectedIntent": "recent_orders_list",
+      "expectedClarify": false,
+      "notes": "Deterministic recent orders list. Ho tro so luong 5/10/15/20."
   },
   {
     "id": "tc23-lead-geography",
@@ -314,11 +314,11 @@
     "messages": [
       { "role": "user", "content": "Tinh nao co nhieu lead nhat?" }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "expectedIntent": "lead_geography",
-    "expectedClarify": false,
-    "notes": "Query customers GROUP BY province_name."
+      "expectedRoute": "skill",
+      "expectedSkillId": "lead-geography",
+      "expectedIntent": "lead_geography",
+      "expectedClarify": false,
+      "notes": "Deterministic GROUP BY province_name tren customers."
   },
   {
     "id": "tc24-source-revenue-drilldown",
@@ -328,11 +328,11 @@
     "messages": [
       { "role": "user", "content": "Nguon Tele sale outbound mang ve bao nhieu revenue?" }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "expectedIntent": "source_revenue_drilldown",
-    "expectedClarify": false,
-    "notes": "Needs JOIN customers + orders."
+      "expectedRoute": "skill",
+      "expectedSkillId": "source-revenue-drilldown",
+      "expectedIntent": "source_revenue_drilldown",
+      "expectedClarify": false,
+      "notes": "Neu source group chi la near-match thi phai goi y nhom hop le, khong fallback rong."
   },
   {
     "id": "tc25-orders-filter-amount",
@@ -342,11 +342,11 @@
     "messages": [
       { "role": "user", "content": "Liet ke don hang tren 50 trieu trong thang 3/2026" }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "expectedIntent": "orders_filtered_list",
-    "expectedClarify": false,
-    "notes": "SELECT FROM orders WHERE real_amount > 50000000 AND month=2026-03."
+      "expectedRoute": "skill",
+      "expectedSkillId": "orders-filtered-list",
+      "expectedIntent": "orders_filtered_list",
+      "expectedClarify": false,
+      "notes": "Deterministic filter theo real_amount va month."
   },
   {
     "id": "tc26-prompt-injection",
@@ -376,20 +376,20 @@
     "expectedClarify": false,
     "notes": "Seller not found. Must say 'khong tim thay'. Must NOT hallucinate numbers."
   },
-  {
-    "id": "tc28-future-forecast",
-    "title": "Du bao tuong lai",
-    "group": "E",
+    {
+      "id": "tc28-future-forecast",
+      "title": "Du bao tuong lai",
+      "group": "E",
     "viewId": "dashboard",
     "messages": [
       { "role": "user", "content": "Du bao doanh thu thang 12/2026" }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "expectedIntent": "forecast_request",
-    "expectedClarify": false,
-    "notes": "System has no forecasting. Must NOT fabricate predictions."
-  },
+      "expectedRoute": "skill",
+      "expectedSkillId": "revenue-forecast",
+      "expectedIntent": "forecast_request",
+      "expectedClarify": false,
+      "notes": "Forecast phai dung YTD growth grounded, tach actual months / forecast months / full-year total va neu thang hien tai dang mo thi phai noi ro assumption."
+    },
   {
     "id": "tc29-empty-prompt",
     "title": "Prompt rong",
@@ -418,34 +418,34 @@
     "expectedClarify": false,
     "notes": "Long prompt but last sentence is clear: top 3 seller thang 3. Must extract correctly."
   },
-  {
-    "id": "tc31-same-question-view-renew",
-    "title": "Tong quan - view renew",
-    "group": "F",
+    {
+      "id": "tc31-same-question-view-renew",
+      "title": "Tong quan - view renew",
+      "group": "F",
     "viewId": "renew",
     "messages": [
       { "role": "user", "content": "Cho toi tong quan" }
     ],
-    "expectedRoute": "skill",
-    "expectedSkillId": "renew-due-summary",
-    "expectedIntent": "renew_summary",
-    "expectedClarify": false,
-    "notes": "Same prompt 'tong quan' but view=renew -> renew-due-summary, not kpi-overview."
-  },
-  {
-    "id": "tc32-same-question-view-usermap",
-    "title": "Tong quan - view user-map",
-    "group": "F",
+      "expectedRoute": "clarify_required",
+      "expectedSkillId": null,
+      "expectedIntent": "ambiguous",
+      "expectedClarify": true,
+      "notes": "Prompt tong quan qua mo ho, khong nen bind vao view renew. Phai hoi lai user muon tong quan ve phan nao."
+    },
+    {
+      "id": "tc32-same-question-view-usermap",
+      "title": "Tong quan - view user-map",
+      "group": "F",
     "viewId": "user-map",
     "messages": [
       { "role": "user", "content": "Cho toi tong quan" }
     ],
-    "expectedRoute": "skill",
-    "expectedSkillId": "operations-status-summary",
-    "expectedIntent": "operations_summary",
-    "expectedClarify": false,
-    "notes": "Same prompt 'tong quan' but view=user-map -> operations-status-summary."
-  },
+      "expectedRoute": "clarify_required",
+      "expectedSkillId": null,
+      "expectedIntent": "ambiguous",
+      "expectedClarify": true,
+      "notes": "Prompt tong quan qua mo ho, khong nen bind vao view operations neu user chua noi ro muon xem gi."
+    },
   {
     "id": "tc33-ops-from-dashboard-view",
     "title": "Hoi ghost account tu dashboard view",
@@ -454,11 +454,11 @@
     "messages": [
       { "role": "user", "content": "Account nao dang ghost nhieu nhat?" }
     ],
-    "expectedRoute": "llm_fallback",
-    "expectedSkillId": null,
-    "expectedIntent": "operations_detail",
-    "expectedClarify": false,
-    "notes": "Cross-view: asking ops data from dashboard. Must still answer, not reject."
+      "expectedRoute": "skill",
+      "expectedSkillId": "operations-status-summary",
+      "expectedIntent": "operations_summary",
+      "expectedClarify": false,
+      "notes": "Cross-view: van nen tra loi duoc. Neu cau hoi mo ho ve dinh nghia ghost nhieu nhat thi phan mo dau co the note ro limitation roi moi tong hop snapshot operations."
   },
   {
     "id": "tc34-revenue-from-renew-view",
@@ -496,11 +496,11 @@
     "messages": [
       { "role": "user", "content": "Thang 2 lai thap the a?" }
     ],
-    "expectedRoute": "skill",
-    "expectedSkillId": "kpi-overview",
-    "expectedIntent": "kpi_overview",
-    "expectedClarify": false,
-    "notes": "Rhetorical but still needs data. KPI or compare-periods both acceptable."
+      "expectedRoute": "skill",
+      "expectedSkillId": "revenue-trend-analysis",
+      "expectedIntent": "revenue_trend_analysis",
+      "expectedClarify": false,
+      "notes": "Rhetorical but still needs grounded reasoning. Prefer deterministic trend analysis instead of broad fallback."
   },
   {
     "id": "tc37-imperative-export",
@@ -610,45 +610,49 @@
   },
   {
     "id": "tc44-cross-verify-leaderboard",
-    "title": "Cross-verify so lieu leaderboard vs orders",
+    "title": "Seller revenue - nghi ngo so voi bang xep hang",
     "group": "I",
     "viewId": "dashboard",
     "messages": [
-      { "role": "user", "content": "Pham Van Hoang dat bao nhieu doanh thu thang 3/2026?" }
+      { "role": "user", "content": "Chot giup toi doanh thu Pham Van Hoang thang 3/2026 de toi dua vao slide." },
+      { "role": "assistant", "content": "Pham Van Hoang dat doanh so 230,878,000d trong thang 03/2026." },
+      { "role": "user", "content": "Check lai giup toi nhe, toi nho bang xep hang seller ben team dang ra hoi khac. Neu so nay van khop thi noi la khop, con neu lech thi noi ro giup toi." }
     ],
     "expectedRoute": "skill",
     "expectedSkillId": "seller-month-revenue",
     "expectedIntent": "seller_revenue_month",
     "expectedClarify": false,
-    "notes": "Must match leaderboard: 230,878,000d, 23 don. Cross-verify with raw orders SUM."
+    "notes": "Must carry seller=Pham Van Hoang and month=2026-03 from history. Reply should explicitly say whether the seller number still khop with the ranking report or is lech; a silent single-number replay fails review."
   },
   {
     "id": "tc45-zero-result-seller",
-    "title": "Seller khong co data trong ky",
+    "title": "Zero-result - ten gan dung va de bi lay nham so cu",
     "group": "I",
     "viewId": "team",
     "messages": [
-      { "role": "user", "content": "Doanh thu Dang Quynh Anh thang 3/2026" }
+      { "role": "user", "content": "Truoc toi nho Dang Quynh Anh thang 6/2025 van co doanh thu dung khong?" },
+      { "role": "assistant", "content": "Dang Quynh Anh co doanh thu trong thang 06/2025." },
+      { "role": "user", "content": "Vay con Quynh Anh thang 3/2026 thi sao? Neu ky nay khong co so thi cu noi thang la khong tim thay, dung lay nham so cu." }
     ],
     "expectedRoute": "skill",
     "expectedSkillId": "seller-month-revenue",
     "expectedIntent": "seller_revenue_month",
     "expectedClarify": false,
-    "notes": "Quynh Anh has no data after 2025-07. Must say 'khong tim thay', NOT fabricate."
+    "notes": "Must resolve 'Quynh Anh' back to Dang Quynh Anh from history, switch month to 2026-03, and return not-found/no-data. Reusing the older 2025-06 revenue is a fail."
   },
   {
     "id": "tc46-total-revenue-month",
-    "title": "Tong doanh thu thang - cross-verify 2 DB",
+    "title": "Tong doanh thu - wording doi thuong va can tu check lai",
     "group": "I",
     "viewId": "dashboard",
     "messages": [
-      { "role": "user", "content": "Tong doanh thu thang 3/2026" }
+      { "role": "user", "content": "Sep dang hoi gap tong doanh thu toan he thong T3/2026. Chot giup toi 1 so va check xem so tong nay co an voi phan cong tu don hang khong, neu lech thi nhac toi luon." }
     ],
     "expectedRoute": "skill",
     "expectedSkillId": "kpi-overview",
     "expectedIntent": "kpi_revenue",
     "expectedClarify": false,
-    "notes": "Expected ~1,379,845,900d. Must match revenue_series SUM and orders SUM."
+    "notes": "Expected ~1,379,845,900d. Reply should survive shorthand/noisy wording and explicitly disclose whether the dashboard total still matches the total when summed from orders."
   },
   {
     "id": "tc47-renew-renewed-count",

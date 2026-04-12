@@ -22,17 +22,17 @@ export default function TopBar() {
   };
 
   return (
-    <header className="fixed top-0 right-0 left-64 h-16 bg-background/95 backdrop-blur-md flex justify-between items-center px-8 w-[calc(100%-16rem)] z-40 border-b border-outline-variant/30">
-      <div className="flex items-center gap-4 bg-surface-container-low px-4 py-2 rounded-lg w-96">
-        <Search className="text-slate-400 w-4 h-4" />
+    <header className="fixed top-0 right-0 left-64 h-16 bg-background/80 backdrop-blur-xl flex justify-between items-center px-8 w-[calc(100%-16rem)] z-40 border-b border-border shadow-sm">
+      <div className="flex items-center gap-3 bg-muted/50 hover:bg-muted/80 transition-colors px-3 py-1.5 rounded-md w-96 border border-border/50 focus-within:ring-1 focus-within:ring-ring focus-within:border-ring">
+        <Search className="text-muted-foreground w-[18px] h-[18px]" />
         <input 
-          className="bg-transparent border-none focus:ring-0 text-sm w-full font-body placeholder-slate-400 outline-none" 
-          placeholder="Tìm kiếm dữ liệu khách hàng..." 
+          className="bg-transparent border-none w-full text-sm font-sans placeholder-muted-foreground outline-none text-foreground" 
+          placeholder="Search customer data, leads..." 
           type="text"
         />
       </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <div className="relative">
           <SyncAdminPanel />
         </div>
@@ -40,37 +40,43 @@ export default function TopBar() {
           type="button"
           onClick={() => void handleLoadLiveData()}
           disabled={isRefreshing}
-          className="rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 py-2 text-xs font-bold text-on-surface shadow-sm transition hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold shadow-sm transition-all hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="flex items-center gap-2">
-            <RefreshCcw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            {isRefreshing ? "Loading..." : "Load live data"}
+            <RefreshCcw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-primary" : ""}`} />
+            {isRefreshing ? "Syncing..." : "Sync Live"}
           </span>
         </button>
         {refreshError ? (
-          <div className="max-w-52 text-[11px] font-bold text-red-600" title={refreshError}>
-            Load loi
+          <div className="max-w-48 text-[10px] font-bold text-destructive truncate" title={refreshError}>
+            Sync Fail
           </div>
         ) : null}
-        <button className="relative text-slate-500 hover:bg-slate-100 p-2 rounded-lg transition-all">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-background"></span>
+        
+        <div className="h-6 w-[1px] bg-border mx-1"></div>
+
+        <button className="relative text-muted-foreground hover:bg-accent hover:text-accent-foreground p-2 rounded-full transition-all">
+          <Bell className="w-[18px] h-[18px]" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border border-background"></span>
         </button>
-        <button className="text-slate-500 hover:bg-slate-100 p-2 rounded-lg transition-all">
-          <HelpCircle className="w-5 h-5" />
+        <button className="text-muted-foreground hover:bg-accent hover:text-accent-foreground p-2 rounded-full transition-all flex items-center justify-center">
+          <HelpCircle className="w-[18px] h-[18px]" />
         </button>
-        <div className="h-8 w-[1px] bg-slate-200"></div>
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col items-end">
-            <span className="text-xs font-bold text-on-surface">Admin User</span>
-            <span className="text-[10px] text-slate-500">Premium Plan</span>
+        
+        <div className="flex items-center gap-3 pl-2">
+          <div className="flex flex-col items-end justify-center">
+            <span className="text-sm font-semibold leading-none">Admin User</span>
+            <span className="text-[10px] font-medium text-muted-foreground mt-1 tracking-wide uppercase">Premium</span>
           </div>
-          <img 
-            alt="User Profile Avatar" 
-            className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20" 
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxygwNR_BCUiwvyvoKvWzIfR-S0oyEFf2TS_3FyD0yMcA1c3M3w-ayaHsWJ8HdzVYV0uh4hfmof_T_XQZ4RL9TaVMmOlHmt8octwtAwyk9PMFM-a1PS6DTtT8KRaKPS0OxZ3GDLWTYJip01CQ90yM7SgwvGbCIr2HvJpSPhlXOkFxahAN-lBABn6WSqFWbcH9F4sz5GcoPMfnIIEGQ7NPpICPTgCQlWFie_d6ludt4pY5HAdvgsSvqEGnJCXl6yR45q-R3W8DDnt3r"
-            referrerPolicy="no-referrer"
-          />
+          <div className="relative">
+            <img 
+              alt="Avatar" 
+              className="w-9 h-9 rounded-full object-cover ring-2 ring-background border border-border cursor-pointer shadow-sm" 
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxygwNR_BCUiwvyvoKvWzIfR-S0oyEFf2TS_3FyD0yMcA1c3M3w-ayaHsWJ8HdzVYV0uh4hfmof_T_XQZ4RL9TaVMmOlHmt8octwtAwyk9PMFM-a1PS6DTtT8KRaKPS0OxZ3GDLWTYJip01CQ90yM7SgwvGbCIr2HvJpSPhlXOkFxahAN-lBABn6WSqFWbcH9F4sz5GcoPMfnIIEGQ7NPpICPTgCQlWFie_d6ludt4pY5HAdvgsSvqEGnJCXl6yR45q-R3W8DDnt3r"
+              referrerPolicy="no-referrer"
+            />
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background"></span>
+          </div>
         </div>
       </div>
     </header>

@@ -30,7 +30,7 @@ Quy tac:
 - Frontend app: `apps/frontend`
 - Backend app: `apps/backend`
 - AI chat module: `modules/ai-chat`
-- Runtime entrypoint: `modules/ai-chat/src/runtime/chat-runtime.js`
+- Runtime entrypoint: `modules/ai-chat/src/runtime/chat-runtime-v2.js`
 - Legacy baseline kept at: `modules/ai-chat/src/server/legacy-agent-chat.js`
 - Prompt registry now serves 3 prompt types:
   - intent classifier
@@ -113,18 +113,23 @@ Quy tac:
 - Updated Chat Lab knowledge and datasets:
   - added verified entries `KH-010` to `KH-015` in `docs/eval/chat-lab-know-how.md`
   - updated `docs/eval/eval-50-chat-lab.json` so `tc12` now expects `clarify_required`
-- Added a repo-local `evaluate_test` skill scaffold and first Chat Lab evaluator flow:
-  - skill path: `skills/evaluate_test`
-  - backend endpoint: `POST /api/agent/chat-lab/evaluate`
-  - evaluator reads `docs/eval/chat-lab-know-how.md` on each request and returns a recommendation layer, summary, and matched `KH-xxx` entries
-  - Chat Lab now has a `Bat Evaluate_test` checkbox and an evaluator recommendation box beside manual review
-  - evaluator output is cached locally in the frontend and included in CSV export columns
 - Applied the next Chat Lab hardening pass from the reviewed CSV artifacts:
   - upgraded deterministic skill wording for `seller-month-revenue`, `top-sellers-period`, `kpi-overview`, `renew-due-summary`, `operations-status-summary`, `team-performance-summary`, and `conversion-source-summary`
   - added deterministic skill `revenue-trend-analysis` for trend / anomaly / why-revenue asks
   - added compound deterministic orchestration for clear 2-domain asks that map to two existing skills
   - updated Chat Lab eval dataset so `tc16`, `tc18`, `tc19`, and `tc20` now reflect the hardened expected behavior
   - chat widget token/cost footer now renders as `[... token | ~... đ]`
+- Softened view-bound routing in the main chat widget/runtime:
+  - active `viewId` is now treated as supporting context instead of a hard domain boundary
+  - explicit cross-view asks such as `doanh thu hệ thống` from operations views now route to `kpi-overview`
+  - fallback schema summary now includes dashboard/sales/operations domains together so cross-view fallback does not get trapped inside the current view only
+
+- Started the first V1.5 packaging pass:
+  - added a repo-local `DataConnector` contract and `createDefaultConnector()` seam while keeping `SQLiteConnector` as the active implementation
+  - upgraded compound skill orchestration to emit planning/formatter/result timeline steps and return a deterministic partial answer instead of forcing broad fallback when only part of the composition succeeds
+  - hardened shorthand/variant intent coverage for `dt`, `ss`, `cr`, `kenh`, and `doi` across legacy routing and key skill matchers
+  - production widget now sends a stable `session_id` and can infer `selected_filters` from the latest view cache when props do not pass filters explicitly
+  - added prompt-variant regressions for shorthand seller revenue, shorthand top seller, shorthand compare, cross-view revenue paraphrase, and shorthand compound team+conversion asks
 
 ## Validation
 
@@ -147,11 +152,6 @@ Quy tac:
   - `tc13` -> `team-performance-summary` with `Team Fire`
   - `tc15` -> richer `operations-status-summary` snapshot for `04/2026`
 - Spot-check via `node --experimental-sqlite -` also confirmed `tc16`, `tc18`, `tc19`, and `tc20` now route to `llm_fallback` under legacy routing; final analytical answer quality still depends on valid model API keys in the local environment.
-- `npm run lint --workspace @crm/frontend` passed after wiring the `Evaluate_test` checkbox, recommendation box, and CSV export fields into Chat Lab.
-- `npm run build --workspace @crm/frontend` passed after wiring the `Evaluate_test` flow into Chat Lab.
-- `node --check apps/backend/src/index.js` passed after adding the Chat Lab evaluator endpoint.
-- `node --check apps/backend/src/lib/chat-lab-evaluator.js` passed after adding the know-how-driven evaluator module.
-- Smoke check via `node --input-type=module -` confirmed `tc12-generic-summary` is evaluated as a route failure with matched know-how `KH-010`.
 - `npm run test --workspace @crm/ai-chat-module` passed with 29/29 tests after adding deterministic trend analysis, compound multi-skill orchestration, and narrower business wording for renew / operations / seller / team skills.
 - `npm run lint --workspace @crm/frontend` passed after updating the widget token + cost footer format.
 - `npm run build --workspace @crm/frontend` passed after the widget token + cost footer format update.
@@ -163,14 +163,56 @@ Quy tac:
   - `tc18` now stays on `team-performance-summary`
   - `tc19` now uses the last 6 closed months and flags `01/2026` as the outlier low month
   - `tc20` now quantifies the revenue drop and points to lead / conversion / team deltas before suggesting drill-down
+- `npm run test --workspace @crm/ai-chat-module` passed with 30/30 tests after softening cross-view routing and adding the regression `cross-view revenue ask does not get trapped by operations view context`.
+- `npm run lint --workspace @crm/frontend` passed after the cross-view routing fix.
+- `npm run test --workspace @crm/ai-chat-module` passed with 35/35 tests after adding the `DataConnector` seam, compound skill orchestration debug/partial handling, shorthand prompt hardening, and V1.5 prompt-variant regressions.
+- `npm run lint --workspace @crm/frontend` passed after wiring widget-side session/filter parity improvements.
+- `npm run build --workspace @crm/frontend` passed after wiring widget-side session/filter parity improvements.
+- `npm run lint --workspace @crm/frontend` passed after removing `Evaluate_test` from the Chat Lab UI.
+- `npm run build --workspace @crm/frontend` passed after removing the `Evaluate_test` UI surfaces from Chat Lab.
+- `node --check apps/backend/src/index.js` passed after deleting the dormant Chat Lab evaluator endpoint and backend module.
+- `npm run lint --workspace @crm/frontend` passed after adding a Chat Lab `Conversation` tab for turn-by-turn session replay and long-session stress testing.
+- `npm run build --workspace @crm/frontend` passed after adding the Chat Lab turn-by-turn stress mode.
+- `node --experimental-sqlite --input-type=module -` smoke validation on 2026-04-12 confirmed:
+  - `tc14` -> `skill / inactive-sellers-summary`
+  - `tc21` -> `skill / customer-revenue-ranking`
+  - `tc22` -> `skill / recent-orders-list`
+  - `tc23` -> `skill / lead-geography`
+  - `tc24` -> `skill / source-revenue-drilldown` with valid source-group suggestion instead of broad fallback
+  - `tc25` -> `skill / orders-filtered-list`
+  - `tc26` -> `validation / injection_attempt`
+  - `tc27` -> `skill / seller-month-revenue` with grounded not-found seller copy
+  - `tc28` -> `llm_fallback / forecast_request` with guarded forecast framing instead of clarify
+  - `tc30` -> `skill / top-sellers-period` using the last explicit ask in the long prompt
+- `npm run test --workspace @crm/ai-chat-module` could not complete in this sandbox on 2026-04-12 because Node's test runner hit `spawn EPERM`; validation for this round therefore used direct runtime smoke calls plus dataset regeneration instead of the normal test harness.
+- `node scripts/build-eval-50-derived.mjs` regenerated:
+  - `docs/eval/eval-50-chat-lab.json`
+  - `docs/eval/eval-50-route.json`
+  - `docs/eval/eval-50-intent.json`
+  - `docs/eval/eval-50-clarify.json`
+  - `docs/eval/eval-50-manual.json`
+- 2026-04-12 D/E hardening follow-up completed:
+  - `customer-revenue-ranking`, `recent-orders-list`, `lead-geography`, `source-revenue-drilldown`, `orders-filtered-list`, and `revenue-forecast` now prefer deterministic replies so Chat Lab keeps grounded tables / lists instead of losing detail in the formatter.
+  - `lead-geography` now collapses province variants after query, so `Hồ Chí Minh` no longer appears twice under mixed casing.
+  - `source-revenue-drilldown` now runs from `source-revenue-drilldown-v2.js`; near-match source groups return a grounded mapped answer plus the canonical source-group list, and the trigger was narrowed so it no longer pollutes team+conversion compound asks.
+  - `forecast_request` is no longer treated as guarded fallback only; it now maps to deterministic skill `revenue-forecast`, using YTD growth vs the prior year and explicitly calling out partial-month assumptions.
+  - `top-sellers-period` now respects explicit `top N` asks in long prompts, so `top 3` no longer expands to `top 5`.
+  - `docs/eval/eval-50-cases.json` and derived eval files were updated so `tc28` now expects `skill / revenue-forecast`.
+- `npm run test --workspace @crm/ai-chat-module` passed with 45/45 tests on 2026-04-12 after the D/E hardening round above.
 
 ## Open Issues
 
 - Live classifier, live formatter, and fallback quality still depend on valid model API keys; without them the runtime falls back to legacy intent rules and template formatting.
 - Only the first 3 representative deterministic skills have been migrated to structured facts + formatter flow; the remaining skills still rely mostly on legacy reply shaping.
-- Several richer intents still fall through to `llm_fallback`, including customer lookup, lead geography, cohort summary, and custom analytical queries.
-- Group `C` trend / causal revenue cases no longer need `llm_fallback`, but broader customer / geography / cohort analytics still do.
+- Several richer intents still fall through to `llm_fallback`, including customer lookup, cohort summary, broader cross-source drill-down, and open-ended custom analytical queries.
+- Group `D` now has deterministic coverage for customer ranking, recent orders, lead geography, source revenue suggestion/drill-down, and filtered order lists; the main remaining work is answer quality / robustness on later groups rather than route coverage for these D cases.
 - Frontend per-view selected filters are still not fully wired into the production widget; Chat Lab can send explicit filters but the normal widget still depends mostly on `viewId`.
+- The widget now infers cached `selected_filters` when available, but true parity still depends on every view keeping its cache payloads fresh and structurally aligned with Chat Lab expectations.
+- Chat Lab now has a dedicated `Conversation` tab that can:
+  - replay scripted testcase turns one by one in the same `session_id`
+  - replay the whole testcase sequentially against actual assistant replies instead of canned transcript replies
+  - seed a session from the original scenario transcript, then continue with extra manual turns
+- Multi-turn runtime depth is still limited by shallow carry-over inference; the new UI helps surface those failures, but does not itself solve them.
 - `npm audit` still reports dependency risk and has not been addressed in this round.
 
 ## Next Steps
@@ -180,9 +222,197 @@ Quy tac:
 - Decide whether the frontend production widget should expose a lighter version of the new debug metadata or keep that visibility exclusive to Chat Lab.
 - Extend intent coverage or dedicated skills for:
   - customer lookup
-  - lead geography
   - cohort summary
   - richer team/source drill-down
-- Continue the next Chat Lab review batch from groups `D` onward, using `artifacts/chat-lab-exports/` as the source of reviewed CSV artifacts and appending only verified lessons to `docs/eval/chat-lab-know-how.md`.
-- Decide whether `evaluate_test` should remain heuristic-only or later upgrade to an LLM-backed reviewer once enough know-how coverage exists for groups `E` onward.
+- Continue the next Chat Lab review batch from groups `E` onward, using `artifacts/chat-lab-exports/` as the source of reviewed CSV artifacts and appending only verified lessons to `docs/eval/chat-lab-know-how.md`.
+- Focus the next local hardening pass on groups `F-I`; groups `D-E` are now materially stronger, but still need real manual CSV confirmation against the updated runtime.
+- 2026-04-12 follow-up hardening after reviewed batches `2026-04-12T02-36-46-673Z` and `2026-04-12T02-55-24-979Z`:
+  - `tc21` customer ranking now includes `Mã KH` before customer name via `customer-revenue-ranking-v2.js`.
+  - Generic prompts like `Cho tôi tổng quan` are no longer allowed to bind to the current view; they now route to `clarify_required` and ask what domain the user wants summarized.
+  - `tc33` keeps the deterministic operations path, but `operations-status-summary` now opens with a soft limitation note when the user asks an underspecified question like `account ghost nhiều nhất`.
+  - Shared month parsing now understands shorthand `t3` and English month names like `March 2026`, so deterministic skills can reuse that parsing without falling back.
+  - `revenue-trend-analysis` now handles rhetorical month questions such as `Tháng 2 lại thấp thế à?` deterministically by comparing adjacent months and adding a short seasonal note when appropriate.
+  - Imperative export prompts like `Xuất cho tôi bảng seller tháng 3 đi` now map directly to `top-sellers-period` instead of broad fallback.
+  - Seller verification prompts like `Hoàng Văn Huy có phải đạt 200 triệu tháng 3 không?` now route to `seller-month-revenue` and explicitly confirm/correct the claimed number.
+- `npm run test --workspace @crm/ai-chat-module` passed with 50/50 tests on 2026-04-12 after the F/G hardening round above.
+- 2026-04-12 H follow-up hardening completed from reviewed conversation CSV artifacts:
+  - `tc40` seller follow-up now keeps the carried month from history and can resolve short seller mentions from previously mentioned names in-session.
+  - `tc41` month follow-up chains now anchor back to the original `top seller` intent, so `thang 1`, `01/2026`, `12/2025`, and no-data months stay on deterministic `top-sellers-period` instead of falling to fallback.
+  - `tc42` KPI drill-down follow-up (`Phan tich them ve doanh thu`) now reuses the prior KPI month context and stays on deterministic `kpi-overview` with a richer revenue breakdown instead of `clarify_required`.
+  - `tc43` off-topic weather follow-up is now blocked by `validation / out_of_domain_request` with a cheap no-access reply instead of token-heavy fallback.
+  - `docs/eval/eval-50-chat-lab.json` was updated so `tc42` now expects deterministic KPI drill-down rather than fallback.
+- `npm run test --workspace @crm/ai-chat-module` passed with 55/55 tests on 2026-04-12 after the H follow-up hardening round above.
+- 2026-04-12 follow-up depth hardening continued after new conversation exports:
+  - deterministic follow-up no longer depends only on `recentTurnsForIntent`; anchor lookup now scans the full in-request transcript so longer chains keep their topic instead of collapsing after a few turns.
+  - `tc40` now survives natural phrasing like `thang 4 cua Hien thi sao`, carrying both seller topic and the new month cleanly inside the same conversation.
+  - `tc41` now keeps deterministic `top-sellers-period` even when the user jumps across years, e.g. `thang 12 2025 thi sao`.
+  - `kpi-overview` now supports topic-specific drill-downs such as revenue, lead mới, khách mới/chuyển đổi, số đơn, và seller focus, instead of replaying the same overview block.
+- `npm run test --workspace @crm/ai-chat-module` passed with 57/57 tests on 2026-04-12 after the deeper Group H conversation-state hardening.
+- Keep multi-turn stress cases in group `H` and expand them beyond the current short follow-up coverage before considering Chat Lab ready for long-session QA.
+- `evaluate_test` has been removed from both Chat Lab UI and backend; future review automation, if any, should be rebuilt from `chat-lab-know-how.md` with a clearer scope.
+- Use the new Chat Lab `Conversation` tab when validating:
+  - long carry-over chains
+  - off-topic resets
+  - prompt variants inserted mid-session
+  - stress cases that only fail after several consecutive user turns
+- 2026-04-12 conversation memory/observability hardening completed:
+  - runtime `chat-runtime-v2` now emits `conversation_state` on responses and pushes a `conversation_topic_state` step into telemetry so carry-over decisions are inspectable instead of implicit.
+  - Chat Lab `Conversation` tab now shows per-turn health, continuity mode, active topic label, focus/entity/time patches, anchor question, and exports those fields into CSV for manual review.
+  - `kpi-overview` now supports compound follow-up drill-down inside one topic (for example `lead moi va khach moi`) instead of only handling one narrow follow-up focus.
+- `npm run test --workspace @crm/ai-chat-module` passed with 60/60 tests on 2026-04-12 after adding conversation-state regressions and multi-focus KPI follow-up coverage.
+- `npm run build --workspace @crm/frontend` passed on 2026-04-12 after wiring Chat Lab conversation-state UI and CSV export fields.
+- `npm run lint --workspace @crm/frontend` passed on 2026-04-12 after wiring Chat Lab conversation-state UI and CSV export fields.
+- 2026-04-12 H follow-up round 4 stabilization completed after reviewing the newest conversation CSV exports:
+  - seller alias detection is now filtered by real name-like tokens instead of generic business words, so prompts like `Seller nao dang dan dau DT thang nay?`, `What's the revenue for March 2026?`, and `Thang 2 lai thap the a?` no longer get hijacked into fake seller matches such as `Dang`, `The`, or `Hien`.
+  - history-based seller resolution now only activates on short follow-up turns with prior transcript context, which keeps first-turn system asks on `kpi-overview` but still lets seller follow-ups like `Con Hien thi sao?`, `Hoang thi sao?`, and ambiguous `Hung thi sao?` stay deterministic.
+  - ambiguous seller follow-ups now surface a deterministic clarify step instead of silently reusing the previous seller entity.
+- `npm run test --workspace @crm/ai-chat-module` passed with 63/63 tests on 2026-04-12 after the Group H alias/time-context stabilization round above.
+- 2026-04-12 `tc42` follow-up drill-down hardening continued after the `2026-04-12T06-39-46-550Z` conversation export:
+  - KPI follow-up now recognizes broader drill-down wording like `lam ro hon theo lead`, not only the earlier fixed phrases (`phan tich them`, `noi ro hon`, ...).
+  - `kpi-overview` now supports narrower lead-focused replies and lead-by-source breakdowns inside the same carried month, instead of always replaying the full revenue overview block.
+  - follow-up correction turns like `toi muon hoi lead khong phai doanh thu` now drop the revenue focus deterministically instead of falling back.
+  - follow-up handoff between `kpi_overview` and `conversion_source_summary` is now explicit: asking `lead + nguon` can move into source-summary skill, while dropping `nguon` later can move cleanly back to KPI lead analysis without losing the month context.
+- `npm run test --workspace @crm/ai-chat-module` passed with 65/65 tests on 2026-04-12 after the `tc42` drill-down/focus-correction hardening above.
 - Keep `docs/ai-chat-architecture.md` and `sub_plan.md` aligned with the actual runtime as Round 1 hardening continues.
+- 2026-04-12 Group `I` (`tc44-46`) was upgraded from easy single-turn grounding checks into harder review cases:
+  - `tc44` now uses a follow-up verify turn with business wording (`bang xep hang seller ben team`) instead of datasource wording; this was later fixed so the follow-up carries seller/month context and verifies against seller ranking.
+  - `tc45` now tests zero-result behavior under old-history contamination plus a near-match seller reference (`Dang Quynh Anh` -> `Quynh Anh`) to catch stale-number hallucination.
+  - `tc46` now uses noisier business shorthand and asks whether the dashboard total still matches the total when summed from orders, instead of naming internal sources directly.
+- 2026-04-12 local batch rerun across all 50 Chat Lab cases was written to `artifacts/chat-lab-exports/chat-lab-batch-local-2026-04-12T14-56-35-233Z.json`.
+  - Result snapshot: `40/50` auto-pass.
+  - Real runtime gaps from that run:
+    - `tc44` initially failed for Group `I` due seller verification follow-up resolving into a wrong clarify path; fixed later in the same V1.5 hardening sequence.
+    - `tc46` initially auto-passed but had weak reply quality because it replayed KPI summary without explicitly answering the user's `check lai / co khop khong` ask; fixed later with order-sum reconciliation wording.
+    - `tc49` and `tc50` initially showed over-eager deterministic routing (`operations` / `renew`) on broad asks; fixed later by blocking broad sale-owner/account and CEO full-picture asks from deterministic capture.
+  - Dataset expectations that are now stale relative to runtime improvements:
+    - `tc16`, `tc18`, `tc19`, `tc20`, `tc42`, `tc43`.
+- 2026-04-12 V1.5 packaging pass after the user completed A-J manual testing:
+  - `PLAN.md` now reflects the actual V1.5 state: A-J have been tested/hardened locally, and the phase is in local gate packaging rather than broad testcase expansion.
+  - `DataConnector` contract now covers runtime-used methods beyond the original seam, including `getLatestOperationsMonthEndKey()` and `detectSellerCandidates()`, with a regression in `sqlite-connector.test.js`.
+  - Compound orchestration fallback copy in `chat-runtime-v2.js` now uses Vietnamese with diacritics instead of ASCII-only text; legacy import path `chat-runtime.js` is now only a small re-export shim.
+  - `top-sellers-period` multi-period reply block now uses Vietnamese with diacritics so follow-up chains do not regress into ASCII-only output.
+  - Added a regression assertion that compound deterministic replies include the Vietnamese opener `Tôi tách câu hỏi...`.
+  - `docs/eval/chat-lab-testing-guide.md` and `docs/ai-chat-architecture.md` now point agents at the active `chat-runtime-v2.js` runtime and mention the V1.5 connector/conversation-state seams.
+  - `npm run test --workspace @crm/ai-chat-module` passed with `70/70` tests after these V1.5 gate fixes.
+- 2026-04-12 duplicate/obsolete cleanup:
+  - `modules/ai-chat/src/runtime/chat-runtime.js` and `modules/ai-chat/src/runtime/intent-classifier.js` are now thin compatibility shims to the active `*-v2` implementations instead of duplicate runtime code.
+  - Old skill source paths were reduced to compatibility shims:
+    - `seller-month-revenue.js` and `seller-month-revenue-v2.js` -> `seller-month-revenue-v3.js`
+    - `customer-revenue-ranking.js` -> `customer-revenue-ranking-v2.js`
+    - `source-revenue-drilldown.js` -> `source-revenue-drilldown-v2.js`
+  - Removed temporary frontend refactor scripts `apps/frontend/fix_opacity.cjs` and `apps/frontend/refactor.cjs`.
+  - Removed the no-longer-needed source-group audit script and artifacts:
+    - root script `audit:source-groups`
+    - `scripts/audit-source-group-mapping.mjs`
+    - `artifacts/source-group-audit/`
+  - `skills/chat-lab-review/SKILL.md` and `docs/eval/runtime-summary.md` now point to active runtime/classifier paths.
+  - `npm run test --workspace @crm/ai-chat-module` still passed with `70/70` after cleanup.
+- 2026-04-13 V2 kickoff:
+  - `PLAN.md` now splits `V2.0` into Supabase connector/parity + MCP safe surface and adds `V2.5` for backend online trigger scrape -> upsert Supabase after connector parity.
+  - Supabase has no CRM data yet, so implementation started with safe local scaffolding rather than switching runtime data plane.
+  - Added `SupabaseConnector` scaffold plus `CRM_DATA_CONNECTOR=sqlite|supabase` selection in `modules/ai-chat/src/connectors/index.js`; Supabase query execution intentionally fail-fast until the V2 async connector refactor is complete.
+  - Added `supabase/migrations/0001_crm_agent_schema.sql` as the initial `crm_agent` canonical schema contract.
+  - Added V2 scripts:
+    - `npm run v2:sql-audit` -> scans AI chat SQL for SQLite/Postgres dialect risks.
+    - `npm run v2:export-supabase-seed` -> exports SQLite canonical tables to JSONL artifacts for controlled Supabase seeding; avoid committing generated seed exports because they contain raw CRM data.
+  - Smoke run of `npm run v2:sql-audit` found `375` findings and wrote an audit report under `artifacts/v2-supabase/`.
+  - Smoke run of seed export with `SUPABASE_SEED_EXPORT_LIMIT=5` succeeded, then the generated `seed-export` folder was deleted to avoid leaving raw CRM sample data in the repo.
+  - `npm run test --workspace @crm/ai-chat-module` passed with `72/72` after the V2 scaffold.
+- 2026-04-13 Supabase setup status:
+  - User created Supabase project/schema and applied `supabase/migrations/0001_crm_agent_schema.sql`.
+  - `crm_agent_readonly` role exists and has read-only grants on schema `crm_agent`.
+  - `.env` now has Supabase pooler connection under `SUPABASE_DATABASE_URL`; keep `CRM_DATA_CONNECTOR=sqlite` until parity passes.
+  - `npm run v2:supabase-smoke` reached Supabase successfully:
+    - `ok: true`
+    - `current_user: crm_agent_readonly`
+    - `schema: crm_agent`
+    - `expected_table_count: 15`
+    - `actual_table_count: 15`
+    - `missing_tables: []`
+    - `readonly_check: passed_write_blocked`
+  - Next V2 step is to implement Supabase async query/parity path; do not switch runtime to `CRM_DATA_CONNECTOR=supabase` yet.
+- 2026-04-13 V2 Supabase async smoke path:
+  - `SupabaseConnector` now has `runReadQueryAsync()` using `pg` for read-only smoke/parity queries while keeping the sync `runReadQuery()` runtime path gated.
+  - Added scripts:
+    - `npm run v2:supabase-parity-smoke` compares core counts/latest order date between SQLite and Supabase.
+    - `npm run v2:generate-supabase-seed-sql` turns JSONL seed export into `artifacts/v2-supabase/supabase-seed.sql`; this file contains raw CRM data and must not be committed.
+  - `npm run v2:supabase-smoke` still passes with read-only role and 15 expected tables, but all Supabase tables are currently empty.
+  - `npm run v2:supabase-parity-smoke` correctly fails because Supabase has `0` rows while local SQLite has data (`orders=1569`, `customers=50891`, `kpis_daily=706`, latest order day `2026-04-06`).
+  - `npm run test --workspace @crm/ai-chat-module` passed with `72/72` after adding the async Supabase smoke path.
+- 2026-04-13 V2 seed + parity checkpoint:
+  - Added `npm run v2:seed-supabase` to load the exported canonical JSONL data into Supabase through an admin/seed connection string; this path rejects the read-only role.
+  - Supabase schema drift discovered during first seed run was fixed in code/migration:
+    - `crm_agent.orders.payment_status` is text in real data, not integer.
+    - `crm_agent.staffs` must key by `user_id`; `contact_name` is not unique in the SQLite source.
+  - After these adjustments, Supabase seed completed successfully with exact table counts matching SQLite, including `customers=50891`, `orders=1569`, `kpis_daily=706`, `staffs=72`, and all 15 canonical tables populated.
+  - `npm run v2:supabase-smoke` passed against populated Supabase data, still under `crm_agent_readonly`.
+  - `npm run v2:supabase-parity-smoke` passed after seeding:
+    - `orders_count: 1569 == 1569`
+    - `customers_count: 50891 == 50891`
+    - `kpis_daily_count: 706 == 706`
+    - `latest_order_day: 2026-04-06 == 2026-04-06`
+  - Temporary raw-data artifacts were cleaned up after the successful seed/parity run:
+    - removed `artifacts/v2-supabase/seed-export/`
+    - removed `artifacts/v2-supabase/supabase-seed.sql`
+    - retained only the dialect audit reports under `artifacts/v2-supabase/`
+  - Runtime remains on `CRM_DATA_CONNECTOR=sqlite`; the next V2 step is replacing sync SQLite-only runtime query paths with Supabase-capable execution before enabling the production/runtime switch.
+- 2026-04-13 V2 runtime connector refactor:
+  - `DataConnector` now exposes `initializeRuntimeState()` and `runReadQueryAsync()`. SQLite keeps sync execution under the hood, while Supabase uses async `pg` queries.
+  - `SupabaseConnector` now preloads runtime metadata from Supabase at startup:
+    - latest order date
+    - latest operations month end key
+    - seller names for deterministic classifier/entity resolution
+  - AI runtime now awaits connector initialization before routing and awaits skill execution, so deterministic skill paths can use Supabase without relying on sync SQLite-only query execution.
+  - Fallback tool execution now uses `connector.runReadQueryAsync()` instead of the sync-only path.
+  - Deterministic skills migrated from `runReadQuery()` to `runReadQueryAsync()`:
+    - seller / top seller / KPI / compare / renew / operations / source / team / trend / forecast / orders / lead geography / customer ranking
+  - `npm run test --workspace @crm/ai-chat-module` still passed with `72/72` under default SQLite connector after the refactor.
+  - Direct local replay with `CRM_DATA_CONNECTOR=supabase` now works for real runtime questions:
+    - `Top seller thang 3/2026` -> `top-sellers-period`
+    - `Doanh thu Huy thang 3/2026` -> `seller-month-revenue`
+    - `Tom tat KPI chinh hom nay` -> `kpi-overview`
+    - `So sanh doanh thu thang nay voi thang truoc` -> `compare-periods`
+    - `Tinh hinh renew thang nay` -> `renew-due-summary`
+  - Attempting to run the full Node test suite with `CRM_DATA_CONNECTOR=supabase` inside the current sandbox hit `spawn EPERM`; this looks like an environment/sandbox restriction, not a runtime logic regression. Use direct replay smoke or run the full suite outside the sandbox if a full Supabase test pass is needed.
+  - `.env` has not been switched permanently yet; next safe step is end-to-end local backend/frontend smoke with `CRM_DATA_CONNECTOR=supabase`, then update default local connector if those checks stay clean.
+- 2026-04-13 Supabase observability + app smoke:
+  - Supabase application names are now clearer in logs:
+    - runtime connector default: `crm-dashboard-ai-chat`
+    - read-only smoke: `crm-readonly-smoke`
+    - parity smoke: `crm-parity-smoke`
+    - seed script: `crm-seed-script`
+  - `npm run v2:supabase-smoke` and `npm run v2:supabase-parity-smoke` still pass after the application-name cleanup.
+  - End-to-end smoke with Supabase connector was validated in a pragmatic split:
+    - backend started cleanly on `PORT=3101` with `CRM_DATA_CONNECTOR=supabase`
+    - `GET /api/health` returned `{"ok":true}`
+    - `POST /api/agent/chat` returned deterministic grounded output for `Top seller thang 3/2026`
+    - frontend production build still passed (`npm run build --workspace @crm/frontend`)
+  - The root `npm run dev` wrapper remained flaky in the current shell because stale local processes/ports caused wrapper-level noise; backend/API smoke itself was clean once started on a dedicated port.
+  - Temporary backend smoke process on `3101` was stopped after verification.
+- 2026-04-13 Supabase connection-noise reduction:
+  - `SupabaseConnector` no longer creates a fresh `pg.Client` for every query. It now uses an app-wide `pg.Pool` with read-only settings and default `SUPABASE_POOL_MAX=1`.
+  - Goal of this change: reduce repeated connection/auth chatter in Supabase logs and reuse a single pooled session for sequential deterministic skill queries.
+  - Important limitation: because the project is going through Supabase pooler/Supavisor, the database logs can still show multiple low-level entries (`received/authenticated/authorized`, plus `pgbouncer` auth flow). The connector change reduces app-side connection churn but cannot guarantee a literal single Postgres log line per chat turn.
+  - `apps/backend/.env.example` was cleaned back to a safe sample and now documents:
+    - `SUPABASE_POOL_MAX`
+    - `SUPABASE_POOL_IDLE_TIMEOUT_MS`
+    - `SUPABASE_POOL_CONNECTION_TIMEOUT_MS`
+  - `npm run test --workspace @crm/ai-chat-module` still passed with `72/72` after the pool refactor.
+  - Replayed the same Supabase-backed seller query twice in a row (`hoàng văn huy doanh số tháng 4`) and both runs stayed deterministic on `seller-month-revenue`; use Supabase logs after this point to confirm the reduced session churn in the real environment.
+
+- 2026-04-13 Supabase region migration prep:
+  - Verified there is no Korea/project-ref hardcode in runtime logic; region-specific values are isolated to .env/operator setup.
+  - Added docs/v2-supabase-migrate-singapore.md as the operator runbook for moving from the current Korea project to a new Singapore project.
+  - Updated apps/backend/.env.example with clearer pooler/seed examples, Singapore notes, and a warning to use URL-safe passwords or encode special characters in connection strings.
+
+- 2026-04-13 Singapore Supabase migration completed:
+  - New Singapore project 	wdsuojoagybyakslbqe was seeded from the local canonical SQLite export using the existing V2 seed pipeline.
+  - 
+pm run v2:seed-supabase inserted exact row counts for all 15 crm_agent tables, including customers=50891, orders=1569, kpis_daily=706, ops_raw_daily=68870, and monthly_status=29352.
+  - 
+pm run v2:supabase-smoke passed against the Singapore project under crm_agent_readonly, with 15 tables present and write blocked correctly.
+  - 
+pm run v2:supabase-parity-smoke passed against the Singapore project: orders/customers/kpis counts and latest order day all matched local SQLite.
+  - Temporary raw seed artifacts were cleaned again after the migration (rtifacts/v2-supabase/seed-export, rtifacts/v2-supabase/supabase-seed.sql).
+  - The project is now ready for the next V2 step: quick widget + Chat Lab replay on the Singapore-backed Supabase runtime, then MCP surface work and wider parity replay.
+  - Current .env still contains placeholder/unsafe password strings; before long-term use, replace YOUR_READONLY_PASSWORD with the real Singapore read-only password and prefer a URL-safe seed/admin password string even if the current seed URL happened to work in this setup.

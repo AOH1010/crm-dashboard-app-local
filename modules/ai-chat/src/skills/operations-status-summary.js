@@ -12,6 +12,7 @@ function detectRequestedSlices(question) {
     wantsActive: /(active|hoat dong)/.test(foldedQuestion),
     wantsInactive: /(inactive|khong hoat dong)/.test(foldedQuestion),
     wantsGhost: /\bghost\b/.test(foldedQuestion),
+    wantsMostGhost: /(ghost).{0,24}(nhieu nhat|cao nhat|nao nhieu nhat|nao cao nhat)/.test(foldedQuestion) || /(nhieu nhat|cao nhat).{0,24}(ghost)/.test(foldedQuestion),
     wantsBest: /\bbest\b/.test(foldedQuestion),
     wantsValue: /\bvalue\b/.test(foldedQuestion),
     wantsNoise: /\bnoise\b/.test(foldedQuestion),
@@ -23,9 +24,16 @@ export const operationsStatusSummarySkill = {
   id: "operations-status-summary",
   canHandle(context) {
     const foldedQuestion = context.routingFoldedQuestion || context.foldedQuestion;
+    if (
+      /(team|nhom|doi)/.test(foldedQuestion)
+      && /(seller active|sale active)/.test(foldedQuestion)
+      && /(doanh thu|doanh so|so sanh|hieu suat|so don)/.test(foldedQuestion)
+    ) {
+      return false;
+    }
     return /(active|inactive|best|ghost|noise|value|hoat dong|operations)/.test(foldedQuestion);
   },
-  run(context, connector) {
+  async run(context, connector) {
     const monthContext = resolveMonthEndKey({
       question: context.latestQuestion,
       selectedFilters: context.selectedFilters,
@@ -33,7 +41,7 @@ export const operationsStatusSummarySkill = {
     });
     const requestedSlices = detectRequestedSlices(context.latestQuestion);
 
-    const statusResult = connector.runReadQuery({
+    const statusResult = await connector.runReadQueryAsync({
       sql: `
         SELECT
           COALESCE(status, 'Unknown') AS status,
@@ -48,7 +56,7 @@ export const operationsStatusSummarySkill = {
       maxRows: 10
     });
 
-    const categoryResult = connector.runReadQuery({
+    const categoryResult = await connector.runReadQueryAsync({
       sql: `
         SELECT
           COALESCE(category, 'Unknown') AS category,
@@ -92,7 +100,15 @@ export const operationsStatusSummarySkill = {
       && !requestedSlices.wantsNoise
       && !requestedSlices.wantsInactive;
 
-    if (asksOnlyActiveGhost) {
+    if (requestedSlices.wantsMostGhost) {
+      reply = [
+        `Tôi chưa hiểu chính xác bạn đang định nghĩa "account ghost nhiều nhất" theo tiêu chí nào. Nếu ý bạn là muốn xem snapshot operations của ${monthContext.label}, tôi tổng hợp nhanh như dưới đây:`,
+        `- Tổng account tracked: ${totalAccounts.toLocaleString("vi-VN")}.`,
+        `- Active: ${activeCount.toLocaleString("vi-VN")} (${formatPercent(activeRate)}); Inactive: ${inactiveCount.toLocaleString("vi-VN")}.`,
+        `- Ghost hiện có: ${ghostCount.toLocaleString("vi-VN")} account.`,
+        categoryTable
+      ].join("\n\n");
+    } else if (asksOnlyActiveGhost) {
       reply = [
         `Trong ${monthContext.label}, có ${activeCount.toLocaleString("vi-VN")} account Active và ${ghostCount.toLocaleString("vi-VN")} account Ghost.`,
         `- Active chiếm ${formatPercent(activeRate)} trên tổng ${totalAccounts.toLocaleString("vi-VN")} account tracked.`
@@ -110,7 +126,7 @@ export const operationsStatusSummarySkill = {
     return {
       reply,
       fallback_reply: reply,
-      format_hint: asksOnlyActiveGhost ? "summary" : "table",
+      format_hint: asksOnlyActiveGhost || requestedSlices.wantsMostGhost ? "summary" : "table",
       summary_facts: {
         month_label: monthContext.label,
         total_accounts: totalAccounts,

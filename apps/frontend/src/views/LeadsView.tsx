@@ -29,8 +29,8 @@ type ProvinceFeature = { type?: string; id?: string | number; properties?: { Ten
 type ProvinceFeatureCollection = { type?: string; features?: ProvinceFeature[]; [key: string]: unknown };
 
 const GEO_URL = "/vn-provinces.json";
-const INDUSTRY_COLORS = ["#B8FF68", "#7ED343", "#3C6600", "#1C1D21", "#6B7280", "#E5E7EB"];
-const HEAT_COLORS = ["#EEF7E0", "#DAF0B8", "#C3E889", "#A8DD57", "#86CC38", "#60AC23", "#3F7F10", "#295408"];
+const INDUSTRY_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)", "var(--color-border)"];
+const HEAT_COLORS = ["#eff6ff", "#dbeafe", "#bfdbfe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8"];
 const LEADS_CACHE_KEY = "crm_cache_leads";
 
 function foldText(value: string) {
@@ -330,10 +330,10 @@ export default function LeadsView() {
   const highlightedProvinceColorByKey = useMemo(() => {
     const highlighted: Record<string, string> = {};
     if (topProvinces[0]?.provinceKey) {
-      highlighted[topProvinces[0].provinceKey] = "#204907";
+      highlighted[topProvinces[0].provinceKey] = "#1e3a8a"; /* blue-900 */
     }
     if (topProvinces[1]?.provinceKey) {
-      highlighted[topProvinces[1].provinceKey] = "#3A730D";
+      highlighted[topProvinces[1].provinceKey] = "#1e40af"; /* blue-800 */
     }
     return highlighted;
   }, [topProvinces]);
@@ -411,16 +411,16 @@ export default function LeadsView() {
     <div className="animate-in slide-in-from-bottom-2 space-y-8 duration-500">
       <div className="flex items-end justify-between">
         <div>
-          <h2 className="font-headline text-[length:var(--font-size-h-page)] font-bold tracking-tight text-[#1C1D21]">
+          <h2 className="font-headline text-[length:var(--font-size-h-page)] font-bold tracking-tight text-foreground">
             Leads Distribution
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Vietnam heatmap by province with customer conversion insights by industry and segment group.
           </p>
         </div>
       </div>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 shadow-ambient">
+      <section className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-sm">
         {cacheSavedAt ? (
           <span>
             Dang hien cache luu luc <strong>{new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(cacheSavedAt))}</strong>.
@@ -440,19 +440,19 @@ export default function LeadsView() {
         </section>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.8fr_1fr]">
-        <section className="relative flex min-h-[760px] flex-col gap-5 rounded-[30px] border border-gray-100 bg-white p-6 shadow-ambient">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.8fr_1fr]">
+        <section className="relative flex min-h-[760px] flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-sm">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="space-y-1">
-              <h3 className="font-headline text-[length:var(--font-size-h-bento)] font-bold tracking-tight text-[#1C1D21]">
+              <h3 className="font-headline text-[length:var(--font-size-h-bento)] font-bold tracking-tight text-foreground">
                 Vietnam Heatmap
               </h3>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                 Hover a province to view exact count
               </p>
             </div>
 
-            <div className="inline-flex rounded-full border border-gray-200 bg-[#F6F6F8] p-1">
+            <div className="inline-flex rounded-full border border-border bg-muted p-1">
               {(["customers", "leads"] as LeadsMode[]).map((item) => (
                 <button
                   key={item}
@@ -460,7 +460,7 @@ export default function LeadsView() {
                   onClick={() => startTransition(() => setMode(item))}
                   className={cn(
                     "rounded-full px-5 py-2 text-xs font-bold uppercase tracking-widest transition-colors",
-                    mode === item ? "bg-[#1C1D21] text-[#B8FF68]" : "text-gray-500 hover:text-[#1C1D21]",
+                    mode === item ? "bg-card text-card-foreground text-primary" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {item}
@@ -469,7 +469,7 @@ export default function LeadsView() {
             </div>
           </div>
 
-          <div ref={mapContainerRef} className="relative flex-1 overflow-hidden rounded-[24px] border border-gray-100 bg-[#F9F9FB]">
+          <div ref={mapContainerRef} className="relative flex-1 overflow-hidden rounded-xl border border-border bg-background">
             <ComposableMap
               projection="geoMercator"
               projectionConfig={{ scale: 2020, center: [106.3, 16.35] }}
@@ -561,20 +561,20 @@ export default function LeadsView() {
               </ZoomableGroup>
             </ComposableMap>
 
-            <div className="pointer-events-none absolute bottom-4 left-4 rounded-xl border border-gray-200 bg-white/95 px-3 py-2 text-[11px] font-bold text-gray-500 shadow-ambient">
+            <div className="pointer-events-none absolute bottom-4 left-4 rounded-xl border border-border bg-muted px-3 py-2 text-[11px] font-bold text-muted-foreground shadow-sm">
               Blank province excluded from map: {formatNumber(data?.summary.blank_province_count || 0)}
             </div>
 
-            <div ref={topProvincePanelRef} className="absolute right-4 top-4 w-[250px] rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-ambient">
+            <div ref={topProvincePanelRef} className="absolute right-4 top-4 w-[250px] rounded-2xl border border-border bg-muted p-4 shadow-sm">
               <div className="mb-3 flex items-center gap-2">
-                <MapPinned className="h-4 w-4 text-[#3c6600]" />
-                <p className="text-xs font-black uppercase tracking-widest text-[#1C1D21]">Top 5 Provinces</p>
+                <MapPinned className="h-4 w-4 text-primary" />
+                <p className="text-xs font-black uppercase tracking-widest text-foreground">Top 5 Provinces</p>
               </div>
               <div className="space-y-2.5">
                 {topProvinces.map((item) => (
                   <div key={item.provinceName} className="flex items-center justify-between gap-3 text-xs">
-                    <span className="font-bold text-[#1C1D21]">{item.provinceName}</span>
-                    <span className="font-black text-[#3c6600]">{formatNumber(item.count)}</span>
+                    <span className="font-bold text-foreground">{item.provinceName}</span>
+                    <span className="font-black text-primary">{formatNumber(item.count)}</span>
                   </div>
                 ))}
               </div>
@@ -582,7 +582,7 @@ export default function LeadsView() {
 
             {hoverInfo ? (
               <div
-                className="pointer-events-none absolute z-[70] rounded-xl bg-[#1C1D21] px-3 py-2 text-xs font-bold text-white shadow-xl"
+                className="pointer-events-none absolute z-[70] rounded-xl bg-card text-card-foreground px-3 py-2 text-xs font-bold  shadow-xl"
                 style={{ left: hoverInfo.x, top: hoverInfo.y }}
               >
                 {hoverInfo.provinceName} - {formatNumber(hoverInfo.count)}
@@ -591,19 +591,19 @@ export default function LeadsView() {
           </div>
         </section>
 
-        <aside className="flex min-h-[680px] flex-col gap-8">
-          <section className="rounded-[30px] border border-gray-100 bg-white p-6 shadow-ambient">
+        <aside className="flex min-h-[680px] flex-col gap-6">
+          <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h3 className="font-headline text-[length:var(--font-size-h-bento)] font-bold tracking-tight text-[#1C1D21]">
+                <h3 className="font-headline text-[length:var(--font-size-h-bento)] font-bold tracking-tight text-foreground">
                   Industry Mix
                 </h3>
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                   Based on {mode}
                 </p>
               </div>
-              <div className="rounded-xl bg-[#F6F6F8] p-2">
-                <PieIcon className="h-4 w-4 text-gray-400" />
+              <div className="rounded-xl bg-muted p-2">
+                <PieIcon className="h-4 w-4 text-muted-foreground" />
               </div>
             </div>
 
@@ -631,16 +631,16 @@ export default function LeadsView() {
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div className="flex flex-col items-center">
-                    <span className="font-headline text-4xl font-black text-[#1C1D21]">{formatNumber(industryTotal)}</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{mode}</span>
+                    <span className="font-headline text-4xl font-black text-foreground">{formatNumber(industryTotal)}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{mode}</span>
                   </div>
                 </div>
               </div>
 
               <div className="w-[42%] min-w-[180px] space-y-2">
-                <div className="rounded-xl border border-gray-200 bg-[#F9F9FB] p-3 text-xs">
-                  <p className="font-black uppercase tracking-widest text-gray-400">Hover Detail</p>
-                  <p className="mt-1 font-semibold text-[#1C1D21]">
+                <div className="rounded-xl border border-border bg-background p-3 text-xs">
+                  <p className="font-black uppercase tracking-widest text-muted-foreground">Hover Detail</p>
+                  <p className="mt-1 font-semibold text-foreground">
                     {hoveredIndustry ? `${hoveredIndustry.name} - ${formatNumber(hoveredIndustry.value)}` : "Hover a slice"}
                   </p>
                 </div>
@@ -649,8 +649,8 @@ export default function LeadsView() {
                   {industryChartData.map((item) => (
                     <div key={item.name} className="flex items-center gap-2 text-xs">
                       <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="font-semibold text-gray-600">{item.name}</span>
-                      <span className="ml-auto font-black text-[#1C1D21]">
+                      <span className="font-semibold text-muted-foreground">{item.name}</span>
+                      <span className="ml-auto font-black text-foreground">
                         {formatPercent(industryTotal > 0 ? (item.value / industryTotal) * 100 : 0)}
                       </span>
                     </div>
@@ -660,15 +660,15 @@ export default function LeadsView() {
             </div>
           </section>
 
-          <section className="flex flex-1 flex-col rounded-[30px] border border-gray-100 bg-white p-6 shadow-ambient">
+          <section className="flex flex-1 flex-col rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <h3 className="font-headline text-[length:var(--font-size-h-bento)] font-bold tracking-tight text-[#1C1D21]">
+                <h3 className="font-headline text-[length:var(--font-size-h-bento)] font-bold tracking-tight text-foreground">
                   Segment Conversion
                 </h3>
-                <Info className="h-3.5 w-3.5 text-gray-300" />
+                <Info className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                 customers / leads
               </span>
             </div>
@@ -677,17 +677,17 @@ export default function LeadsView() {
               {segmentRows.map((segment) => (
                 <div key={segment.segment_group}>
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-sm font-bold text-[#1C1D21]">{segment.segment_group}</span>
+                    <span className="text-sm font-bold text-foreground">{segment.segment_group}</span>
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="font-black text-[#3c6600]">{formatPercent(segment.conversion_rate)}</span>
-                      <span className="font-semibold text-gray-400">
+                      <span className="font-black text-primary">{formatPercent(segment.conversion_rate)}</span>
+                      <span className="font-semibold text-muted-foreground">
                         {formatNumber(segment.customer_count)}/{formatNumber(segment.lead_count)}
                       </span>
                     </div>
                   </div>
-                  <div className="h-2 rounded-full bg-[#F1F3F5]">
+                  <div className="h-2 rounded-full bg-muted">
                     <div
-                      className="h-full rounded-full bg-[#B8FF68] transition-all duration-700"
+                      className="h-full rounded-full bg-primary transition-all duration-700"
                       style={{ width: `${Math.min(segment.conversion_rate, 100)}%` }}
                     />
                   </div>

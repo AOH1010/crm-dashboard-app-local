@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   TimerReset,
   X,
+  Download,
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { LOAD_LIVE_DATA_EVENT } from "@/src/lib/liveDataEvents";
@@ -97,7 +98,7 @@ function formatPercent(value: number) {
 function getCategoryTone(category: string) {
   switch (category) {
     case "Best":
-      return "border-[#B8FF68]/45 bg-[#B8FF68]/12 text-[#416113]";
+      return "border-primary/45 bg-primary/12 text-[#416113]";
     case "Value":
       return "border-sky-200 bg-sky-50 text-sky-700";
     case "Noise":
@@ -183,21 +184,57 @@ export default function ActiveMapView() {
     });
   };
 
-  const riskRows = useMemo(
-    () => (payload?.rows || []).filter((row) => row.category === "Ghost" || row.category === "Noise").slice(0, 6),
-    [payload],
-  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+  
+  const allRows = useMemo(() => payload?.rows || [], [payload]);
+  const totalPages = Math.ceil(allRows.length / rowsPerPage) || 1;
+  const tableRows = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return allRows.slice(start, start + rowsPerPage);
+  }, [allRows, currentPage]);
 
-  const tableRows = useMemo(() => (payload?.rows || []).slice(0, 18), [payload]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [payload]);
+
+  const handleExportCsv = () => {
+    if (allRows.length === 0) return;
+    const headers = ["Account", "Owner", "Type", "Customer ID", "Activation", "Expiry", "Open Count", "Quality Ratio", "Status", "Category", "Latest Active"];
+    const csvContent = [
+      headers.join(","),
+      ...allRows.map(row => [
+        `"${row.account || ''}"`,
+        `"${row.sale_owner || ''}"`,
+        `"${row.account_type || row.customer_type || ''}"`,
+        `"${row.customer_id || ''}"`,
+        `"${row.activation_date || ''}"`,
+        `"${row.expiry_date || ''}"`,
+        row.open_cnt || 0,
+        row.quality_ratio || 0,
+        `"${row.status || ''}"`,
+        `"${row.category || ''}"`,
+        `"${row.latest_active_date || ''}"`
+      ].join(","))
+    ].join("\n");
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `active_accounts_${reportMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="space-y-8 pb-28">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-headline text-[length:var(--font-size-h-page)] font-bold tracking-tight text-[#1C1D21]">
+          <h1 className="font-headline text-[length:var(--font-size-h-page)] font-bold tracking-tight text-foreground">
             Active Map
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Monitor activation-rooted accounts by tenure, current active status, and usage quality.
           </p>
         </div>
@@ -206,19 +243,19 @@ export default function ActiveMapView() {
           <button
             type="button"
             onClick={handleResetCurrentMonth}
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-[#1C1D21] shadow-ambient transition-colors hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-bold text-foreground shadow-sm transition-colors hover:bg-gray-50"
           >
-            <CalendarRange className="h-4 w-4 text-[#3c6600]" />
+            <CalendarRange className="h-4 w-4 text-primary" />
             Current month
           </button>
           <button
             type="button"
             onClick={() => setShowFilters((value) => !value)}
             className={cn(
-              "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold shadow-ambient transition-colors",
+              "inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold shadow-sm transition-colors",
               showFilters
-                ? "border-[#B8FF68] bg-[#B8FF68]/20 text-[#1C1D21]"
-                : "border-gray-200 bg-white text-[#1C1D21] hover:bg-gray-50",
+                ? "border-primary bg-primary/20 text-primary-foreground"
+                : "border-border bg-card text-foreground hover:bg-gray-50",
             )}
           >
             <Filter className="h-4 w-4" />
@@ -227,7 +264,7 @@ export default function ActiveMapView() {
         </div>
       </div>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 shadow-ambient">
+      <section className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-sm">
         {cacheSavedAt ? (
           <span>
             Dang hien cache local duoc luu luc <strong>{formatDateTime(cacheSavedAt)}</strong>. Bam <strong>Load live data</strong> tren top bar de cap nhat Active Map tu server.
@@ -240,15 +277,15 @@ export default function ActiveMapView() {
       </section>
 
       {showFilters ? (
-        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-ambient">
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <label className="space-y-2 text-sm font-semibold text-[#1C1D21]">
+            <label className="space-y-2 text-sm font-semibold text-foreground">
               <span>Report month</span>
               <input
                 type="month"
                 value={draftMonth}
                 onChange={(event) => setDraftMonth(event.target.value)}
-                className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#B8FF68]"
+                className="rounded-xl border border-border bg-card px-4 py-2.5 text-sm outline-none transition-colors focus:border-primary"
               />
             </label>
 
@@ -256,7 +293,7 @@ export default function ActiveMapView() {
               <button
                 type="button"
                 onClick={() => setShowFilters(false)}
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-bold text-muted-foreground transition-colors hover:bg-gray-50"
               >
                 <X className="h-4 w-4" />
                 Close
@@ -264,7 +301,7 @@ export default function ActiveMapView() {
               <button
                 type="button"
                 onClick={handleApplyFilters}
-                className="rounded-xl bg-[#B8FF68] px-5 py-2 text-sm font-bold text-[#1C1D21] shadow-lg shadow-[#B8FF68]/20 transition-transform hover:scale-[1.01]"
+                className="rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground shadow-sm shadow-primary/20 transition-transform hover:scale-[1.01]"
               >
                 Apply
               </button>
@@ -279,7 +316,7 @@ export default function ActiveMapView() {
         </section>
       ) : null}
 
-      <section className="rounded-[30px] border border-gray-100 bg-white p-4 shadow-ambient">
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="flex flex-wrap gap-2">
           {TENURE_BUCKETS.map((bucket) => (
             <button
@@ -289,8 +326,8 @@ export default function ActiveMapView() {
               className={cn(
                 "rounded-xl px-4 py-2 text-sm font-bold transition-all",
                 tenureBucket === bucket.key
-                  ? "bg-[#1C1D21] text-[#B8FF68] shadow-lg shadow-black/10"
-                  : "bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-[#1C1D21]",
+                  ? "bg-card text-card-foreground text-primary shadow-sm shadow-black/10"
+                  : "bg-gray-50 text-muted-foreground hover:bg-gray-100 hover:text-foreground",
               )}
             >
               {bucket.label}
@@ -299,8 +336,8 @@ export default function ActiveMapView() {
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 items-start ">
+        <div className="grid gap-4 content-start md:grid-cols-2 xl:grid-cols-4">
           {[
             {
               label: "Tracked Accounts",
@@ -331,141 +368,145 @@ export default function ActiveMapView() {
             <article
               key={card.label}
               className={cn(
-                "rounded-[28px] border p-6 shadow-ambient",
-                card.dark ? "border-[#1C1D21] bg-[#1C1D21] text-white" : "border-gray-100 bg-white text-[#1C1D21]",
+                "rounded-xl border p-4 shadow-sm flex flex-col justify-between",
+                card.dark ? "border-border bg-card text-foreground" : "border-border bg-card text-foreground",
               )}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className={cn(
-                    "text-[11px] font-black uppercase tracking-[0.22em]",
-                    card.dark ? "text-white/40" : "text-gray-400",
+              <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className={cn(
+                      "text-[10px] font-bold uppercase tracking-wider",
+                      card.dark ? "text-muted-foreground" : "text-muted-foreground",
+                    )}>
+                      {card.label}
+                    </p>
+                    <p className="mt-1 font-headline text-2xl font-bold tracking-tight">
+                      {typeof card.value === "number" ? numberFormatter.format(card.value) : card.value}
+                    </p>
+                  </div>
+                  <div className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                    card.dark ? "bg-muted text-primary" : "bg-muted text-foreground",
                   )}>
-                    {card.label}
-                  </p>
-                  <p className="mt-3 font-headline text-4xl font-bold tracking-tight">
-                    {typeof card.value === "number" ? numberFormatter.format(card.value) : card.value}
-                  </p>
-                </div>
-                <div className={cn(
-                  "flex h-12 w-12 items-center justify-center rounded-2xl",
-                  card.dark ? "bg-white/8 text-[#B8FF68]" : "bg-gray-50 text-[#1C1D21]",
-                )}>
-                  <card.icon className="h-5 w-5" />
+                    <card.icon className="h-4 w-4" />
+                  </div>
                 </div>
               </div>
-              <p className={cn("mt-6 text-sm", card.dark ? "text-white/60" : "text-gray-500")}>{card.helper}</p>
+              <p className={cn("mt-2 text-xs", card.dark ? "text-muted-foreground" : "text-muted-foreground")}>{card.helper}</p>
             </article>
           ))}
         </div>
 
-        <aside className="rounded-[32px] border border-white/5 bg-[#1C1D21] p-7 text-white shadow-2xl">
-          <p className="text-[11px] font-black uppercase tracking-[0.28em] text-[#B8FF68]">Risk Queue</p>
-          <h2 className="mt-2 font-headline text-3xl font-bold tracking-tight">Priority Follow-up</h2>
-          <p className="mt-2 text-sm text-white/55">
-            Highest-risk accounts in {TENURE_BUCKETS.find((bucket) => bucket.key === tenureBucket)?.label || "All"} for {formatMonthLabel(payload?.applied_filters.report_month || reportMonth)}.
-          </p>
 
-          <div className="mt-6 space-y-3">
-            {riskRows.length === 0 ? (
-              <div className="rounded-[22px] border border-white/8 bg-white/5 p-5 text-sm text-white/60">
-                No Ghost or Noise accounts in this tenure slice.
-              </div>
-            ) : (
-              riskRows.map((row) => (
-                <article key={row.account} className="rounded-[22px] border border-white/8 bg-white/5 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-bold text-white">{row.account}</p>
-                      <p className="mt-1 text-sm text-white/55">{row.sale_owner || "Unassigned owner"}</p>
-                    </div>
-                    <span className={cn("rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]", getCategoryTone(row.category))}>
-                      {row.category}
-                    </span>
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                    <div className="rounded-2xl bg-black/15 px-3 py-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">Latest active</p>
-                      <p className="mt-1 font-bold text-white">{row.latest_active_date || "N/A"}</p>
-                    </div>
-                    <div className="rounded-2xl bg-black/15 px-3 py-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">Quality</p>
-                      <p className="mt-1 font-bold text-white">{formatPercent(row.quality_ratio * 100)}</p>
-                    </div>
-                  </div>
-                </article>
-              ))
-            )}
-          </div>
-        </aside>
       </section>
 
-      <section className="rounded-[36px] border border-gray-100 bg-white p-7 shadow-ambient">
+      <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="font-headline text-[length:var(--font-size-h-bento)] font-bold tracking-tight text-[#1C1D21]">
+            <h2 className="font-headline text-[length:var(--font-size-h-bento)] font-bold tracking-tight text-foreground">
               Account Monitoring Table
             </h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               Revenue is not shown here. This table focuses on active quality, category, and expiry readiness.
             </p>
           </div>
-          <p className="text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">
-            {numberFormatter.format(payload?.rows.length || 0)} rows in slice
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-muted-foreground">
+              {numberFormatter.format(allRows.length)} rows in slice
+            </p>
+            <button
+              onClick={handleExportCsv}
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-bold text-primary shadow-sm transition-colors hover:bg-gray-50"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </button>
+          </div>
         </div>
 
-        <div className="mt-6 overflow-x-auto">
-          <table className="min-w-[1180px] w-full border-separate border-spacing-y-3">
-            <thead>
-              <tr>
-                {["Account", "Owner", "Type", "Activation", "Expiry", "Open", "Quality", "Status", "Category", "Latest active"].map((header) => (
-                  <th key={header} className="px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.22em] text-gray-400">
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {tableRows.map((row) => (
-                <tr key={`${row.account}:${row.customer_id || "na"}`}>
-                  <td className="rounded-l-[22px] border-y border-l border-gray-100 bg-[#FBFCFE] px-3 py-4">
-                    <p className="font-bold text-[#1C1D21]">{row.account}</p>
-                    <p className="mt-1 text-xs text-gray-500">{row.customer_id || "No customer ID"}</p>
-                  </td>
-                  <td className="border-y border-gray-100 bg-[#FBFCFE] px-3 py-4 text-sm text-gray-600">{row.sale_owner || "Unassigned"}</td>
-                  <td className="border-y border-gray-100 bg-[#FBFCFE] px-3 py-4 text-sm text-gray-600">{row.account_type || row.customer_type || "N/A"}</td>
-                  <td className="border-y border-gray-100 bg-[#FBFCFE] px-3 py-4 text-sm text-gray-600">{formatDate(row.activation_date)}</td>
-                  <td className="border-y border-gray-100 bg-[#FBFCFE] px-3 py-4 text-sm text-gray-600">{formatDate(row.expiry_date)}</td>
-                  <td className="border-y border-gray-100 bg-[#FBFCFE] px-3 py-4">
-                    <div className="flex items-center gap-3">
-                      <span className="min-w-[42px] text-sm font-bold text-[#1C1D21]">{numberFormatter.format(row.open_cnt)}</span>
-                      <div className="h-2 flex-1 rounded-full bg-gray-100">
-                        <div
-                          className="h-2 rounded-full bg-gradient-to-r from-[#B8FF68] to-[#D7F59D]"
-                          style={{ width: `${Math.min(100, row.open_cnt * 4)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="border-y border-gray-100 bg-[#FBFCFE] px-3 py-4 text-sm font-bold text-[#1C1D21]">{formatPercent(row.quality_ratio * 100)}</td>
-                  <td className="border-y border-gray-100 bg-[#FBFCFE] px-3 py-4">
-                    <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]", getStatusTone(row.status))}>
-                      {row.status || "N/A"}
-                    </span>
-                  </td>
-                  <td className="border-y border-gray-100 bg-[#FBFCFE] px-3 py-4">
-                    <span className={cn("rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]", getCategoryTone(row.category))}>
-                      {row.category}
-                    </span>
-                  </td>
-                  <td className="rounded-r-[22px] border-y border-r border-gray-100 bg-[#FBFCFE] px-3 py-4 text-sm text-gray-600">
-                    {row.latest_active_date || "N/A"}
-                  </td>
+        <div className="mt-6 overflow-hidden rounded-xl border border-border">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1180px] border-collapse text-sm">
+              <thead className="bg-muted/50 border-b border-border">
+                <tr>
+                  {["Account", "Owner", "Type", "Activation", "Expiry", "Open", "Quality", "Status", "Category", "Latest active"].map((header) => (
+                    <th key={header} className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.22em] text-muted-foreground">
+                      {header}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tableRows.map((row) => (
+                  <tr key={`${row.account}:${row.customer_id || "na"}`} className="border-b border-border hover:bg-gray-50 transition-colors last:border-0">
+                    <td className="px-4 py-3">
+                      <p className="font-bold text-foreground">{row.account}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{row.customer_id || "No customer ID"}</p>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-foreground">{row.sale_owner || "Unassigned"}</td>
+                    <td className="px-4 py-3 text-sm text-foreground">{row.account_type || row.customer_type || "N/A"}</td>
+                    <td className="px-4 py-3 text-sm text-foreground">{formatDate(row.activation_date)}</td>
+                    <td className="px-4 py-3 text-sm text-foreground">{formatDate(row.expiry_date)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="min-w-[42px] font-bold text-foreground">{numberFormatter.format(row.open_cnt)}</span>
+                        <div className="h-2 w-16 overflow-hidden rounded-full bg-border">
+                          <div
+                            className="h-full bg-primary"
+                            style={{ width: `${Math.min(100, (row.open_cnt / 50) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-bold text-foreground">{formatPercent(row.quality_ratio * 100)}</td>
+                    <td className="px-4 py-3">
+                      <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider", getStatusTone(row.status))}>
+                        {row.status || "N/A"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider", getCategoryTone(row.category))}>
+                        {row.category}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-foreground">
+                      {row.latest_active_date || "N/A"}
+                    </td>
+                  </tr>
+                ))}
+                {tableRows.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      Không có tài khoản nào phù hợp với bộ lọc hiện tại.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="flex items-center justify-between border-t border-border bg-card px-4 py-3">
+            <p className="text-[13px] text-muted-foreground">
+              Đang hiển thị trang <span className="font-bold text-foreground">{currentPage}</span> / <span className="font-bold text-foreground">{totalPages}</span>
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-bold text-foreground shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Trước
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-bold text-foreground shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Sau
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </div>

@@ -17,7 +17,7 @@ export default function DashboardLayout({
   showAgentWidget = true
 }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen overflow-x-clip bg-[#F9F9FB]">
+    <div className="min-h-screen overflow-x-clip bg-background font-sans text-foreground">
       <Sidebar activeId={activeId} onNavigate={onNavigate} />
       <div className="ml-64 flex flex-col min-h-screen">
         <TopBar />

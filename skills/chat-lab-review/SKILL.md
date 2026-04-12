@@ -44,8 +44,8 @@ Do not skip this filter. Many "AI ngu" failures are formatter or scoring failure
 
 ## Where To Look
 
-- Runtime entry: [modules/ai-chat/src/runtime/chat-runtime.js](../../modules/ai-chat/src/runtime/chat-runtime.js)
-- Intent classifier: [modules/ai-chat/src/runtime/intent-classifier.js](../../modules/ai-chat/src/runtime/intent-classifier.js)
+- Runtime entry: [modules/ai-chat/src/runtime/chat-runtime-v2.js](../../modules/ai-chat/src/runtime/chat-runtime-v2.js)
+- Intent classifier: [modules/ai-chat/src/runtime/intent-classifier-v2.js](../../modules/ai-chat/src/runtime/intent-classifier-v2.js)
 - Intent catalog: [modules/ai-chat/src/runtime/intent-catalog.js](../../modules/ai-chat/src/runtime/intent-catalog.js)
 - Skill registry: [modules/ai-chat/src/runtime/skill-registry.js](../../modules/ai-chat/src/runtime/skill-registry.js)
 - Formatter: [modules/ai-chat/src/runtime/skill-response-formatter.js](../../modules/ai-chat/src/runtime/skill-response-formatter.js)
@@ -56,7 +56,7 @@ Do not skip this filter. Many "AI ngu" failures are formatter or scoring failure
 ## Common Failure Mapping
 
 - Route wrong, intent wrong:
-  - start in `intent-classifier.js`
+  - start in `intent-classifier-v2.js`
   - inspect `viewId`, follow-up carry-over, ambiguity threshold
 
 - Route wrong, intent right:

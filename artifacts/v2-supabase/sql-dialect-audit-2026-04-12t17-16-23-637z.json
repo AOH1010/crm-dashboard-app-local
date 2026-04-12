@@ -1,0 +1,3028 @@
+{
+  "generated_at": "2026-04-12T17:16:23.637Z",
+  "scan_roots": [
+    "modules/ai-chat/src/skills",
+    "modules/ai-chat/src/runtime",
+    "modules/ai-chat/src/connectors"
+  ],
+  "file_count": 39,
+  "finding_count": 375,
+  "summary": {
+    "by_check": {
+      "sqlite_placeholder": 324,
+      "case_like": 4,
+      "date_fn": 5,
+      "substr": 30,
+      "limit": 4,
+      "sqlite_pragma_attach": 7,
+      "temp_view": 1
+    },
+    "by_severity": {
+      "high": 331,
+      "medium": 40,
+      "low": 4
+    }
+  },
+  "findings": [
+    {
+      "file": "modules/ai-chat/src/skills/business-mappings-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 82,
+      "snippet": "const explicitGroupPattern = new RegExp(`\\\\b(?:nhom|nguon|source|kenh)\\\\s+${foldedGroup.replace(/\\s+/g, \"\\\\s+\")}\\\\b`);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/business-mappings-v2.js",
+      "check_id": "case_like",
+      "severity": "medium",
+      "note": "SQLite LIKE and Postgres LIKE/ILIKE can differ in case sensitivity.",
+      "line": 58,
+      "snippet": "`WHEN LOWER(COALESCE(${columnName}, '')) LIKE '%fire%' THEN 'Fire'`,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/business-mappings-v2.js",
+      "check_id": "case_like",
+      "severity": "medium",
+      "note": "SQLite LIKE and Postgres LIKE/ILIKE can differ in case sensitivity.",
+      "line": 59,
+      "snippet": "`WHEN LOWER(COALESCE(${columnName}, '')) LIKE '%andes%' THEN 'Andes'`,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/business-mappings-v2.js",
+      "check_id": "case_like",
+      "severity": "medium",
+      "note": "SQLite LIKE and Postgres LIKE/ILIKE can differ in case sensitivity.",
+      "line": 60,
+      "snippet": "`WHEN LOWER(COALESCE(${columnName}, '')) LIKE '%kinh doanh hcm%' THEN 'HCM'`,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/business-mappings-v2.js",
+      "check_id": "case_like",
+      "severity": "medium",
+      "note": "SQLite LIKE and Postgres LIKE/ILIKE can differ in case sensitivity.",
+      "line": 61,
+      "snippet": "`WHEN LOWER(COALESCE(${columnName}, '')) LIKE '%jega lite%' OR LOWER(COALESCE(${columnName}, '')) LIKE '%ka%' THEN 'KA'`,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/compare-periods.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 12,
+      "snippet": "const monthMatches = [...normalized.matchAll(/thang\\s*(\\d{1,2})(?:\\s*\\/\\s*(20\\d{2}))?/g)];"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/compare-periods.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 22,
+      "snippet": "const currentYear = currentMatch[2] ? Number.parseInt(currentMatch[2], 10) : fallbackYear;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/compare-periods.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 23,
+      "snippet": "const previousYear = previousMatch[2] ? Number.parseInt(previousMatch[2], 10) : fallbackYear;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/compare-periods.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 43,
+      "snippet": "const deltaPercent = Number(previousValue || 0) > 0 ? (delta / Number(previousValue || 0)) * 100 : null;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/compare-periods.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 48,
+      "snippet": "delta >= 0 ? `+${formatter(delta)}` : formatter(delta),"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/compare-periods.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 49,
+      "snippet": "deltaPercent === null ? \"-\" : `${deltaPercent >= 0 ? \"+\" : \"\"}${formatPercent(deltaPercent)}`"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/compare-periods.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 61,
+      "snippet": "const currentPeriod = explicitComparison?.current || resolveCurrentPeriod({"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/compare-periods.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 65,
+      "snippet": "const previousPeriod = explicitComparison?.previous || resolvePreviousPeriod(currentPeriod);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/compare-periods.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 74,
+      "snippet": "WHERE day BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/compare-periods.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 87,
+      "snippet": "? (Number(currentRow.new_customers || 0) / Number(currentRow.new_leads || 0)) * 100"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/compare-periods.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 90,
+      "snippet": "? (Number(previousRow.new_customers || 0) / Number(previousRow.new_leads || 0)) * 100"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/compare-periods.js",
+      "check_id": "date_fn",
+      "severity": "medium",
+      "note": "SQLite date functions need Postgres equivalents.",
+      "line": 6,
+      "snippet": "const day = new Date(Date.UTC(year, month, 0)).getUTCDate();"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/conversion-source-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 22,
+      "snippet": "? (() => {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/conversion-source-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 32,
+      "snippet": "to: monthWindow.month_key === latestMonthKey ? latestDateKey : endOfMonthKey(`${monthWindow.month_key}-01`)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/conversion-source-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 57,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/conversion-source-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 66,
+      "snippet": "WHERE cb.created_date BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/conversion-source-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 82,
+      "snippet": "const conversionRate = leadCount > 0 ? (customerCount / leadCount) * 100 : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/conversion-source-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 103,
+      "snippet": "? ["
+    },
+    {
+      "file": "modules/ai-chat/src/skills/conversion-source-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 112,
+      "snippet": "format_hint: rows.length > 0 ? \"ranking_table\" : \"no_data\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/conversion-source-summary.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 46,
+      "snippet": "SUBSTR(TRIM(COALESCE(c.created_at_1, '')), 1, 10) AS created_date"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/conversion-source-summary.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 49,
+      "snippet": "AND LENGTH(SUBSTR(TRIM(COALESCE(c.created_at_1, '')), 1, 10)) = 10"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/conversion-source-summary.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 57,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/customer-revenue-ranking-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 10,
+      "snippet": "return Number.isFinite(year) ? year : fallbackYear;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/customer-revenue-ranking-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 25,
+      "snippet": "const to = year === latestYear ? latestDateKey : `${year}-12-31`;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/customer-revenue-ranking-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 39,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/customer-revenue-ranking-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 69,
+      "snippet": "? ["
+    },
+    {
+      "file": "modules/ai-chat/src/skills/customer-revenue-ranking-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 79,
+      "snippet": "format_hint: leader ? \"ranking_table\" : \"no_data\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/customer-revenue-ranking-v2.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 39,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/customer-revenue-ranking-v2.js",
+      "check_id": "date_fn",
+      "severity": "medium",
+      "note": "SQLite date functions need Postgres equivalents.",
+      "line": 22,
+      "snippet": "const latestYear = Number.parseInt(latestDateKey.slice(0, 4), 10) || new Date().getFullYear();"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/inactive-sellers-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 35,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 7) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/inactive-sellers-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 60,
+      "snippet": "? ["
+    },
+    {
+      "file": "modules/ai-chat/src/skills/inactive-sellers-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 70,
+      "snippet": "format_hint: rows.length > 0 ? \"summary\" : \"no_data\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/inactive-sellers-summary.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 35,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 7) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 30,
+      "snippet": "const canUseConversationCarryOver = context.intent?.primary_intent === \"kpi_overview\""
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 47,
+      "snippet": "return Array.from(new Set(focuses.length > 0 ? focuses : [\"summary\"]));"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 72,
+      "snippet": "? (() => {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 82,
+      "snippet": "to: monthWindow.month_key === latestMonthKey ? latestDateKey : endOfMonthKey(`${monthWindow.month_key}-01`),"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 109,
+      "snippet": "WHERE day BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 125,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 143,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 151,
+      "snippet": "? connector.runReadQuery({"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 159,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 176,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 192,
+      "snippet": "WHERE day BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 201,
+      "snippet": "? connector.runReadQuery({"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 218,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 227,
+      "snippet": "WHERE cb.created_date BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 250,
+      "snippet": "const totalOrderRevenue = Number(orderRevenueResult?.rows?.[0]?.total_order_revenue || 0);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 251,
+      "snippet": "const reconciliationDiff = wantsReconciliation ? Math.abs(totalOrderRevenue - totalRevenue) : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 252,
+      "snippet": "const conversionRate = newLeads > 0 ? (newCustomers / newLeads) * 100 : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 260,
+      "snippet": "? newLeads / Math.max(1, Math.ceil((new Date(`${period.to}T00:00:00Z`).getTime() - new Date(`${period.from}T00:00:00Z`).getTime()) / 86400000) + 1)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 262,
+      "snippet": "const sourceBreakdown = (sourceBreakdownResult?.rows || []).map((row) => {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 269,
+      "snippet": "conversion_rate: leadCount > 0 ? (customerCount / leadCount) * 100 : 0"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 275,
+      "snippet": "? ["
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 349,
+      "snippet": "format_hint: hasDrilldown ? \"analysis\" : \"summary\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 356,
+      "snippet": "total_order_revenue: wantsReconciliation ? totalOrderRevenue : null,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 357,
+      "snippet": "reconciliation_diff: wantsReconciliation ? reconciliationDiff : null,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 363,
+      "snippet": "top_seller: topSeller ? {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 401,
+      "snippet": "...(orderRevenueResult ? [{"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 419,
+      "snippet": "...(sourceBreakdownResult ? [{"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 125,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 143,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 159,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 176,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 207,
+      "snippet": "SUBSTR(TRIM(COALESCE(c.created_at_1, '')), 1, 10) AS created_date"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 210,
+      "snippet": "AND LENGTH(SUBSTR(TRIM(COALESCE(c.created_at_1, '')), 1, 10)) = 10"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 218,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/kpi-overview.js",
+      "check_id": "date_fn",
+      "severity": "medium",
+      "note": "SQLite date functions need Postgres equivalents.",
+      "line": 260,
+      "snippet": "? newLeads / Math.max(1, Math.ceil((new Date(`${period.to}T00:00:00Z`).getTime() - new Date(`${period.from}T00:00:00Z`).getTime()) / 86400000) + 1)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/lead-geography.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 77,
+      "snippet": "conversion_rate: row.lead_count > 0 ? (row.customer_count / row.lead_count) * 100 : 0"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/lead-geography.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 98,
+      "snippet": "? ["
+    },
+    {
+      "file": "modules/ai-chat/src/skills/lead-geography.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 108,
+      "snippet": "format_hint: leader ? \"ranking_table\" : \"no_data\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/operations-status-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 50,
+      "snippet": "WHERE month_end_key = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/operations-status-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 65,
+      "snippet": "WHERE month_end_key = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/operations-status-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 75,
+      "snippet": "const activeCount = Number(statusResult.rows.find((row) => String(row.status) === \"Active\")?.account_count || 0);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/operations-status-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 77,
+      "snippet": "const activeRate = totalAccounts > 0 ? (activeCount / totalAccounts) * 100 : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/operations-status-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 91,
+      "snippet": "totalAccounts > 0 ? formatPercent((Number(row.account_count || 0) / totalAccounts) * 100) : \"-\""
+    },
+    {
+      "file": "modules/ai-chat/src/skills/operations-status-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 129,
+      "snippet": "format_hint: asksOnlyActiveGhost || requestedSlices.wantsMostGhost ? \"summary\" : \"table\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/orders-filtered-list.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 7,
+      "snippet": "const millionMatch = normalized.match(/(\\d+(?:[.,]\\d+)?)\\s*trieu/);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/orders-filtered-list.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 12,
+      "snippet": "const billionMatch = normalized.match(/(\\d+(?:[.,]\\d+)?)\\s*ty/);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/orders-filtered-list.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 52,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 7) = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/orders-filtered-list.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 53,
+      "snippet": "AND COALESCE(real_amount, 0) >= ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/orders-filtered-list.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 79,
+      "snippet": "? ["
+    },
+    {
+      "file": "modules/ai-chat/src/skills/orders-filtered-list.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 88,
+      "snippet": "format_hint: rows.length > 0 ? \"ranking_table\" : \"no_data\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/orders-filtered-list.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 47,
+      "snippet": "SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) AS order_date"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/orders-filtered-list.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 52,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 7) = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/recent-orders-list.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 6,
+      "snippet": "const parsed = Number.parseInt(match?.[1] || \"5\", 10);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/recent-orders-list.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 17,
+      "snippet": "return /((\\d+\\s+)?don hang moi nhat|recent orders?|order moi nhat)/.test(foldedQuestion);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/recent-orders-list.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 60,
+      "snippet": "? ["
+    },
+    {
+      "file": "modules/ai-chat/src/skills/recent-orders-list.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 69,
+      "snippet": "format_hint: rows.length > 0 ? \"ranking_table\" : \"no_data\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/recent-orders-list.js",
+      "check_id": "limit",
+      "severity": "low",
+      "note": "LIMIT is supported but should be checked with wrapper row_limit behavior.",
+      "line": 20,
+      "snippet": "const limit = extractLimit(context.latestQuestion);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/recent-orders-list.js",
+      "check_id": "limit",
+      "severity": "low",
+      "note": "LIMIT is supported but should be checked with wrapper row_limit behavior.",
+      "line": 34,
+      "snippet": "maxRows: limit"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/recent-orders-list.js",
+      "check_id": "limit",
+      "severity": "low",
+      "note": "LIMIT is supported but should be checked with wrapper row_limit behavior.",
+      "line": 71,
+      "snippet": "limit,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/renew-due-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 32,
+      "snippet": "WHERE due_month_key = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/renew-due-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 47,
+      "snippet": "WHERE due_month_key = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/renew-due-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 59,
+      "snippet": "const renewalRate = dueCount > 0 ? (renewedCount / dueCount) * 100 : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/renew-due-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 69,
+      "snippet": "? `- Mẫu account gần hạn: ${expiringSoon.rows.map((item) => item.account).join(\", \")}.`"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/renew-due-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 87,
+      "snippet": "data: shouldIncludeSampleAccounts(context.latestQuestion) ? {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 13,
+      "snippet": "if (explicit?.month) {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 29,
+      "snippet": "return monthIsComplete ? latestMonthKey : addMonthsToMonthKey(latestMonthKey, -1);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 43,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 4) IN (?, ?)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 110,
+      "snippet": "revenue_amount: Number(revenueByMonth.get(monthKey)?.revenue_amount || 0)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 115,
+      "snippet": "revenue_amount: Number(revenueByMonth.get(monthKey)?.revenue_amount || 0)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 141,
+      "snippet": "const baseline = Number(revenueByMonth.get(previousYearMonthKey)?.revenue_amount || 0);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 154,
+      "snippet": "? actualTargetRow.revenue_amount"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 155,
+      "snippet": ": Number(forecastTargetRow?.forecast_amount || 0);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 161,
+      "snippet": ".reduce((sum, monthKey) => sum + Number(revenueByMonth.get(monthKey)?.revenue_amount || 0), 0);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 162,
+      "snippet": "const fullYearGrowth = previousYearTotal > 0 ? ((fullYearForecast / previousYearTotal) - 1) * 100 : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 188,
+      "snippet": "? `- Assumption: ${formatMonthLabel(latestMonthKey)} đang là tháng mở đến ${latestDateKey}, nên tôi chỉ dùng actual đến ${formatMonthLabel(lastCompleteMonthKey)} để tránh lệch growth.`"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 36,
+      "snippet": "SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 7) AS month_key,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-forecast.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 43,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 4) IN (?, ?)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 12,
+      "snippet": "const matches = Array.from(normalized.matchAll(/\\bthang\\s*(\\d{1,2})(?:\\s*\\/\\s*(20\\d{2})|\\s*nam\\s*(20\\d{2}))?/g));"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 53,
+      "snippet": "? addMonthsToMonthKey(latestMonthKey, -1)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 95,
+      "snippet": "WHERE SUBSTR(day, 1, 7) IN (${scope.months.map(() => \"?\").join(\", \")})"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 116,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 7) IN (${scope.months.map(() => \"?\").join(\", \")})"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 152,
+      "snippet": "const revenueDeltaPercent = baseMetrics.total_revenue > 0 ? (revenueDelta / baseMetrics.total_revenue) * 100 : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 156,
+      "snippet": "? \"- Góc nhìn mùa vụ: đây thường là giai đoạn có ít ngày làm việc hơn do kỳ nghỉ đầu năm/Tết, nên doanh thu thấp hơn không hẳn là tín hiệu bất thường.\""
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 158,
+      "snippet": "const nextDelta = nextMetrics ? focusMetrics.total_revenue - nextMetrics.total_revenue : null;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 161,
+      "snippet": "`Nếu đang nói về ${formatMonthLabel(focusMonthKey)}, thì đây ${nextMetrics && nextDelta < 0 ? \"đúng là\" : \"chưa hẳn là\"} một tháng thấp khi đặt cạnh các tháng liền kề.`,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 164,
+      "snippet": "`- So với ${formatMonthLabel(baseMonthKey)}, ${formatMonthLabel(focusMonthKey)} ${revenueDelta < 0 ? \"giảm\" : revenueDelta > 0 ? \"tăng\" : \"gần như không đổi\"} ${formatCurrency(Math.abs(revenueDelta))} (${formatPercent(Math.abs(revenueDeltaP"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 165,
+      "snippet": "nextMetrics ? `- So với ${formatMonthLabel(nextMonthKey)}, ${formatMonthLabel(focusMonthKey)} ${nextDelta < 0 ? \"thấp hơn\" : nextDelta > 0 ? \"cao hơn\" : \"gần như ngang\"} ${formatCurrency(Math.abs(nextDelta))}.` : null,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 166,
+      "snippet": "leadDelta < 0 ? `- Lead mới cũng giảm ${Math.abs(leadDelta).toLocaleString(\"vi-VN\")} so với ${formatMonthLabel(baseMonthKey)}.` : null,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 167,
+      "snippet": "customerDelta < 0 ? `- Khách mới giảm ${Math.abs(customerDelta).toLocaleString(\"vi-VN\")}, nên đầu ra doanh thu thấp hơn là hợp logic.` : null,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 172,
+      "snippet": "const baseMonthKey = /so voi/.test(questionText) ? secondMonthKey : firstMonthKey;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 173,
+      "snippet": "const compareMonthKey = /so voi/.test(questionText) ? firstMonthKey : secondMonthKey;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 187,
+      "snippet": "const revenueDeltaPercent = baseMetrics.total_revenue > 0 ? (revenueDelta / baseMetrics.total_revenue) * 100 : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 188,
+      "snippet": "const baseConversion = baseMetrics.new_leads > 0 ? (baseMetrics.new_customers / baseMetrics.new_leads) * 100 : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 189,
+      "snippet": "const compareConversion = compareMetrics.new_leads > 0 ? (compareMetrics.new_customers / compareMetrics.new_leads) * 100 : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 208,
+      "snippet": "`Doanh thu ${formatMonthLabel(compareMonthKey)} ${revenueDelta < 0 ? \"giảm\" : \"tăng\"} ${formatCurrency(Math.abs(revenueDelta))} so với ${formatMonthLabel(baseMonthKey)} (${formatPercent(Math.abs(revenueDeltaPercent))}).`,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 212,
+      "snippet": "? `- Team giảm mạnh nhất: ${biggestDropTeam.team_label} (${formatCurrency(Math.abs(biggestDropTeam.delta))}).`"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 215,
+      "snippet": "? \"- Nếu cần drill-down tiếp, tôi có thể tách theo team hoặc theo nguồn lead để kiểm tra nguyên nhân chi tiết hơn.\""
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 226,
+      "snippet": "const lastDelta = lastMonth && previousMonth ? lastMonth.total_revenue - previousMonth.total_revenue : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 227,
+      "snippet": "const trendDirection = lastDelta > 0 ? \"tăng\" : lastDelta < 0 ? \"giảm\" : \"đi ngang\";"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 231,
+      "snippet": "highestMonth ? `- Tháng cao nhất: ${formatMonthLabel(highestMonth.month_key)} với ${formatCurrency(highestMonth.total_revenue)}.` : null,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 232,
+      "snippet": "lowestMonth ? `- Tháng thấp nhất: ${formatMonthLabel(lowestMonth.month_key)} với ${formatCurrency(lowestMonth.total_revenue)}.` : null,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 234,
+      "snippet": "? `- Gần nhất: ${formatMonthLabel(previousMonth.month_key)} -> ${formatMonthLabel(lastMonth.month_key)} là ${lastDelta < 0 ? \"giảm\" : \"tăng\"} ${formatCurrency(Math.abs(lastDelta))}.`"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 237,
+      "snippet": "? `- Tháng bất thường đáng chú ý: ${lowestMonth.month_key === \"2026-01\" ? `${formatMonthLabel(lowestMonth.month_key)} thấp hơn hẳn các tháng còn lại.` : `${formatMonthLabel(lowestMonth.month_key)} là đáy của chuỗi 6 tháng.`}`"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 90,
+      "snippet": "SUBSTR(day, 1, 7) AS month_key,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 95,
+      "snippet": "WHERE SUBSTR(day, 1, 7) IN (${scope.months.map(() => \"?\").join(\", \")})"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 96,
+      "snippet": "GROUP BY SUBSTR(day, 1, 7)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 107,
+      "snippet": "SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 7) AS month_key,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/revenue-trend-analysis.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 116,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 7) IN (${scope.months.map(() => \"?\").join(\", \")})"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 7,
+      "snippet": "const explicitIntentSeller = context.intent?.entities?.find((entity) => entity.type === \"seller\")?.value || null;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 18,
+      "snippet": "const millionMatch = normalized.match(/(\\d+(?:[.,]\\d+)?)\\s*trieu/);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 19,
+      "snippet": "if (millionMatch?.[1]) {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 22,
+      "snippet": "const billionMatch = normalized.match(/(\\d+(?:[.,]\\d+)?)\\s*ty/);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 23,
+      "snippet": "if (billionMatch?.[1]) {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 27,
+      "snippet": "if (plainVndMatch?.[1]) {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 42,
+      "snippet": "const hasIntentSeller = Boolean(context.intent?.entities?.find((entity) => entity.type === \"seller\")?.value);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 75,
+      "snippet": "WHERE TRIM(COALESCE(saler_name, '')) = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 76,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 7) = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 91,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 7) = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 99,
+      "snippet": "? connector.runReadQuery({"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 108,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 7) = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 121,
+      "snippet": "const monthTotalRevenue = Number(monthTotalResult.rows[0]?.total_revenue || 0);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 122,
+      "snippet": "const averageOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 123,
+      "snippet": "const sellerSharePercent = monthTotalRevenue > 0 ? (totalRevenue / monthTotalRevenue) * 100 : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 125,
+      "snippet": "? (rankingResult?.rows || []).findIndex((row) => String(row.seller_name || \"\") === sellerName)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 127,
+      "snippet": "const rankingRevenue = rankingRowIndex >= 0 ? Number(rankingResult?.rows?.[rankingRowIndex]?.revenue_amount || 0) : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 128,
+      "snippet": "const rankingDiff = rankingRowIndex >= 0 ? Math.abs(rankingRevenue - totalRevenue) : 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 136,
+      "snippet": "const assumptionText = resolvedMonth.inferred_year ? \" Tôi đang mặc định năm mới nhất trong dữ liệu.\" : \"\";"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 138,
+      "snippet": "? Math.abs(totalRevenue - claimedAmount) <= Math.max(claimedAmount * 0.03, 1_000_000)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 139,
+      "snippet": "? `Đúng, trong ${resolvedMonth.label}, ${sellerName} đạt khoảng ${formatCurrency(totalRevenue)} từ ${orderCount.toLocaleString(\"vi-VN\")} đơn không hủy.${assumptionText}`"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 167,
+      "snippet": "format_hint: sellerKnown && orderCount > 0 ? \"summary\" : \"no_data\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 181,
+      "snippet": "ranking_position: rankingRowIndex >= 0 ? rankingRowIndex + 1 : null,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 182,
+      "snippet": "ranking_revenue: rankingRowIndex >= 0 ? rankingRevenue : null,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 183,
+      "snippet": "ranking_diff: rankingRowIndex >= 0 ? rankingDiff : null"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 185,
+      "snippet": "data: sellerKnown && orderCount > 0 ? {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 202,
+      "snippet": "...(rankingResult ? [{"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 76,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 7) = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 91,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 7) = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/seller-month-revenue-v3.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 108,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 7) = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 24,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 26,
+      "snippet": "HAVING source_group = ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 49,
+      "snippet": ".split(/\\b(?:va|dong thoi|kem theo|ngoai ra|sau do|con)\\b/)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 67,
+      "snippet": "const reply = `Tôi chưa map được nguồn bạn đang hỏi. Hiện tại hệ thống đang gồm các nhóm nguồn: ${availableGroups.join(\", \")}. Bạn muốn xem nhóm nào?`;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 85,
+      "snippet": "? `Tôi không thấy nhóm nguồn đúng y nguyên văn trong hệ thống. Tôi đang map tạm câu hỏi này về nhóm ${sourceIntent.group}. Nếu đúng ý bạn, trong giai đoạn ${period.from} đến ${period.to}, nhóm ${sourceIntent.group} mang về ${formatCurrency("
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 96,
+      "snippet": "revenue_amount: row ? Number(row.revenue_amount || 0) : 0,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 97,
+      "snippet": "order_count: row ? Number(row.order_count || 0) : 0,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 100,
+      "snippet": "data: row ? {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 105,
+      "snippet": "sqlLogs: row ? [sqlLog] : [],"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 112,
+      "snippet": "? `Trong giai đoạn ${period.from} đến ${period.to}, nhóm nguồn ${sourceIntent.group} mang về ${formatCurrency(row.revenue_amount)} từ ${Number(row.order_count || 0).toLocaleString(\"vi-VN\")} đơn không hủy.`"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 118,
+      "snippet": "format_hint: row ? \"summary\" : \"no_data\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 123,
+      "snippet": "revenue_amount: row ? Number(row.revenue_amount || 0) : 0,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 124,
+      "snippet": "order_count: row ? Number(row.order_count || 0) : 0"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 126,
+      "snippet": "data: row ? {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 131,
+      "snippet": "sqlLogs: row ? [sqlLog] : [],"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/source-revenue-drilldown-v2.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 24,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/team-performance-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 12,
+      "snippet": "const quarterMatch = normalized.match(/\\b(?:quy|q)\\s*(\\d)\\b(?:\\s*nam\\s*(20\\d{2}))?/);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/team-performance-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 18,
+      "snippet": "const year = quarterMatch[2] ? Number.parseInt(quarterMatch[2], 10) : null;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/team-performance-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 61,
+      "snippet": "if (monthWindow?.month_key) {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/team-performance-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 81,
+      "snippet": "const intentTeams = Array.isArray(context.intent?.entities)"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/team-performance-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 82,
+      "snippet": "? context.intent.entities"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/team-performance-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 122,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/team-performance-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 167,
+      "snippet": "const leader = left.revenue_amount >= right.revenue_amount ? left : right;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/team-performance-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 168,
+      "snippet": "const trailer = leader.team_label === left.team_label ? right : left;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/team-performance-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 197,
+      "snippet": "format_hint: rows.length > 0 ? (isComparisonAsk ? \"comparison\" : requestedTeam ? \"summary\" : \"ranking_table\") : \"no_data\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/team-performance-summary.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 203,
+      "snippet": "top_team: topTeam ? {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/team-performance-summary.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 122,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 34,
+      "snippet": "if (monthWindow?.month_key) {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 63,
+      "snippet": "if (directTopMatch?.[1]) {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 67,
+      "snippet": "const sellerCountMatch = normalized.match(/\\b(\\d{1,2})\\s+(?:seller|sale|nguoi ban|nhan vien)\\b/);"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 68,
+      "snippet": "if (sellerCountMatch?.[1]) {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 82,
+      "snippet": "const regex = /\\bth\\w*\\s*(\\d{1,2})(?:\\s*(?:\\/|\\s+nam\\s+|\\s+)\\s*(20\\d{2}))?/g;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 87,
+      "snippet": "const year = match[2] ? Number.parseInt(match[2], 10) : latestYear;"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 118,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 155,
+      "snippet": "const assumptionText = period.inferred_year ? \" Tôi đang mặc định năm mới nhất trong dữ liệu.\" : \"\";"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 186,
+      "snippet": "format_hint: primaryResult.rows.length > 0 ? \"ranking_table\" : \"no_data\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 187,
+      "snippet": "summary_facts: primaryResult.leader ? {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 210,
+      "snippet": "name: index === 0 ? this.id : `${this.id}_${item.period.month_key || index + 1}`,"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 230,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 259,
+      "snippet": "const assumptionText = period.inferred_year ? \" Tôi đang mặc định năm mới nhất trong dữ liệu.\" : \"\";"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 270,
+      "snippet": "format_hint: rows.length > 0 ? \"ranking_table\" : \"no_data\","
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 271,
+      "snippet": "summary_facts: leader ? {"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 118,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/skills/top-sellers-period.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 230,
+      "snippet": "AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/chat-runtime-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 86,
+      "snippet": "const latestQuestion = latestMessage?.content || \"\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/chat-runtime-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 155,
+      "snippet": "|| \"Bạn có thể nói rõ hơn yêu cầu hiện tại để tôi route đúng phần dữ liệu cần xem không?\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/chat-runtime-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 159,
+      "snippet": "if (context.intent?.primary_intent === \"injection_attempt\") {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/chat-runtime-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 199,
+      "snippet": "return firstBlock ? `- ${skill.name || skill.id}: ${firstBlock}` : null;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/chat-runtime-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 277,
+      "snippet": "skill_id: skillMatch.skill?.id || null,"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/chat-runtime-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 285,
+      "snippet": "reason: context.intent?.primary_intent || \"request_validation\""
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/chat-runtime-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 287,
+      "snippet": "const validationReply = context.intent?.primary_intent === \"out_of_domain_request\""
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/chat-runtime-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 288,
+      "snippet": "? \"Tôi không có quyền truy cập dữ liệu hoặc dịch vụ ngoài CRM nội bộ, nên không thể trả lời câu hỏi này.\""
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/chat-runtime-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 481,
+      "snippet": "? \"compound_skill_partial\""
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/chat-runtime-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 495,
+      "snippet": "if (context.intent?.primary_intent === \"forecast_request\") {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/chat-runtime-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 529,
+      "snippet": "const errorMessage = error instanceof Error ? error.message : \"Unknown fallback runtime error.\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/chat-runtime-v2.js",
+      "check_id": "date_fn",
+      "severity": "medium",
+      "note": "SQLite date functions need Postgres equivalents.",
+      "line": 35,
+      "snippet": "at: new Date().toISOString(),"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 27,
+      "snippet": "if (focuses.length === 0 && intent?.metric && intent.metric !== \"unknown\") {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 39,
+      "snippet": "if (explicit?.month) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 41,
+      "snippet": "? `${String(explicit.month).padStart(2, \"0\")}/${explicit.year}`"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 44,
+      "snippet": "if (explicit?.relative) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 48,
+      "snippet": "const value = String(intent?.time_window?.value || \"\").trim();"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 53,
+      "snippet": "if (valueMonth?.month) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 55,
+      "snippet": "? `${String(valueMonth.month).padStart(2, \"0\")}/${valueMonth.year}`"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 58,
+      "snippet": "if (valueMonth?.relative) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 70,
+      "snippet": "const currentEntities = (currentIntent?.entities || []).map((entity) => `${entity.type}:${entity.value}`);"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 71,
+      "snippet": "const anchorEntities = (anchorIntent?.entities || []).map((entity) => `${entity.type}:${entity.value}`);"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 76,
+      "snippet": "const currentTime = String(currentIntent?.time_window?.value || \"\");"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 77,
+      "snippet": "const anchorTime = String(anchorIntent?.time_window?.value || \"\");"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 83,
+      "snippet": "anchorIntent?.metric && anchorIntent.metric !== \"unknown\" ? anchorIntent.metric : null,"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 84,
+      "snippet": "anchorIntent?.dimension && anchorIntent.dimension !== \"unknown\" ? anchorIntent.dimension : null"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 98,
+      "snippet": "if (intent?.primary_intent === \"out_of_domain_request\") {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 102,
+      "snippet": "return patchedFields.length > 0 ? \"follow_up_patch\" : \"continued_topic\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 104,
+      "snippet": "if (anchorIntent && intent?.primary_intent && intent.primary_intent === anchorIntent.primary_intent) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 105,
+      "snippet": "return patchedFields.length > 0 ? \"follow_up_patch\" : \"continued_topic\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 111,
+      "snippet": "const entityLabel = entities.length > 0 ? entities.map((entity) => entity.value).join(\", \") : \"general\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 113,
+      "snippet": "return `${intent?.primary_intent || \"unknown\"} | ${entityLabel} | ${timeLabel} | ${focuses.join(\"+\")}`;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 118,
+      "snippet": "? context.fullConversationMessages"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 122,
+      "snippet": "? findFollowUpAnchor({"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 130,
+      "snippet": "const anchorIntent = anchor?.intent || null;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 132,
+      "snippet": "const entities = (currentIntent?.entities || []).map((entity) => ({"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 151,
+      "snippet": "currentIntent?.primary_intent || resolvedRoute || \"unknown\","
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 166,
+      "snippet": "primary_intent: currentIntent?.primary_intent || \"unknown\","
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 168,
+      "snippet": "skill_id: skillMatch.skill?.id || null,"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 174,
+      "snippet": "anchor_question: anchor?.message?.content || null,"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 175,
+      "snippet": "anchor_intent: anchorIntent?.primary_intent || null,"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/conversation-topic-state.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 176,
+      "snippet": "state_confidence: currentIntent?.confidence ?? context.intentConfidence ?? null"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 54,
+      "snippet": "|| (getDefaultProvider() === \"nvidia\" ? \"google/gemma-4-31b-it\" : \"gemini-2.5-flash\");"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 101,
+      "snippet": "role: message.role === \"assistant\" ? \"model\" : \"user\","
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 176,
+      "snippet": "? {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 193,
+      "snippet": "? textReply"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 200,
+      "snippet": "if (response.candidates?.[0]?.content) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 223,
+      "snippet": "const errorMessage = error instanceof Error ? error.message : \"Unknown SQL execution error.\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 226,
+      "snippet": "sql: typeof args.sql === \"string\" ? args.sql : \"\","
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 263,
+      "snippet": "const choice = response?.choices?.[0] || {};"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 265,
+      "snippet": "const toolCalls = Array.isArray(assistantMessage.tool_calls) ? assistantMessage.tool_calls : [];"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 277,
+      "snippet": "? textReply"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 291,
+      "snippet": "const functionName = toolCall?.function?.name || QUERY_FUNCTION_NAME;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 294,
+      "snippet": "args = JSON.parse(toolCall?.function?.arguments || \"{}\");"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 316,
+      "snippet": "const errorMessage = error instanceof Error ? error.message : \"Unknown SQL execution error.\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/fallback-llm.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 319,
+      "snippet": "sql: typeof args.sql === \"string\" ? args.sql : \"\","
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 37,
+      "snippet": "const RECENT_ORDERS_PATTERN = /((\\d+\\s+)?don hang moi nhat|recent orders?|order moi nhat)/;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 48,
+      "snippet": "const GENERIC_SUMMARY_PATTERN = /^(?:(cho toi|giup toi|hay|show me)\\s+)?(tom tat|tong quan|overview)(?:\\s+(cho toi|giup toi|view nay|di|nhe|voi|quick|nhanh))?\\s*$/;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 120,
+      "snippet": "return allowed.includes(normalized) ? normalized : fallback;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 135,
+      "snippet": "? result.entities"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 137,
+      "snippet": "type: String(entity?.type || \"unknown\"),"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 138,
+      "snippet": "value: String(entity?.value || \"\").trim()"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 143,
+      "snippet": "? {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 153,
+      "snippet": "? Math.max(0, Math.min(1, confidence))"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 287,
+      "snippet": "const directCandidates = typeof context.connector?.detectSellerCandidates === \"function\""
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 288,
+      "snippet": "? context.connector.detectSellerCandidates(question)"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 296,
+      "snippet": "? context.fullConversationMessages"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 313,
+      "snippet": "const priorText = historyMessages.slice(0, -1).map((message) => foldText(message?.content || \"\")).join(\"\\n\");"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 325,
+      "snippet": "return sum + (tokenIndex === sellerTokens.length - 1 ? 5 : 2);"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 326,
+      "snippet": "}, 0) + (priorText.includes(foldText(sellerName)) ? 2 : 0);"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 351,
+      "snippet": "? sellerCandidates[0].seller_name"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 357,
+      "snippet": "? context.fullConversationMessages"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 362,
+      "snippet": "if (candidate?.role !== \"user\") {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 386,
+      "snippet": "return fallbackMessage ? { message: fallbackMessage, intent: null } : null;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 396,
+      "snippet": "result.clarification_question = \"Câu hỏi này còn mơ hồ. Bạn muốn xem doanh thu theo seller, team, nguồn hay tổng quan KPI?\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 432,
+      "snippet": "const explicitSellerCandidate = sellerName ? null : extractExplicitSellerCandidate(question);"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 441,
+      "snippet": "const previousTopic = followUpAnchor?.message || null;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 442,
+      "snippet": "const foldedPreviousTopic = foldText(previousTopic?.content || \"\");"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 458,
+      "snippet": "? inferViewScopedOverviewIntent(context, createIntentSkeleton())"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 462,
+      "snippet": "? \"table\""
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 464,
+      "snippet": "? \"ranking\""
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 466,
+      "snippet": "? \"comparison\""
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 481,
+      "snippet": "if (sourceGroupIntent?.group) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 483,
+      "snippet": "type: sourceGroupIntent.mode === \"exact\" ? \"source_group\" : \"source_group_suggestion\","
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 510,
+      "snippet": "result.clarification_question = \"Bạn muốn tôi tóm tắt phần nào: nội dung hội thoại, KPI dashboard, team, renew hay operations?\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 618,
+      "snippet": "result.dimension = teamMatch ? \"team\" : \"time\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 644,
+      "snippet": "result.metric = revenueMatch ? \"revenue\" : /don/.test(foldedQuestion) ? \"orders\" : \"revenue\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 685,
+      "snippet": "&& [\"kpi_overview\", \"conversion_source_summary\"].includes(followUpAnchor?.intent?.primary_intent)"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 690,
+      "snippet": "const inferred = followUpAnchor?.intent || inferIntentFromQuestion(previousTopic.content, {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 696,
+      "snippet": "const anchoredSellerName = followUpAnchor?.intent?.entities?.find((entity) => entity.type === \"seller\")?.value || null;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 703,
+      "snippet": "? anchoredSellerName"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 712,
+      "snippet": "? \"seller_revenue_month\""
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 714,
+      "snippet": "inferred.action = inferred.action === \"unknown\" ? \"lookup\" : inferred.action;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 715,
+      "snippet": "inferred.metric = inferred.metric === \"unknown\" ? \"revenue\" : inferred.metric;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 733,
+      "snippet": "} else if (previousTopic?.content && extractMonthYear(previousTopic.content)) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 744,
+      "snippet": "inferred.action = topMatch ? \"rank\" : \"summarize\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 762,
+      "snippet": "const topScore = followUpSellerCandidates[0]?.score || 0;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 771,
+      "snippet": "? `Có nhiều seller khớp với cách gọi này: ${topCandidates.join(\", \")}. Bạn muốn hỏi ai?`"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 772,
+      "snippet": ": \"Bạn muốn hỏi seller nào cụ thể?\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 808,
+      "snippet": "result.action = topMatch ? \"rank\" : \"summarize\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 826,
+      "snippet": "result.action = compareMatch ? \"compare\" : topMatch ? \"rank\" : \"summarize\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 836,
+      "snippet": "result.metric = revenueMatch ? \"revenue\" : \"unknown\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 842,
+      "snippet": "if (sellerEntityValue && (revenueMatch || (VERIFY_AMOUNT_PATTERN.test(foldedQuestion) && /(\\d+(?:[.,]\\d+)?)\\s*(trieu|ty|vnd)/.test(foldedQuestion)))) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 868,
+      "snippet": "result.clarification_question = \"Bạn muốn xem tổng quan KPI, team, renew hay operations?\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 877,
+      "snippet": "result.clarification_question = \"Bạn muốn xem tổng quan KPI, team, renew hay operations?\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 924,
+      "snippet": "result.metric = revenueMatch ? \"revenue\" : conversionMatch ? \"conversion\" : \"unknown\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 925,
+      "snippet": "result.dimension = teamMatch ? \"team\" : sourceMatch ? \"source\" : customerMatch ? \"customer\" : \"unknown\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 931,
+      "snippet": "const latestQuestion = context.routingQuestion || context.latestUserMessage?.content || context.latestQuestion || \"\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/intent-classifier-v2.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 981,
+      "snippet": "intent.clarification_question = intent.clarification_question || \"Bạn có thể nói rõ hơn bạn muốn xem chỉ số nào không?\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/model-runtime.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 28,
+      "snippet": "|| (getDefaultProvider() === \"nvidia\" ? \"google/gemma-4-31b-it\" : \"gemini-2.5-flash\");"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/model-runtime.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 231,
+      "snippet": "if (!response?.ok) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/model-runtime.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 232,
+      "snippet": "const errorText = response ? await response.text() : \"No response\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/model-runtime.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 238,
+      "snippet": "text: String(payload?.choices?.[0]?.message?.content || \"\").trim(),"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/model-runtime.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 239,
+      "snippet": "usageMetadata: payload?.usage || null"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/prompt-registry.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 39,
+      "snippet": "const cacheKey = `intent:${viewId}:${requestContext.latestUserMessage?.content || \"\"}:${JSON.stringify(requestContext.selectedFilters || {})}`;"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/prompt-registry.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 55,
+      "snippet": "if (requestContext.routingQuestion && requestContext.routingQuestion !== requestContext.latestUserMessage?.content) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/prompt-registry.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 64,
+      "snippet": "const intentId = requestContext.intent?.primary_intent || \"unknown\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/prompt-registry.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 84,
+      "snippet": "const intentId = requestContext.intent?.primary_intent || \"unknown\";"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/skill-registry.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 67,
+      "snippet": "const skillId = ROUTABLE_SKILL_INTENTS[intent?.primary_intent];"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/skill-registry.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 76,
+      "snippet": "if (context.intentSource === \"legacy_rules\" && intentMappedSkill && !context.intent?.ambiguity_flag) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/skill-registry.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 87,
+      "snippet": "matchedSkillCandidates: intentMappedSkill ? [intentMappedSkill.id] : [],"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/skill-registry.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 88,
+      "snippet": "routeReason: intentMappedSkill ? \"intent_skill_mapping\" : \"no_skill_for_intent\""
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/skill-registry.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 100,
+      "snippet": "if (context.questionAnalysis?.isMultiIntent && matchedSkills.length > 1) {"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/skill-response-formatter.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 27,
+      "snippet": "`Intent: ${requestContext.intent?.primary_intent || \"unknown\"}`,"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/skill-response-formatter.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 29,
+      "snippet": "? `Selected filters: ${JSON.stringify(requestContext.selectedFilters, null, 2)}`"
+    },
+    {
+      "file": "modules/ai-chat/src/runtime/skill-response-formatter.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 70,
+      "snippet": "const sellerName = String(skillResult.summary_facts?.seller_name || \"\").trim();"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 17,
+      "snippet": "const FORBIDDEN_SQL_KEYWORDS = /\\b(insert|update|delete|drop|alter|create(?!\\s+temp\\s+view)|replace|truncate|pragma|attach|detach|vacuum|reindex|analyze|begin|commit|rollback)\\b/i;"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 18,
+      "snippet": "const TABLE_REFERENCE_PATTERN = /\\b(?:from|join)\\s+([a-zA-Z0-9_.`\"[\\]]+)/gi;"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 200,
+      "snippet": "return this.tableEntries[canonicalName]?.actual || null;"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 214,
+      "snippet": "description: this.tableEntries[tableId]?.description || \"\","
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 215,
+      "snippet": "columns: this.tableEntries[tableId]?.columns || []"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 263,
+      "snippet": "if (!allowPlaceholders && sqlText.includes(\"?\")) {"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 305,
+      "snippet": "columns: safeRows.length > 0 ? Object.keys(safeRows[0]) : [],"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 330,
+      "snippet": "return row?.latest_day || getSystemTodayDateKey();"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 405,
+      "snippet": "score += isLastToken ? 5 : SELLER_ALIAS_STOPWORDS.has(token) ? 3 : 2;"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 434,
+      "snippet": "? candidates[0].seller_name"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 446,
+      "snippet": "const latest = String(row?.latest_status_month || \"\");"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 454,
+      "snippet": "return fallback?.latest_month || null;"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 326,
+      "snippet": "SELECT MAX(SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10)) AS latest_day"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "substr",
+      "severity": "medium",
+      "note": "SUBSTR works in Postgres as substring alias but must be parity-tested for date strings.",
+      "line": 328,
+      "snippet": "WHERE LENGTH(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10))) >= 10"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_pragma_attach",
+      "severity": "high",
+      "note": "SQLite database management statements are not portable to Supabase.",
+      "line": 17,
+      "snippet": "const FORBIDDEN_SQL_KEYWORDS = /\\b(insert|update|delete|drop|alter|create(?!\\s+temp\\s+view)|replace|truncate|pragma|attach|detach|vacuum|reindex|analyze|begin|commit|rollback)\\b/i;"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_pragma_attach",
+      "severity": "high",
+      "note": "SQLite database management statements are not portable to Supabase.",
+      "line": 173,
+      "snippet": "PRAGMA journal_mode = WAL;"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_pragma_attach",
+      "severity": "high",
+      "note": "SQLite database management statements are not portable to Supabase.",
+      "line": 174,
+      "snippet": "PRAGMA busy_timeout = 60000;"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_pragma_attach",
+      "severity": "high",
+      "note": "SQLite database management statements are not portable to Supabase.",
+      "line": 177,
+      "snippet": "// Ignore PRAGMA failures."
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_pragma_attach",
+      "severity": "high",
+      "note": "SQLite database management statements are not portable to Supabase.",
+      "line": 182,
+      "snippet": "db.exec(`ATTACH DATABASE '${escapedDashboardPath}' AS dashboard`);"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "sqlite_pragma_attach",
+      "severity": "high",
+      "note": "SQLite database management statements are not portable to Supabase.",
+      "line": 186,
+      "snippet": "db.exec(`ATTACH DATABASE '${escapedOperationsPath}' AS operations`);"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "temp_view",
+      "severity": "medium",
+      "note": "SQLite temp views should be replaced by Supabase schema/search_path contract.",
+      "line": 193,
+      "snippet": "db.exec(`CREATE TEMP VIEW IF NOT EXISTS ${canonicalName} AS SELECT * FROM ${entry.actual}`);"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "date_fn",
+      "severity": "medium",
+      "note": "SQLite date functions need Postgres equivalents.",
+      "line": 337,
+      "snippet": "return Number.parseInt(this.getLatestOrderDateKey().slice(0, 4), 10) || new Date().getFullYear();"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/sqlite-connector.js",
+      "check_id": "limit",
+      "severity": "low",
+      "note": "LIMIT is supported but should be checked with wrapper row_limit behavior.",
+      "line": 292,
+      "snippet": "const rows = db.prepare(`SELECT * FROM (${safeSql}) AS __crm_agent_result LIMIT ${rowLimit}`).all(...params);"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/supabase-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 13,
+      "snippet": "const TABLE_REFERENCE_PATTERN = /\\b(?:from|join)\\s+([a-zA-Z0-9_.`\"[\\]]+)/gi;"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/supabase-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 108,
+      "snippet": "description: this.tableEntries[tableId]?.description || \"\","
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/supabase-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 109,
+      "snippet": "columns: this.tableEntries[tableId]?.columns || []"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/supabase-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 157,
+      "snippet": "if (!allowPlaceholders && sqlText.includes(\"?\")) {"
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/supabase-connector.js",
+      "check_id": "sqlite_placeholder",
+      "severity": "high",
+      "note": "SQLite placeholder '?' must become Postgres '$1' style or be adapted by connector.",
+      "line": 196,
+      "snippet": "? \"Configured, but query execution is gated behind the V2 async connector refactor.\""
+    },
+    {
+      "file": "modules/ai-chat/src/connectors/supabase-connector.js",
+      "check_id": "sqlite_pragma_attach",
+      "severity": "high",
+      "note": "SQLite database management statements are not portable to Supabase.",
+      "line": 12,
+      "snippet": "const FORBIDDEN_SQL_KEYWORDS = /\\b(insert|update|delete|drop|alter|create|replace|truncate|pragma|attach|detach|vacuum|reindex|analyze|begin|commit|rollback|grant|revoke)\\b/i;"
+    }
+  ]
+}

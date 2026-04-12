@@ -56,7 +56,7 @@ export const comparePeriodsSkill = {
     const foldedQuestion = context.routingFoldedQuestion || context.foldedQuestion;
     return /(so sanh|compare)/.test(foldedQuestion);
   },
-  run(context, connector) {
+  async run(context, connector) {
     const explicitComparison = resolveExplicitMonthlyComparison(context.latestQuestion, connector);
     const currentPeriod = explicitComparison?.current || resolveCurrentPeriod({
       selectedFilters: context.selectedFilters,
@@ -64,7 +64,7 @@ export const comparePeriodsSkill = {
     });
     const previousPeriod = explicitComparison?.previous || resolvePreviousPeriod(currentPeriod);
 
-    const aggregate = (from, to) => connector.runReadQuery({
+    const aggregate = (from, to) => connector.runReadQueryAsync({
       sql: `
         SELECT
           ROUND(COALESCE(SUM(revenue_amount), 0), 2) AS total_revenue,
@@ -78,8 +78,8 @@ export const comparePeriodsSkill = {
       maxRows: 1
     });
 
-    const current = aggregate(currentPeriod.from, currentPeriod.to);
-    const previous = aggregate(previousPeriod.from, previousPeriod.to);
+    const current = await aggregate(currentPeriod.from, currentPeriod.to);
+    const previous = await aggregate(previousPeriod.from, previousPeriod.to);
 
     const currentRow = current.rows[0] || {};
     const previousRow = previous.rows[0] || {};

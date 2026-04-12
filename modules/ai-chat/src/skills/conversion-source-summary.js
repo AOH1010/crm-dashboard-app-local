@@ -1,7 +1,8 @@
 import { createUsage } from "../contracts/chat-contracts.js";
-import { resolveCurrentPeriod } from "../tooling/question-analysis.js";
+import { endOfMonthKey } from "../tooling/date-utils.js";
+import { resolveCurrentPeriod, resolveMonthlyWindowFromContext } from "../tooling/question-analysis.js";
 import { formatMarkdownTable, formatPercent } from "./formatters.js";
-import { buildSourceGroupCaseSql } from "./business-mappings.js";
+import { buildSourceGroupCaseSql } from "./business-mappings-v2.js";
 
 const sourceGroupCaseSql = buildSourceGroupCaseSql("c.account_source_full_name");
 
@@ -9,16 +10,34 @@ export const conversionSourceSummarySkill = {
   id: "conversion-source-summary",
   canHandle(context) {
     const foldedQuestion = context.routingFoldedQuestion || context.foldedQuestion;
-    return /(nguon|source)/.test(foldedQuestion)
-      && /(conversion|chuyen doi|khach moi|lead)/.test(foldedQuestion);
+    return /(nguon|source|kenh)/.test(foldedQuestion)
+      && /(conversion|chuyen doi|\bcr\b|khach moi|lead)/.test(foldedQuestion);
   },
-  run(context, connector) {
-    const period = resolveCurrentPeriod({
-      selectedFilters: context.selectedFilters,
-      latestDateKey: connector.getLatestOrderDateKey()
-    });
+  async run(context, connector) {
+    const latestDateKey = connector.getLatestOrderDateKey();
+    const latestMonthKey = connector.getLatestMonthKey();
+    const latestYear = connector.getLatestOrderYear();
+    const hasConversationContext = Array.isArray(context.normalizedMessages) && context.normalizedMessages.length > 1;
+    const period = hasConversationContext
+      ? (() => {
+        const monthWindow = resolveMonthlyWindowFromContext({
+          question: context.routingQuestion || context.latestQuestion,
+          context,
+          selectedFilters: context.selectedFilters,
+          latestMonthKey,
+          latestYear
+        });
+        return {
+          from: `${monthWindow.month_key}-01`,
+          to: monthWindow.month_key === latestMonthKey ? latestDateKey : endOfMonthKey(`${monthWindow.month_key}-01`)
+        };
+      })()
+      : resolveCurrentPeriod({
+        selectedFilters: context.selectedFilters,
+        latestDateKey
+      });
 
-    const result = connector.runReadQuery({
+    const result = await connector.runReadQueryAsync({
       sql: `
         WITH customer_base AS (
           SELECT

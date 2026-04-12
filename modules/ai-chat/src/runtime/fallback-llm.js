@@ -201,10 +201,10 @@ async function runGeminiFallback({ normalizedMessages, connector, systemInstruct
       contents.push(response.candidates[0].content);
     }
 
-    const functionParts = functionCalls.map((call, index) => {
+    const functionParts = await Promise.all(functionCalls.map(async (call, index) => {
       const args = call.args || {};
       try {
-        const result = connector.runReadQuery({
+        const result = await connector.runReadQueryAsync({
           sql: args.sql,
           maxRows: args.max_rows
         });
@@ -234,7 +234,7 @@ async function runGeminiFallback({ normalizedMessages, connector, systemInstruct
           { error: errorMessage }
         );
       }
-    });
+    }));
 
     contents.push({
       role: "user",
@@ -297,7 +297,7 @@ async function runNvidiaFallback({ normalizedMessages, connector, systemInstruct
       }
 
       try {
-        const result = connector.runReadQuery({
+        const result = await connector.runReadQueryAsync({
           sql: args.sql,
           maxRows: args.max_rows
         });

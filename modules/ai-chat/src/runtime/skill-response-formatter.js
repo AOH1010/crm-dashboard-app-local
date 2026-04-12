@@ -42,7 +42,14 @@ function shouldPreferDeterministicReply(skillResult) {
     "renew-due-summary",
     "operations-status-summary",
     "conversion-source-summary",
-    "revenue-trend-analysis"
+    "revenue-trend-analysis",
+    "customer-revenue-ranking",
+    "recent-orders-list",
+    "lead-geography",
+    "source-revenue-drilldown",
+    "orders-filtered-list",
+    "inactive-sellers-summary",
+    "revenue-forecast"
   ].includes(String(skillResult.skill_id || ""));
 }
 

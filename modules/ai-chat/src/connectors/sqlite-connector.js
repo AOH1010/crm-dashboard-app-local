@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { clamp, foldText, toJsonSafe } from "../tooling/common.js";
 import { compareDateKeys, getSystemTodayDateKey } from "../tooling/date-utils.js";
+import { DataConnector } from "./data-connector.js";
 import { CRM_DB_PATH, DASHBOARD_DB_PATH, ensureDashboardSalesDb } from "../../../../apps/backend/src/lib/dashboard-sales-db.js";
 import { OPERATIONS_DB_PATH } from "../../../../apps/backend/src/lib/operations-data.js";
 
@@ -51,6 +52,47 @@ const SELLER_ALIAS_STOPWORDS = new Set([
   "con",
   "ky",
   "roi"
+]);
+const SELLER_ALIAS_QUERY_STOPWORDS = new Set([
+  "seller",
+  "sale",
+  "nguoi",
+  "ban",
+  "nao",
+  "ai",
+  "dang",
+  "dan",
+  "dau",
+  "doanh",
+  "thu",
+  "dt",
+  "revenue",
+  "what",
+  "whats",
+  "the",
+  "for",
+  "thang",
+  "nam",
+  "quy",
+  "nay",
+  "truoc",
+  "sau",
+  "con",
+  "thi",
+  "sao",
+  "lai",
+  "thap",
+  "cao",
+  "a",
+  "overview",
+  "tong",
+  "quan",
+  "tom",
+  "tat",
+  "kpi",
+  "he",
+  "thong",
+  "system"
 ]);
 let dashboardReady = false;
 
@@ -104,8 +146,9 @@ function closeDatabase(db) {
   }
 }
 
-export class SQLiteConnector {
+export class SQLiteConnector extends DataConnector {
   constructor() {
+    super();
     this.schemaRegistry = readSchemaRegistry();
     this.tableEntries = this.schemaRegistry.tables;
     this.allowedCanonicalTables = new Set(Object.keys(this.tableEntries));
@@ -175,7 +218,12 @@ export class SQLiteConnector {
   }
 
   getDomainsForView(viewId) {
-    return this.schemaRegistry.viewDomains[viewId] || ["dashboard", "sales"];
+    return Array.from(new Set([
+      ...(this.schemaRegistry.viewDomains[viewId] || ["dashboard", "sales"]),
+      "dashboard",
+      "sales",
+      "operations"
+    ]));
   }
 
   buildSchemaSummary(viewId) {
@@ -314,33 +362,81 @@ export class SQLiteConnector {
     }
   }
 
-  detectSellerName(question) {
+  async runReadQueryAsync(params) {
+    return this.runReadQuery(params);
+  }
+
+  detectSellerCandidates(question) {
     const foldedQuestion = foldText(question);
-    const questionTokens = new Set(foldedQuestion.split(/\s+/).filter(Boolean));
+    const questionTokens = new Set(
+      foldedQuestion
+        .split(/\s+/)
+        .filter((token) => token && !/^\d+$/.test(token) && !SELLER_ALIAS_QUERY_STOPWORDS.has(token))
+    );
     const sellerNames = this.getSellerNames();
+
     const exactMatch = sellerNames.find((sellerName) => (
       foldText(sellerName).length >= 6 && foldedQuestion.includes(foldText(sellerName))
     ));
     if (exactMatch) {
-      return exactMatch;
+      return [{ seller_name: exactMatch, score: 100 }];
     }
 
-    const tokenMatches = sellerNames.filter((sellerName) => {
-      const foldedName = foldText(sellerName);
-      const tokens = foldedName
-        .split(/\s+/)
-        .filter((token) => token.length >= 3 && !SELLER_ALIAS_STOPWORDS.has(token));
-      if (tokens.length === 0) {
-        return false;
-      }
-      return tokens.some((token) => questionTokens.has(token));
-    });
-
-    if (tokenMatches.length === 1) {
-      return tokenMatches[0];
+    if (questionTokens.size === 0) {
+      return [];
     }
 
-    return null;
+    const candidates = sellerNames
+      .map((sellerName) => {
+        const foldedName = foldText(sellerName);
+        const tokens = foldedName.split(/\s+/).filter((token) => token.length >= 3);
+        if (tokens.length === 0) {
+          return null;
+        }
+
+        let score = 0;
+        for (let index = 0; index < tokens.length; index += 1) {
+          const token = tokens[index];
+          if (!questionTokens.has(token)) {
+            continue;
+          }
+
+          const isLastToken = index === tokens.length - 1;
+          if (SELLER_ALIAS_STOPWORDS.has(token) && !isLastToken) {
+            continue;
+          }
+
+          score += isLastToken ? 5 : SELLER_ALIAS_STOPWORDS.has(token) ? 3 : 2;
+        }
+
+        if (score === 0) {
+          return null;
+        }
+
+        return {
+          seller_name: sellerName,
+          score
+        };
+      })
+      .filter(Boolean)
+      .sort((left, right) => right.score - left.score || right.seller_name.length - left.seller_name.length || left.seller_name.localeCompare(right.seller_name));
+
+    return candidates;
+  }
+
+  detectSellerName(question) {
+    const candidates = this.detectSellerCandidates(question);
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    if (candidates.length === 1) {
+      return candidates[0].seller_name;
+    }
+
+    return candidates[0].score > candidates[1].score
+      ? candidates[0].seller_name
+      : null;
   }
 
   getLatestOperationsMonthEndKey() {

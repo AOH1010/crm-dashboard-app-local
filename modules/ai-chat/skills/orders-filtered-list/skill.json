@@ -1,0 +1,10 @@
+{
+  "id": "orders-filtered-list",
+  "description": "Filter orders by amount and month using deterministic SQL.",
+  "priority": 89,
+  "triggers": ["liet ke don hang", "loc don hang", "order tren"],
+  "supported_views": ["dashboard", "team"],
+  "required_entities": [],
+  "output_mode": "table",
+  "fallback_policy": "use_skill_for_basic_order_filters"
+}

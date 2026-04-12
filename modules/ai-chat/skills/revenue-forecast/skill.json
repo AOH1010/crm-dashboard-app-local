@@ -1,0 +1,10 @@
+{
+  "id": "revenue-forecast",
+  "description": "Forecast revenue for future months in the current year using grounded YTD growth against the prior year.",
+  "priority": 91,
+  "triggers": ["du bao", "forecast", "doanh thu"],
+  "supported_views": ["dashboard", "team"],
+  "required_entities": [],
+  "output_mode": "summary",
+  "fallback_policy": "prefer_skill_when_the_user_asks_for_grounded_revenue_forecast"
+}

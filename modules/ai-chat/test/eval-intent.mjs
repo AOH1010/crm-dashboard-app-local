@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chatWithCrmAgent } from "../src/runtime/chat-runtime.js";
+import { chatWithCrmAgent } from "../src/runtime/chat-runtime-v2.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -694,20 +694,20 @@ function buildRenewPayload({ reportMonth, year } = {}) {
 
     const expiringRows = db.prepare(`
       SELECT
-        account,
-        customer_type,
-        customer_id,
-        customer_name,
-        sale_owner,
-        account_type,
-        activation_date,
-        expiry_date,
-        contract_term
-      FROM ops_activation_accounts
-      WHERE expiry_date >= ?
-        AND expiry_date <= ?
-      ORDER BY expiry_date ASC, account ASC
-    `).all(todayKey, dueSoonEnd);
+        d.account,
+        d.customer_type,
+        d.customer_id,
+        d.customer_name,
+        d.sale_owner,
+        d.account_type,
+        a.activation_date,
+        d.due_date AS expiry_date,
+        a.contract_term
+      FROM ops_due_accounts d
+      LEFT JOIN ops_activation_accounts a ON a.account = d.account
+      WHERE d.due_month_key = ?
+      ORDER BY d.due_date ASC, d.account ASC
+    `).all(safeReportMonth);
 
     const historyMonthKeys = Array.from({ length: 12 }, (_, index) => addMonthsToKey(todayMonth, -index)).reverse();
     const categoryRows = db.prepare(`

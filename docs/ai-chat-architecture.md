@@ -10,6 +10,9 @@ Tai lieu nay mo ta runtime AI chat da duoc nang cap trong Round 1:
 - giu deterministic skill execution cho query business pho bien
 - them `SkillResponseFormatter` de skill path khong con bypass answer style
 - giu `llm_fallback` cho intent chua co skill hoac query phuc tap
+- runtime active hien tai la `modules/ai-chat/src/runtime/chat-runtime-v2.js`
+- connector seam hien tai la `DataConnector -> SQLiteConnector`; `SupabaseConnector` de sang V2.0
+- V1.5 da co controlled conversation state cho follow-up carry-over, nhung chua phai V3 planner/agentic runtime
 
 ## So do tong the
 

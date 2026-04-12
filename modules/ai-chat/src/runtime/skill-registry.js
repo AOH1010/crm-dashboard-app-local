@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { sellerMonthRevenueSkill } from "../skills/seller-month-revenue.js";
+import { sellerMonthRevenueSkillV3 } from "../skills/seller-month-revenue-v3.js";
 import { topSellersPeriodSkill } from "../skills/top-sellers-period.js";
 import { kpiOverviewSkill } from "../skills/kpi-overview.js";
 import { comparePeriodsSkill } from "../skills/compare-periods.js";
@@ -10,6 +10,13 @@ import { operationsStatusSummarySkill } from "../skills/operations-status-summar
 import { conversionSourceSummarySkill } from "../skills/conversion-source-summary.js";
 import { teamPerformanceSummarySkill } from "../skills/team-performance-summary.js";
 import { revenueTrendAnalysisSkill } from "../skills/revenue-trend-analysis.js";
+import { customerRevenueRankingSkillV2 } from "../skills/customer-revenue-ranking-v2.js";
+import { recentOrdersListSkill } from "../skills/recent-orders-list.js";
+import { leadGeographySkill } from "../skills/lead-geography.js";
+import { sourceRevenueDrilldownSkillV2 } from "../skills/source-revenue-drilldown-v2.js";
+import { ordersFilteredListSkill } from "../skills/orders-filtered-list.js";
+import { inactiveSellersSummarySkill } from "../skills/inactive-sellers-summary.js";
+import { revenueForecastSkill } from "../skills/revenue-forecast.js";
 import { ROUTABLE_SKILL_INTENTS } from "./intent-catalog.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,7 +25,7 @@ const moduleRoot = path.resolve(__dirname, "..", "..");
 const skillsDir = path.join(moduleRoot, "skills");
 
 const handlers = new Map([
-  [sellerMonthRevenueSkill.id, sellerMonthRevenueSkill],
+  [sellerMonthRevenueSkillV3.id, sellerMonthRevenueSkillV3],
   [topSellersPeriodSkill.id, topSellersPeriodSkill],
   [kpiOverviewSkill.id, kpiOverviewSkill],
   [comparePeriodsSkill.id, comparePeriodsSkill],
@@ -26,7 +33,14 @@ const handlers = new Map([
   [operationsStatusSummarySkill.id, operationsStatusSummarySkill],
   [conversionSourceSummarySkill.id, conversionSourceSummarySkill],
   [teamPerformanceSummarySkill.id, teamPerformanceSummarySkill],
-  [revenueTrendAnalysisSkill.id, revenueTrendAnalysisSkill]
+  [revenueTrendAnalysisSkill.id, revenueTrendAnalysisSkill],
+  [customerRevenueRankingSkillV2.id, customerRevenueRankingSkillV2],
+  [recentOrdersListSkill.id, recentOrdersListSkill],
+  [leadGeographySkill.id, leadGeographySkill],
+  [sourceRevenueDrilldownSkillV2.id, sourceRevenueDrilldownSkillV2],
+  [ordersFilteredListSkill.id, ordersFilteredListSkill],
+  [inactiveSellersSummarySkill.id, inactiveSellersSummarySkill],
+  [revenueForecastSkill.id, revenueForecastSkill]
 ]);
 
 function loadSkillManifest(skillId) {

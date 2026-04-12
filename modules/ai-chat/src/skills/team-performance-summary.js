@@ -1,15 +1,15 @@
 import { createUsage } from "../contracts/chat-contracts.js";
 import { endOfMonthKey } from "../tooling/date-utils.js";
 import { foldText } from "../tooling/common.js";
-import { resolveCurrentPeriod, resolveMonthlyWindow } from "../tooling/question-analysis.js";
+import { extractMonthYear, resolveCurrentPeriod, resolveMonthlyWindowFromContext } from "../tooling/question-analysis.js";
 import { formatCurrency, formatMarkdownTable } from "./formatters.js";
-import { buildTeamCaseSql, detectTeamEntities } from "./business-mappings.js";
+import { buildTeamCaseSql, detectTeamEntities } from "./business-mappings-v2.js";
 
 const teamCaseSql = buildTeamCaseSql("s.dept_name");
 
 function resolveQuarterPeriod(question) {
   const normalized = foldText(question);
-  const quarterMatch = normalized.match(/\bquy\s*(\d)\b(?:\s*nam\s*(20\d{2}))?/);
+  const quarterMatch = normalized.match(/\b(?:quy|q)\s*(\d)\b(?:\s*nam\s*(20\d{2}))?/);
   if (!quarterMatch) {
     return null;
   }
@@ -35,9 +35,10 @@ function resolveTeamPeriod(context, connector) {
     return explicitQuarter;
   }
 
-  if (/thang\s*\d{1,2}|\bthang nay\b|\bthang truoc\b/.test(foldText(context.latestQuestion || ""))) {
-    const monthWindow = resolveMonthlyWindow({
+  if (extractMonthYear(context.latestQuestion || "")) {
+    const monthWindow = resolveMonthlyWindowFromContext({
       question: context.latestQuestion,
+      context,
       selectedFilters: context.selectedFilters,
       latestMonthKey: connector.getLatestMonthKey(),
       latestYear: connector.getLatestOrderYear()
@@ -47,6 +48,23 @@ function resolveTeamPeriod(context, connector) {
       to: endOfMonthKey(`${monthWindow.month_key}-01`),
       label: monthWindow.label
     };
+  }
+
+  if (Array.isArray(context.normalizedMessages) && context.normalizedMessages.length > 1) {
+    const monthWindow = resolveMonthlyWindowFromContext({
+      question: context.latestQuestion,
+      context,
+      selectedFilters: context.selectedFilters,
+      latestMonthKey: connector.getLatestMonthKey(),
+      latestYear: connector.getLatestOrderYear()
+    });
+    if (monthWindow?.month_key) {
+      return {
+        from: `${monthWindow.month_key}-01`,
+        to: endOfMonthKey(`${monthWindow.month_key}-01`),
+        label: monthWindow.label
+      };
+    }
   }
 
   const period = resolveCurrentPeriod({
@@ -78,17 +96,17 @@ export const teamPerformanceSummarySkill = {
   id: "team-performance-summary",
   canHandle(context) {
     const foldedQuestion = context.routingFoldedQuestion || context.foldedQuestion;
-    return /(team|nhom)/.test(foldedQuestion)
-      && /(doanh thu|doanh so|revenue|dan dau|xep hang|so sanh)/.test(foldedQuestion);
+    return /(team|nhom|doi)/.test(foldedQuestion)
+      && /(doanh thu|doanh so|\bdt\b|revenue|dan dau|xep hang|so sanh|\bss\b)/.test(foldedQuestion);
   },
-  run(context, connector) {
+  async run(context, connector) {
     const period = resolveTeamPeriod(context, connector);
     const requestedTeams = resolveRequestedTeams(context);
     const requestedTeam = requestedTeams[0] || null;
     const questionText = foldText(context.latestQuestion || "");
     const isComparisonAsk = /so sanh/.test(questionText) || requestedTeams.length >= 2;
 
-    const result = connector.runReadQuery({
+    const result = await connector.runReadQueryAsync({
       sql: `
         WITH team_orders AS (
           SELECT

@@ -48,8 +48,12 @@ export class PromptRegistry {
     if (viewHint) {
       sections.push(viewHint);
     }
+    sections.push("The active view is only supporting context, not a hard routing boundary.");
     if (requestContext.selectedFilters) {
       sections.push(`Selected filters:\n${JSON.stringify(requestContext.selectedFilters, null, 2)}`);
+    }
+    if (requestContext.routingQuestion && requestContext.routingQuestion !== requestContext.latestUserMessage?.content) {
+      sections.push(`Routing-focused slice of the latest ask:\n${requestContext.routingQuestion}`);
     }
     const prompt = sections.filter(Boolean).join("\n\n");
     this.cache.set(cacheKey, prompt);
@@ -92,6 +96,7 @@ export class PromptRegistry {
     if (viewHint) {
       sections.push(viewHint);
     }
+    sections.push("The active view is only supporting context, not a hard routing boundary.");
 
     sections.push(readPromptFile("fallback-sql.md"));
     if (requestContext.intent) {

@@ -8,8 +8,16 @@ export const INTENT_TYPES = [
   "conversion_source_summary",
   "team_revenue_summary",
   "revenue_trend_analysis",
+  "customer_revenue_ranking",
+  "recent_orders_list",
   "customer_lookup",
   "lead_geography",
+  "source_revenue_drilldown",
+  "orders_filtered_list",
+  "inactive_sellers_recent",
+  "forecast_request",
+  "injection_attempt",
+  "out_of_domain_request",
   "cohort_summary",
   "custom_analytical_query",
   "unknown"
@@ -24,7 +32,14 @@ export const ROUTABLE_SKILL_INTENTS = {
   operations_summary: "operations-status-summary",
   conversion_source_summary: "conversion-source-summary",
   team_revenue_summary: "team-performance-summary",
-  revenue_trend_analysis: "revenue-trend-analysis"
+  revenue_trend_analysis: "revenue-trend-analysis",
+  customer_revenue_ranking: "customer-revenue-ranking",
+  recent_orders_list: "recent-orders-list",
+  lead_geography: "lead-geography",
+  source_revenue_drilldown: "source-revenue-drilldown",
+  orders_filtered_list: "orders-filtered-list",
+  inactive_sellers_recent: "inactive-sellers-summary",
+  forecast_request: "revenue-forecast"
 };
 
 export const CLASSIFIER_ROUTE_SKILL_THRESHOLD = 0.85;
