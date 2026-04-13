@@ -25,6 +25,28 @@ Quy tac:
 - Ship Round 1 of the AI chat upgrade as an intent-first runtime while keeping `/api/agent/chat` compatible for the current frontend app.
 - Provide an internal Chat Lab route in the frontend so the team can inspect route quality, intent extraction, clarification behavior, formatter output, and SQL logs on each testcase.
 
+## Quick Handoff 2026-04-13
+
+- Current real project state:
+  - Supabase data plane is connected and usable.
+  - V3 routing/control layer is active globally.
+  - `seller_activity` is the first family that has been migrated deeply enough to separate `define | list | aggregate`.
+  - Chat quality is still the main bottleneck; the project is not ready to be treated as productized chat yet.
+- Most important working rule from now on:
+  - do not confuse `Supabase connected` with `chat is ready`
+  - do not open MCP/tool surface deeper before family hardening and session behavior are more stable
+- Chat Lab is now the main QA harness for both:
+  - single-turn testcase review
+  - multi-turn session replay / stress review
+- Recommended next execution order:
+  1. `team_metrics`
+  2. `operations_metrics`
+  3. `source_metrics`
+  4. `order_metrics`
+  5. `seller_metrics`
+  6. widget/session stress replay on Supabase
+  7. only then expand compound planner / orchestrator work
+
 ## Current State
 
 - Frontend app: `apps/frontend`

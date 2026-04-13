@@ -81,6 +81,33 @@ Roadmap này khóa theo nguyên tắc:
 - Family chính không còn nuốt prompt của nhau trên các case phổ biến.
 - Follow-up phải ổn ở các chuỗi hội thoại thực tế, không chỉ testcase đơn.
 
+### Chat Lab packaging hom nay
+
+- Chat Lab khong con chi la man single-turn review. Hien tai no da co mot lane session QA rieng trong tab `Conversation`.
+- Session QA hien co cac entry point ro rang:
+  - replay testcase tung turn
+  - seed transcript goc roi hoi tiep
+  - auto-generate stress turns theo mode
+- Review session hien duoc ghi theo turn, khong chi theo ket qua cuoi:
+  - `ok`
+  - `drift`
+  - `fail`
+- Chat Lab da export duoc 2 loai artifact cho handoff:
+  - CSV review artifact
+  - JSON session artifact co full trace + turn review + scenario draft
+- Muc dich cua Chat Lab tu thoi diem nay:
+  - tim diem bat dau lech trong session 5-10 turn
+  - chot turn nao fail that
+  - chuyen session fail thanh regression scenario sau khi da co manual review
+
+### Vong lap lam viec dung tu bay gio
+
+1. Dung Chat Lab `Conversation` de replay va stress session tren Supabase.
+2. Danh dau turn bat dau lech bang review theo turn.
+3. Xuat JSON session artifact de handoff/debug.
+4. Sua runtime theo family / carry-over / route-policy, khong sua theo cam tinh cua turn cuoi.
+5. Chi sau khi session behavior on dinh hon moi mo rong tiep compound orchestration va MCP surface.
+
 ## 1. Current Status
 
 ### Runtime hiện có

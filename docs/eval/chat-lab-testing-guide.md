@@ -193,17 +193,85 @@ Panel `Batch` cho biet:
 - so case dat hoan chinh
 - so case con cho manual review bat buoc
 
+### Conversation
+
+Panel `Conversation` dung cho session QA, khong chi testcase don.
+
+No cho phep 3 cach vao session:
+- `Replay testcase theo turn`
+- `Dung transcript goc lam seed` roi hoi them
+- `Tao session stress` tu dong theo mode
+
+Muc dich:
+- tim turn nao bat dau lech
+- xem carry-over co dung khong
+- kiem tra khi nao he thong khong chuyen family dung luc
+- bat cac loi chi lo ra sau 5-10 turn
+
+### Stress session auto-generate
+
+Chat Lab hien co cac mode stress co huong dan, khong sinh hoi thoai ngau nhien vo toi va:
+- `keep context`
+- `metric switch`
+- `family switch`
+- `topic reset`
+- `mixed stress`
+
+Cach dung:
+1. Chon testcase goc.
+2. Vao tab `Conversation`.
+3. Chon mode stress.
+4. Bam `Tao session stress`.
+5. Chay tung turn hoac replay ca session.
+6. Danh dau turn bat dau lech.
+
+### Turn review
+
+Review session duoc ghi theo tung turn, khong chi theo ket qua cuoi.
+
+Trang thai hop le:
+- `ok`
+- `drift`
+- `fail`
+
+Reviewer can:
+- chon turn tren timeline
+- danh dau turn dau tien bat dau lech
+- chon loai loi:
+  - `carry_over_drift`
+  - `entity_stickiness`
+  - `metric_drift`
+  - `family_switch_failure`
+  - `clarify_misfire`
+  - `fallback_misfire`
+  - `view_context_leak`
+  - `reply_quality`
+  - `other`
+
+Quy tac:
+- `drift` dung khi he thong bat dau lech nhung chua vo nghia hoan toan
+- `fail` dung khi turn do da khong con chap nhan duoc
+- luon uu tien tim `turn bat dau lech` thay vi chi cham turn cuoi
+
 ## Cache va export
 
 Chat Lab co luu cache tren trinh duyet cho 3 loai du lieu:
 - `currentResult`
 - `batchResults`
 - `manualReviews`
+- `sessionTurnReviews`
 
 Y nghia:
 - reload tab khong lam mat lich su chay
 - export CSV co the lay ca ket qua cu va review tay da ghi
 - chi khi bam `Lam moi lab` thi moi xoa het cache
+
+Chat Lab hien co 2 duong export:
+- CSV:
+  - phu hop cho batch review, tong hop testcase, handoff nhanh
+- JSON session artifact:
+  - phu hop cho multi-turn debug
+  - chua full turn trace, debug metadata, turn review, va scenario draft de agent sau dung lai
 
 ## Manual review workflow
 
@@ -251,6 +319,17 @@ Khi mot agent khac duoc giao fix testcase:
 6. Chay lai testcase.
 7. Neu case can review tay, agent khong tu ket luan `Dat` thay cho reviewer.
 
+Neu bug chi lo ra sau nhieu turn:
+1. Dung `Conversation` tab thay vi chi chay testcase don.
+2. Replay transcript goc hoac tao stress session.
+3. Danh dau turn bat dau lech.
+4. Xuat JSON session artifact.
+5. Sua vao dung lop loi:
+   - carry-over
+   - family switch
+   - clarify/fallback policy
+   - skill boundary
+
 ## Quy tac quan trong
 
 - Khong coi `autoPass` la `pass cuoi` voi case `manualReview`.
@@ -258,6 +337,8 @@ Khi mot agent khac duoc giao fix testcase:
 - Neu route va intent dung ma reply do, kha nang cao loi nam o `SkillResponseFormatter`.
 - Neu SQL sai hoac row count sai, kha nang cao loi nam o skill handler hoac filter resolution.
 - Neu `intent_source = legacy_rules`, danh gia can than hon vi classifier co the da fail va runtime dang o compatibility path.
+- Auto-generate stress session la cong cu tao bien the nhanh, khong phai nguon su that cuoi cung.
+- Session do user review tay trong Chat Lab van la nguon su that de chuyen thanh regression scenario.
 
 ## Endpoint va nguon du lieu
 
