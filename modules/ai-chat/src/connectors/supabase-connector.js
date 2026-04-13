@@ -95,9 +95,29 @@ const SELLER_ALIAS_QUERY_STOPWORDS = new Set([
   "kpi",
   "he",
   "thong",
-  "system"
+  "system",
+  "lap",
+  "bang",
+  "theo",
+  "tu",
+  "den"
 ]);
 const poolCache = new Map();
+
+function normalizeSellerAliasQuestion(question) {
+  return foldText(question)
+    .replace(/\bhien tai\b/g, " ")
+    .replace(/\bden hien tai\b/g, " ")
+    .replace(/\bthang hien tai\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export async function closeSupabasePools() {
+  const pools = Array.from(poolCache.values());
+  poolCache.clear();
+  await Promise.all(pools.map((pool) => pool.end()));
+}
 
 function readSchemaRegistry() {
   return JSON.parse(fs.readFileSync(schemaRegistryPath, "utf8"));
@@ -472,7 +492,7 @@ export class SupabaseConnector extends DataConnector {
   }
 
   detectSellerCandidates(question) {
-    const foldedQuestion = foldText(question);
+    const foldedQuestion = normalizeSellerAliasQuestion(question);
     const questionTokens = new Set(
       foldedQuestion
         .split(/\s+/)

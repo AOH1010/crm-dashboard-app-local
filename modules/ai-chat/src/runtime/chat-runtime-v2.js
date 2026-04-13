@@ -21,9 +21,12 @@ import {
   createSkillRouteDecision
 } from "./route-decision.js";
 import { runFallbackLlm } from "./fallback-llm.js";
-import { classifyIntent, resolveRouteFromIntent } from "./intent-classifier-v2.js";
+import { classifyIntent } from "./intent-classifier-v2.js";
 import { formatSkillResponse } from "./skill-response-formatter.js";
 import { buildConversationTopicState } from "./conversation-topic-state.js";
+import { buildSemanticFrameV3 } from "./semantic-frame-v3.js";
+import { buildRoutePolicyV3 } from "./route-policy-v3.js";
+import { validateSkillOutputV3 } from "./skill-output-validator-v3.js";
 
 function createTimeline() {
   return [];
@@ -266,12 +269,47 @@ export async function chatWithCrmAgent({
     timeline
   );
 
-  const skillMatch = skillRegistry.findMatch(context);
-  const resolvedRoute = resolveRouteFromIntent(context.intent);
+  context.semantic = buildSemanticFrameV3(context);
+  pushTimeline(timeline, "semantic_frame_v3", {
+    intent: context.semantic.intent,
+    topic: context.semantic.slots.topic,
+    metric: context.semantic.slots.metric,
+    entity_type: context.semantic.slots.entity_type,
+    broadness: context.semantic.broadness,
+    follow_up_flag: context.semantic.follow_up_flag
+  });
+
+  const legacySkillMatch = skillRegistry.findMatch(context);
+  const routePolicyDecision = buildRoutePolicyV3({
+    context,
+    skillRegistry
+  });
+  context.routePolicyDecision = routePolicyDecision;
+  const skillMatch = routePolicyDecision.skill
+    ? {
+      skill: routePolicyDecision.skill,
+      matchedSkillCandidates: routePolicyDecision.matched_skill_candidates,
+      routeReason: routePolicyDecision.reason_code
+    }
+    : {
+      ...legacySkillMatch,
+      matchedSkillCandidates: routePolicyDecision.matched_skill_candidates.length > 0
+        ? routePolicyDecision.matched_skill_candidates
+        : legacySkillMatch.matchedSkillCandidates,
+      routeReason: routePolicyDecision.reason_code || legacySkillMatch.routeReason
+    };
+  const resolvedRoute = routePolicyDecision.resolved_route;
   context.conversationTopicState = buildConversationTopicState({
     context,
     resolvedRoute,
     skillMatch
+  });
+  pushTimeline(timeline, "route_policy_v3", {
+    decision: routePolicyDecision.decision,
+    reason_code: routePolicyDecision.reason_code,
+    skill_id: routePolicyDecision.skill_id,
+    confidence: routePolicyDecision.confidence,
+    top_candidate: routePolicyDecision.candidate_executors?.[0] || null
   });
   pushTimeline(timeline, "intent_router", {
     resolved_route: resolvedRoute,
@@ -306,7 +344,9 @@ export async function chatWithCrmAgent({
       fallbackReason: "validation_guardrail",
       formatterSource: null,
       debugTimeline: timeline,
-      conversationState: context.conversationTopicState
+      conversationState: context.conversationTopicState,
+      semanticFrame: context.semantic,
+      routePolicy: context.routePolicyDecision
     });
   }
 
@@ -333,7 +373,9 @@ export async function chatWithCrmAgent({
       fallbackReason: skillMatch.routeReason,
       formatterSource: null,
       debugTimeline: timeline,
-      conversationState: context.conversationTopicState
+      conversationState: context.conversationTopicState,
+      semanticFrame: context.semantic,
+      routePolicy: context.routePolicyDecision
     });
   }
 
@@ -342,7 +384,18 @@ export async function chatWithCrmAgent({
       skill_id: skillMatch.skill.id
     });
     const rawSkillResult = await skillMatch.skill.handler.run(context, connector);
-    if (rawSkillResult) {
+    const skillValidation = validateSkillOutputV3({
+      context,
+      skill: skillMatch.skill,
+      skillResult: rawSkillResult
+    });
+    pushTimeline(timeline, "skill_output_validator_v3", {
+      skill_id: skillMatch.skill.id,
+      ok: skillValidation.ok,
+      route: skillValidation.route,
+      reason_code: skillValidation.reason_code
+    });
+    if (rawSkillResult && skillValidation.ok) {
       const formattedResult = await formatSkillResponse({
         requestContext: context,
         skillResult: {
@@ -374,15 +427,17 @@ export async function chatWithCrmAgent({
         fallbackReason: null,
         formatterSource: formattedResult.formatterSource,
         debugTimeline: timeline,
-        conversationState: context.conversationTopicState
+        conversationState: context.conversationTopicState,
+        semanticFrame: context.semantic,
+        routePolicy: context.routePolicyDecision
       });
     }
 
-    if (context.clarificationQuestion) {
+    if (skillValidation.route === ROUTE_CLARIFY_REQUIRED && context.clarificationQuestion) {
       const routeDecision = createClarifyRouteDecision(context.intentConfidence || 0.7);
       pushTimeline(timeline, "clarify_required", {
         clarification_question: buildClarificationReply(context),
-        reason: "skill_returned_null"
+        reason: skillValidation.reason_code
       });
       return buildTelemetryResponse({
         traceContext,
@@ -399,12 +454,16 @@ export async function chatWithCrmAgent({
         ambiguityFlag: context.ambiguityFlag,
         clarificationQuestion: context.clarificationQuestion,
         matchedSkillCandidates: skillMatch.matchedSkillCandidates,
-        fallbackReason: "skill_returned_null",
+        fallbackReason: skillValidation.reason_code,
         formatterSource: null,
         debugTimeline: timeline,
-        conversationState: context.conversationTopicState
+        conversationState: context.conversationTopicState,
+        semanticFrame: context.semantic,
+        routePolicy: context.routePolicyDecision
       });
     }
+
+    skillMatch.routeReason = skillValidation.reason_code;
   }
 
   if (resolvedRoute === ROUTE_LLM_FALLBACK
@@ -483,7 +542,9 @@ export async function chatWithCrmAgent({
           : "compound_skill_orchestration",
         formatterSource: "compound_skills",
         debugTimeline: timeline,
-        conversationState: context.conversationTopicState
+        conversationState: context.conversationTopicState,
+        semanticFrame: context.semantic,
+        routePolicy: context.routePolicyDecision
       });
     }
   }
@@ -513,7 +574,9 @@ export async function chatWithCrmAgent({
       fallbackReason: "forecast_request_guarded_fallback",
       formatterSource: null,
       debugTimeline: timeline,
-      conversationState: context.conversationTopicState
+      conversationState: context.conversationTopicState,
+      semanticFrame: context.semantic,
+      routePolicy: context.routePolicyDecision
     });
   }
 
@@ -547,7 +610,9 @@ export async function chatWithCrmAgent({
       fallbackReason: skillMatch.routeReason,
       formatterSource: null,
       debugTimeline: timeline,
-      conversationState: context.conversationTopicState
+      conversationState: context.conversationTopicState,
+      semanticFrame: context.semantic,
+      routePolicy: context.routePolicyDecision
     });
   }
 
@@ -570,6 +635,8 @@ export async function chatWithCrmAgent({
     fallbackReason: skillMatch.routeReason,
     formatterSource: null,
     debugTimeline: timeline,
-    conversationState: context.conversationTopicState
+    conversationState: context.conversationTopicState,
+    semanticFrame: context.semantic,
+    routePolicy: context.routePolicyDecision
   });
 }

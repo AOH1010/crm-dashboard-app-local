@@ -16,13 +16,13 @@ const NVIDIA_ENABLE_THINKING = String(process.env.CRM_AGENT_ENABLE_THINKING || "
 
 const QUERY_TOOL_DECLARATION = {
   name: QUERY_FUNCTION_NAME,
-  description: "Run a read-only SQL query on internal CRM data using canonical table names and return rows.",
+  description: "Run a read-only, connector-portable SQL query on internal CRM data using canonical table names and return rows.",
   parametersJsonSchema: {
     type: "object",
     properties: {
       sql: {
         type: "string",
-        description: "A SQLite SELECT query that only uses canonical allowed tables."
+        description: "A read-only SELECT/WITH query that uses canonical allowed tables and avoids connector-specific SQL where possible."
       },
       max_rows: {
         type: "number",

@@ -92,9 +92,23 @@ const SELLER_ALIAS_QUERY_STOPWORDS = new Set([
   "kpi",
   "he",
   "thong",
-  "system"
+  "system",
+  "lap",
+  "bang",
+  "theo",
+  "tu",
+  "den"
 ]);
 let dashboardReady = false;
+
+function normalizeSellerAliasQuestion(question) {
+  return foldText(question)
+    .replace(/\bhien tai\b/g, " ")
+    .replace(/\bden hien tai\b/g, " ")
+    .replace(/\bthang hien tai\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 function readSchemaRegistry() {
   return JSON.parse(fs.readFileSync(schemaRegistryPath, "utf8"));
@@ -367,7 +381,7 @@ export class SQLiteConnector extends DataConnector {
   }
 
   detectSellerCandidates(question) {
-    const foldedQuestion = foldText(question);
+    const foldedQuestion = normalizeSellerAliasQuestion(question);
     const questionTokens = new Set(
       foldedQuestion
         .split(/\s+/)

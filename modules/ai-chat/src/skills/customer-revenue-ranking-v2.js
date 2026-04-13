@@ -26,19 +26,25 @@ export const customerRevenueRankingSkillV2 = {
 
     const result = await connector.runReadQueryAsync({
       sql: `
-        SELECT
-          TRIM(COALESCE(o.id_1, '')) AS customer_id,
-          COALESCE(NULLIF(TRIM(c.title), ''), 'Unknown customer') AS customer_name,
-          ROUND(SUM(COALESCE(o.real_amount, 0)), 2) AS revenue_amount,
-          COUNT(*) AS order_count
-        FROM orders o
-        LEFT JOIN customers c ON TRIM(o.id_1) = TRIM(c.id_1)
-        WHERE TRIM(COALESCE(o.status_label, '')) <> COALESCE((
-          SELECT meta_value FROM dashboard_meta WHERE meta_key = 'cancelled_status_label'
-        ), '__never_match__')
-          AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?
-        GROUP BY customer_id, customer_name
-        HAVING LENGTH(customer_id) > 0
+        WITH ranked_customers AS (
+          SELECT
+            TRIM(COALESCE(o.id_1, '')) AS customer_id,
+            COALESCE(NULLIF(TRIM(c.title), ''), 'Unknown customer') AS customer_name,
+            ROUND(SUM(COALESCE(o.real_amount, 0)), 2) AS revenue_amount,
+            COUNT(*) AS order_count
+          FROM orders o
+          LEFT JOIN customers c ON TRIM(o.id_1) = TRIM(c.id_1)
+          WHERE TRIM(COALESCE(o.status_label, '')) <> COALESCE((
+            SELECT meta_value FROM dashboard_meta WHERE meta_key = 'cancelled_status_label'
+          ), '__never_match__')
+            AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?
+          GROUP BY
+            TRIM(COALESCE(o.id_1, '')),
+            COALESCE(NULLIF(TRIM(c.title), ''), 'Unknown customer')
+        )
+        SELECT customer_id, customer_name, revenue_amount, order_count
+        FROM ranked_customers
+        WHERE LENGTH(customer_id) > 0
         ORDER BY revenue_amount DESC, order_count DESC, customer_name ASC
       `,
       params: [from, to],

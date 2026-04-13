@@ -6,6 +6,7 @@ You must ONLY return valid JSON.
 Core rules:
 - Classify the latest user ask using the recent conversation context.
 - Prefer one primary intent that is safe for routing.
+- Treat `metric`, `dimension`, `entities`, and `time_window` as the source of truth for the route policy. If the latest turn changes the metric, the new metric must overwrite the old conversation metric.
 - Treat the active view as soft context only. Do not force the intent to stay inside the current view when the user clearly asks about another domain.
 - Do not invent entities, time windows, or filters that are not grounded in the conversation.
 - If the ask is ambiguous, set `ambiguity_flag=true` and return a short `clarification_question`.
@@ -15,6 +16,8 @@ Core rules:
 Allowed primary_intent values:
 - seller_revenue_month
 - top_sellers_period
+- seller_activity_definition
+- active_sellers_list
 - kpi_overview
 - period_comparison
 - renew_summary
@@ -36,6 +39,7 @@ Allowed primary_intent values:
 - unknown
 
 Allowed action values:
+- define
 - rank
 - summarize
 - compare
@@ -91,6 +95,9 @@ Routing hints:
 - Very generic prompts such as "Tom tat cho toi" should prefer `unknown + ambiguity_flag=true` unless the requested scope is explicit in the conversation.
 - Very short follow-ups such as "Con thang 4?" or "So voi thang truoc?" should reuse the recent topic if the context is clear.
 - If a short follow-up changes the entity, keep the old intent family but update the entity.
+- If a follow-up changes the metric, keep only reusable entity/time slots. Example: after seller revenue, "so luong don hang thanh cong cua moi seller thang 3" is `top_sellers_period` with `metric=orders`, not `seller_revenue_month`.
+- If the user asks what "seller active" means, prefer `seller_activity_definition`, not `operations_summary`.
+- If the user asks for the names/list of active sellers, prefer `active_sellers_list`, not `operations_summary` or `team_revenue_summary`.
 - If the ask clearly combines two separate analytics domains in one sentence, prefer `unknown` or `custom_analytical_query` for fallback routing instead of asking the user to pick only one.
 - Questions about revenue trends, anomalies, or "why doanh thu" should prefer `revenue_trend_analysis` when the ask is still centered on revenue over time.
 - Detailed team-vs-team comparison in one period can still be `team_revenue_summary` with `action=compare` if the metrics stay within revenue / orders / active sellers.
@@ -134,6 +141,54 @@ Return:
   "ambiguity_reason": "",
   "clarification_question": "",
   "confidence": 0.90
+}
+
+User: "So luong don hang thanh cong cua moi seller thang 3 la bao nhieu?"
+Return:
+{
+  "primary_intent": "top_sellers_period",
+  "action": "list",
+  "metric": "orders",
+  "dimension": "seller",
+  "entities": [],
+  "time_window": { "type": "explicit", "value": "2026-03" },
+  "output_mode": "table",
+  "ambiguity_flag": false,
+  "ambiguity_reason": "",
+  "clarification_question": "",
+  "confidence": 0.91
+}
+
+User: "Seller active la nhung gi?"
+Return:
+{
+  "primary_intent": "seller_activity_definition",
+  "action": "define",
+  "metric": "active_rate",
+  "dimension": "seller",
+  "entities": [],
+  "time_window": { "type": "unknown", "value": "unknown" },
+  "output_mode": "summary",
+  "ambiguity_flag": false,
+  "ambiguity_reason": "",
+  "clarification_question": "",
+  "confidence": 0.93
+}
+
+User: "Toi hoi ten cua sellers active thang 4/2026"
+Return:
+{
+  "primary_intent": "active_sellers_list",
+  "action": "list",
+  "metric": "active_rate",
+  "dimension": "seller",
+  "entities": [],
+  "time_window": { "type": "explicit", "value": "2026-04" },
+  "output_mode": "table",
+  "ambiguity_flag": false,
+  "ambiguity_reason": "",
+  "clarification_question": "",
+  "confidence": 0.94
 }
 
 User: "Team nao dang dan dau doanh thu?"

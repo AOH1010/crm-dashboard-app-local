@@ -19,7 +19,9 @@ export function buildTelemetryResponse({
   fallbackReason = null,
   formatterSource = null,
   debugTimeline = null,
-  conversationState = null
+  conversationState = null,
+  semanticFrame = null,
+  routePolicy = null
 }) {
   const latencyMs = getLatencyMs(traceContext);
   return {
@@ -42,6 +44,8 @@ export function buildTelemetryResponse({
     fallback_reason: fallbackReason,
     formatter_source: formatterSource,
     execution_timeline: debugTimeline,
-    conversation_state: conversationState
+    conversation_state: conversationState,
+    semantic_frame: semanticFrame,
+    route_policy: routePolicy
   };
 }

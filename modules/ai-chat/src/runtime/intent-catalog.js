@@ -1,6 +1,8 @@
 export const INTENT_TYPES = [
   "seller_revenue_month",
   "top_sellers_period",
+  "seller_activity_definition",
+  "active_sellers_list",
   "kpi_overview",
   "period_comparison",
   "renew_summary",
@@ -26,6 +28,8 @@ export const INTENT_TYPES = [
 export const ROUTABLE_SKILL_INTENTS = {
   seller_revenue_month: "seller-month-revenue",
   top_sellers_period: "top-sellers-period",
+  seller_activity_definition: "seller-activity-definition",
+  active_sellers_list: "active-sellers-list",
   kpi_overview: "kpi-overview",
   period_comparison: "compare-periods",
   renew_summary: "renew-due-summary",
@@ -46,6 +50,7 @@ export const CLASSIFIER_ROUTE_SKILL_THRESHOLD = 0.85;
 export const CLASSIFIER_ROUTE_CLARIFY_THRESHOLD = 0.5;
 
 export const ACTION_TYPES = [
+  "define",
   "rank",
   "summarize",
   "compare",

@@ -7,17 +7,79 @@
 Roadmap này khóa theo nguyên tắc:
 
 - `V1` đã hoàn thành ở mức beta dùng được.
-- `V1.5` là phase quan trọng nhất hiện tại: hoàn thiện chất lượng local trước khi đưa lên `Supabase + MCP`.
+- `V1.5` là phase quan trọng nhất hiện tại: hoàn thiện chất lượng chat thực tế trước khi mở rộng hạ tầng.
 - Trọng tâm `V1.5` không chỉ là pass testcase cố định, mà là:
   - tăng độ bền khi user đổi wording nhẹ
+  - giảm cảm giác "chat bot rule-based", tăng cảm giác trợ lý phân tích thật sự hiểu ý
   - giảm fallback rộng, tốn token
   - đưa compound skill orchestration thành năng lực lõi
   - làm cho widget chat thật gần hành vi của Chat Lab hơn
-- `V2.0` chỉ bắt đầu sau khi `V1.5` đạt gate local rõ ràng.
+- `V2.0` không được hiểu là "đã kết nối Supabase là xong". Kết nối chỉ là điều kiện cần của data plane, không thay thế cho bài toán routing/skill/follow-up.
+- `V2.0` chỉ được mở rộng sâu sau khi `V1.5` đạt gate chat quality rõ ràng trên chính môi trường Supabase.
 - `V2.5` mới làm backend online trigger scrape -> upsert Supabase, sau khi `SupabaseConnector` đã đạt parity với SQLite.
 - `RAG` và `vector search` không phải ưu tiên gần.
 
 ---
+
+## 0. Checkpoint 2026-04-13
+
+### Đóng gói hôm nay
+
+- `SupabaseConnector` đã kết nối và chạy được; môi trường hiện tại có thể test trực tiếp với `CRM_DATA_CONNECTOR="supabase"`.
+- Runtime V3 nền đã có:
+  - `semantic-frame-v3`
+  - `route-policy-v3`
+  - `skill-capabilities-v3`
+  - `skill-output-validator-v3`
+- Family `seller_activity` đã được migrate sâu đầu tiên:
+  - tách rõ `define`
+  - `list`
+  - `aggregate/team-level`
+  - `inactive proxy logic`
+- Test nội bộ hiện tại:
+  - `npm run test --workspace @crm/ai-chat-module` pass `81/81`
+  - `npm run check` pass
+
+### Thực trạng cần nhìn thẳng
+
+- Chat hiện tại vẫn chưa đủ chất lượng để đóng gói sản phẩm.
+- Painpoint chính không còn là kết nối DB, mà là:
+  - route sai khi prompt hơi khó
+  - follow-up sai ngữ cảnh
+  - ép skill vô lý
+  - nhiều family còn chồng lấn boundary
+  - stress test thực tế trên widget vẫn có thể loạn
+- Vì vậy, trạng thái dự án hiện tại là:
+  - `Supabase data plane đã mở`
+  - nhưng `chat intelligence layer chưa đủ chín để productionize`
+
+### Kết luận điều hành
+
+- Không ưu tiên mở rộng thêm hạ tầng trước.
+- Không coi việc có Supabase/MCP là lời giải cho chất lượng chat.
+- Ưu tiên số 1 từ bây giờ là:
+  - hardening theo `skill family`
+  - widget parity thật
+  - compound/multi-skill nền tảng
+
+### Thứ tự làm tiếp
+
+1. Hoàn tất migrate các family còn lại theo chuẩn V3:
+   - `team_metrics`
+   - `operations_metrics`
+   - `source_metrics`
+   - `order_metrics`
+   - `seller_metrics`
+2. Stress test lại trên widget với Supabase làm môi trường chính.
+3. Chỉ khi các family chính đủ ổn mới mở rộng `compound orchestration` và `orchestrator skill`.
+4. Chỉ sau đó mới quay lại mở rộng V2.0 MCP/tooling sâu hơn.
+
+### Điều kiện để được phép sang bước tiếp theo
+
+- User hỏi khó hơn một chút không được "sai loạn lên".
+- Widget path không được lệch đáng kể so với Chat Lab.
+- Family chính không còn nuốt prompt của nhau trên các case phổ biến.
+- Follow-up phải ổn ở các chuỗi hội thoại thực tế, không chỉ testcase đơn.
 
 ## 1. Current Status
 
@@ -45,12 +107,14 @@ Roadmap này khóa theo nguyên tắc:
 - `I` đã được nâng từ case dễ thành grounding/cross-verification thực tế hơn: seller ranking verification, zero-result under stale history, và total revenue reconciliation với orders.
 - `J` đã có baseline broad/multi-domain checks để tránh deterministic routing quá tay.
 - Chat Lab đã có batch, manual review, CSV artifact và conversation/stress replay; `Evaluate_test` / Automated Eval Ops đã bị loại bỏ vì không tạo đủ giá trị review.
-- Trạng thái sau ngày test đủ toàn bộ testcase: `V1.5` đang ở giai đoạn đóng gói gate local, không còn là giai đoạn mở rộng testcase hàng loạt.
+- Trạng thái hiện tại không còn là "thiếu testcase", mà là "cần hardening lại kiến trúc chat để chịu được stress test thực tế".
+- `V1.5` hiện nên được hiểu là `Chat Quality Hardening on top of Supabase-ready runtime`, không chỉ là "đóng gói gate local".
 - Các rủi ro còn lại:
   - live classifier/formatter/fallback vẫn phụ thuộc API key và model runtime
   - một số custom analytical query rộng vẫn phải đi fallback cho đến V2/V3
-  - widget parity đã tốt hơn nhưng vẫn phụ thuộc việc mỗi view truyền/cached `selected_filters` đúng cấu trúc
+  - widget parity đã tốt hơn nhưng stress test thực tế vẫn còn lộ ra lỗi route/follow-up mà Chat Lab đơn lẻ chưa bắt hết
   - compound orchestration trong V1.5 chỉ cố ý giới hạn 2 skill, chưa phải planner V3
+  - nhiều skill vẫn mới được bọc bởi V3 policy layer, chưa được refactor sâu theo family contract
 
 ### AI capability status
 
@@ -59,10 +123,11 @@ Roadmap này khóa theo nguyên tắc:
 - `Deterministic Skills`: đã có
 - `Skill Formatter`: đã có; critical-path skills ưu tiên deterministic fallback để không mất facts khi formatter yếu
 - `Compound Skill Orchestration`: đã có ở mức controlled 2-skill composition, có debug timeline và partial-success policy
+- `Skill Family Model`: đã có nền capability-based routing toàn cục, nhưng mới chỉ migrate sâu một số family đầu tiên; chưa đạt mức family contract đồng đều trên toàn catalog
 - `Conversation Memory`: đã có controlled carry-over state cho V1.5; chưa phải agentic long-term memory
 - `Agentic Workflow`: chưa ở mức planner/orchestrator hoàn chỉnh, để sang V3.0
 - `DataConnector seam`: đã có repo-local contract; `SQLiteConnector` là implementation stable và `SupabaseConnector` đã có schema contract + seeded parity + pooled read-only runtime path trên local
-- `Supabase + MCP`: đang ở V2.0 implementation; Supabase local smoke/parity/runtime smoke đã có, full MCP runtime surface chưa xong
+- `Supabase + MCP`: đã mở được phần connector/parity cơ bản; chưa được xem là phase hoàn tất vì business reasoning layer vẫn là painpoint lớn hơn
 - `RAG`: chưa có
 - `Vector Search`: chưa có
 
@@ -108,7 +173,8 @@ Roadmap này khóa theo nguyên tắc:
 
 ### Mục tiêu thiết yếu
 
-- Hoàn thiện chất lượng local trước khi đưa lên `Supabase + MCP`.
+- Hoàn thiện chất lượng chat thực tế trước khi mở rộng thêm hạ tầng.
+- Dùng `Supabase` làm môi trường test chính để hardening đúng painpoint thật, không quay về tối ưu ảo trên local SQLite.
 - Tăng robustness với prompt variation, không chỉ tối ưu cho testcase cố định.
 - Giảm fallback rộng, tốn token.
 - Nâng compound skill orchestration thành workstream chính.
@@ -160,10 +226,45 @@ Policy cần khóa trong `V1.5`:
 - tối đa 2 skill trong phase này
 - partial success phải trả phần đã chắc chắn và nói rõ phần chưa xử lý
 - compound answer phải có formatter/answer-style thống nhất
+- mỗi sub-ask phải reuse chính runtime skill hiện có, không đi đường tắt riêng
 - debug timeline phải cho thấy:
   - detected sub-asks
   - selected skills
   - fallback reason nếu có
+
+Chuẩn decomposition cần dùng từ nay:
+- trước tiên detect `compound ask` thay vì cố ép cả câu vào 1 skill
+- mỗi sub-ask phải có shape riêng:
+  - `family`
+  - `primary_intent`
+  - `action`
+  - `subject`
+  - `metric`
+  - `entity`
+  - `time_window`
+  - `output_shape`
+- shared context như entity/time chỉ được carry sang sub-ask khác khi có bằng chứng rõ trong câu hỏi
+- nếu decomposition không đủ rõ thì chuyển `clarify_required`, không được bịa sub-plan
+
+Nguyên tắc dùng LLM trong compound orchestration:
+- LLM chỉ nên dùng để:
+  - nhận diện câu hỏi nhiều phần
+  - hỗ trợ decomposition khi rule-based không đủ
+  - hợp nhất câu trả lời cuối
+- LLM không được tự thay deterministic business skill khi sub-ask đã có skill phù hợp
+- nếu một sub-ask không có deterministic path thì mới cho đi `llm_fallback` ở mức subtask, không kéo hỏng toàn bộ câu trả lời
+
+Nguyên tắc merge kết quả:
+- merge chỉ dùng grounded outputs từ từng sub-skill
+- formatter/merger không được tự thêm số liệu mới
+- final answer phải nói rõ:
+  - phần nào đã xử lý được
+  - phần nào chưa xử lý được
+  - phần nào cần user làm rõ thêm
+- nếu hai sub-kết quả mâu thuẫn, runtime phải ưu tiên:
+  - trả mâu thuẫn một cách trung thực
+  - hoặc yêu cầu làm rõ / route validation
+  - không được tự chọn một kết quả im lặng
 
 Gate:
 - các case multi-intent trọng yếu không còn rơi vào fallback rộng khi đã có deterministic path phù hợp
@@ -190,6 +291,55 @@ Nguyên tắc:
 - output luôn tiếng Việt có dấu
 - deterministic facts phải được bảo toàn khi formatter fail
 - formatter không được làm mất trọng tâm business ask
+
+Chuẩn hóa skill từ nay phải theo cùng một contract:
+- mỗi skill mới phải khai báo rõ:
+  - `family`
+  - `supportedSemanticIntents`
+  - `supportedActions`
+  - `supportedMetrics`
+  - `supportedEntityTypes`
+  - `supportedSubjects`
+  - `supportedStates`
+  - `supportedOutputShapes`
+  - `supportedTimeTypes`
+  - `requiredSlots`
+  - `defaultableSlots`
+  - `certifiedBackends`
+- mỗi skill `run()` phải trả về tối thiểu:
+  - `reply`
+  - `fallback_reply`
+  - `format_hint`
+  - `summary_facts`
+  - `data`
+  - `sqlLogs`
+  - `usage`
+- với các family quan trọng, skill contract phải dần tách rõ theo:
+  - `define`
+  - `list`
+  - `lookup`
+  - `rank`
+  - `compare`
+  - `aggregate/summarize`
+- không tiếp tục thêm skill "ôm nhiều ý" nếu có thể tách thành boundary rõ hơn trong cùng family
+
+Thứ tự migrate family nên bám theo:
+- `team_metrics`
+- `operations_metrics`
+- `source_metrics`
+- `order_metrics`
+- `seller_metrics`
+
+Lý do phải đi theo family trước khi mở rộng V2/MCP:
+- painpoint hiện tại nằm ở business reasoning layer, không nằm chủ yếu ở connector layer
+- nếu family boundaries chưa ổn mà mở tool surface rộng hơn, chat sẽ chỉ query sai nhanh hơn chứ không thông minh hơn
+- MCP/Supabase tools không thay thế được business definitions, follow-up policy, clarify policy, hay skill boundary của CRM runtime
+
+Mỗi family chỉ được coi là migrate xong khi đạt:
+- action semantics rõ
+- output-shape semantics rõ
+- boundary giữa các skill không chồng chéo quá mức
+- có regression cho define/list/aggregate/follow-up collision
 
 Gate:
 - toàn bộ skill critical-path của `V1.5` có deterministic fallback rõ ràng
@@ -239,7 +389,8 @@ Gate:
 Status 2026-04-12:
 - Đã có `DataConnector` contract và `createDefaultConnector()` seam, `SQLiteConnector` là implementation active.
 - Contract đã bao phủ các method runtime/skill đang dùng, gồm schema summary, read-only query, latest periods, seller detection và operations month.
-- Không triển khai `SupabaseConnector` trong V1.5; đó là scope V2.0.
+- Từ 2026-04-13, `SupabaseConnector` đã dùng được và nên được xem là test bed chính cho chat quality hardening.
+- Tuy nhiên việc "đã dùng được Supabase" không đồng nghĩa được chuyển trọng tâm sang MCP/tooling sâu hơn khi chat quality còn yếu.
 
 ### V1.5 gate hoàn thành
 
@@ -257,6 +408,12 @@ Status 2026-04-12:
 - `DataConnector` đã được chuẩn hóa
 - fallback rate giảm rõ ở prompt phổ biến
 - cost/token trên các case multi-domain không còn bị đội lên vô lý
+- stress test thực tế trên widget không còn tạo cảm giác "chat bot không có AI"
+- khi user hỏi khó hơn câu map skill đơn, runtime vẫn giữ được:
+  - đúng topic
+  - đúng family
+  - đúng follow-up context
+  - đúng chỗ cần clarify/phản biện
 
 ### Metrics cần đo trong kickoff V1.5
 
@@ -270,20 +427,21 @@ Các baseline này phải được đo thật ở đầu phase, không ghi số 
 - pass rate trên prompt variants
 - pass rate của widget path so với Chat Lab path
 
-### V1.5 local gate snapshot - 2026-04-12
+### V1.5 gate snapshot - 2026-04-13
 
-- Toàn bộ testcase A-J đã được test thủ công trong Chat Lab trong ngày 2026-04-12.
-- Regression suite AI chat hiện pass `70/70` bằng `npm run test --workspace @crm/ai-chat-module`.
-- Các round hardening đã hoàn thành trong local:
-  - `D/E`: deterministic coverage cho customer ranking, recent orders, lead geography, source drill-down, filtered orders, inactive sellers và forecast.
-  - `F/G`: cross-view soft context, shorthand/slang/English-mixed prompts, rhetorical ask, correction ask và output tiếng Việt có dấu.
-  - `H`: controlled conversation carry-over, same-topic drill-down, entity/time patch, off-topic reset và Chat Lab Conversation stress mode.
-  - `I`: seller verification follow-up, zero-result under stale history và total revenue reconciliation với orders.
-  - `J`: guard để broad multi-domain asks không bị deterministic skill/compound route quá tay.
-- V1.5 còn lại trước khi chuyển V2.0 là đóng gói gate local:
-  - replay một số case đại diện trực tiếp trên widget production path
-  - cập nhật docs/handoff nếu có manual fail mới
-  - không mở thêm review automation trong V1.5 trừ khi có design mới đáng tin hơn
+- AI chat regression suite hiện pass `81/81`.
+- `SupabaseConnector` đã dùng được; hardening từ thời điểm này nên ưu tiên test trên Supabase.
+- Family `seller_activity` đã đi được một vòng migrate sâu theo V3.
+- Các family còn lại chưa được refactor đồng đều, nên đây vẫn là painpoint lớn nhất.
+- Trước khi nghĩ đến đóng gói sản phẩm hoặc mở rộng MCP sâu hơn, phần còn lại phải làm theo thứ tự:
+  1. `team_metrics`
+  2. `operations_metrics`
+  3. `source_metrics`
+  4. `order_metrics`
+  5. `seller_metrics`
+  6. widget stress replay trên Supabase
+  7. compound/multi-skill planner mở rộng
+  8. sau đó mới quay lại V2.0 MCP surface sâu hơn
 
 ---
 
@@ -295,6 +453,17 @@ Các baseline này phải được đo thật ở đầu phase, không ghi số 
 - Giữ SQLite là local/offline regression path cho Chat Lab.
 - Chuẩn hóa tool surface qua MCP theo hướng read-only, debug được, và không expose quyền Supabase rộng cho user chat.
 - Không phá contract hiện tại của widget/chat-lab.
+
+Lưu ý chiến lược:
+- `V2.0` không được dùng như cái cớ để bỏ qua painpoint của chat.
+- Supabase MCP không thay thế CRM business skills.
+- MCP chỉ là tool surface / execution surface phía dưới runtime.
+- Bộ não vẫn phải là:
+  - semantic frame
+  - route policy
+  - skill families
+  - validators
+  - clarify/fallback policy
 
 ### Phạm vi
 
@@ -333,6 +502,12 @@ Các baseline này phải được đo thật ở đầu phase, không ghi số 
 - production widget dùng được core deploy mới mà không cần đổi contract lớn
 - có benchmark latency SQLite vs Supabase và chiến lược xử lý nếu Supabase chậm đáng kể
 - có rollback bằng env về SQLite nếu Supabase parity hoặc latency fail
+
+Điều kiện để thật sự mở rộng V2.0 sau checkpoint hiện tại:
+- chat quality trên Supabase đã vượt ngưỡng chấp nhận được
+- các family chính đã được migrate tối thiểu một vòng
+- widget stress replay không còn fail hàng loạt vì route/follow-up
+- khi đó mới đáng để đầu tư tiếp vào MCP safe surface sâu hơn
 
 ---
 
@@ -387,6 +562,49 @@ Các baseline này phải được đo thật ở đầu phase, không ghi số 
 - formatter chung để hợp nhất câu trả lời
 - retry/fallback policy rõ ràng
 - debug chain hiển thị sub-plan và execution path
+
+Thiết kế cần khóa trước khi build:
+- không thay deterministic business skills bằng một "agent skill" tổng quát
+- dùng một lớp `agent skill` hoặc `orchestrator skill` chỉ để:
+  - detect compound ask
+  - tạo sub-plan
+  - gọi nhiều skill family / skill
+  - hợp nhất grounded outputs
+  - quyết định `clarify_required` khi thiếu dữ kiện
+- business data vẫn phải đi qua deterministic skills hoặc controlled fallback, không cho orchestrator tự sinh số liệu
+
+Chuẩn sub-plan của orchestrator cần có:
+- `goal`
+- `subtasks[]`
+- mỗi `subtask` gồm:
+  - `family`
+  - `candidate_skill_ids`
+  - `intent`
+  - `action`
+  - `entity bindings`
+  - `time_window`
+  - `output_shape`
+  - `execution_mode`
+  - `can_fallback`
+- `merge_strategy`
+- `partial_success_policy`
+- `clarify_policy`
+
+Chính sách phản biện / clarify với người dùng phải rõ:
+- nếu câu hỏi gộp nhiều phần nhưng một phần thiếu dữ kiện, hệ thống phải:
+  - trả phần chắc chắn đã có
+  - nói rõ phần nào đang thiếu
+  - hỏi lại đúng chỗ còn thiếu
+- nếu user giả định sai dữ liệu, hệ thống phải phản biện bằng facts grounded thay vì chiều theo giả định
+- nếu yêu cầu quá rộng hoặc mơ hồ để decomposition an toàn, ưu tiên `clarify_required` hơn là dựng plan đoán mò
+- nếu sub-results mâu thuẫn hoặc chất lượng thấp, ưu tiên validation/clarify thay vì merge cưỡng bức
+
+Thứ tự thực hiện V3 đúng nên là:
+1. chuẩn hóa family/skill contracts
+2. mở rộng compound orchestration từ 2 skill sang planner có sub-plan
+3. thêm merger/formatter contract cho multi-skill result
+4. thêm regression suite cho compound asks và partial-success/clarify cases
+5. chỉ sau đó mới cân nhắc retrieval hoặc agentic workflow sâu hơn
 
 ### Không làm
 
@@ -565,3 +783,65 @@ Bước test trọng yếu:
 - `V2.5` là phase backend online ingestion: trigger scrape -> upsert Supabase, bắt đầu sau gate `V2.0`.
 - `V3.0` là controlled agentic orchestration, không phải autonomous agent platform.
 - `V4.0` chỉ bắt đầu khi có use case retrieval thật sự.
+# 2026-04-13 Checkpoint
+
+## Runtime / Widget parity updates completed today
+
+- Confirmed Chat Lab and production widget use the same backend runtime at `/api/agent/chat`.
+- Confirmed the mismatch was caused by input/context differences, not by two different chat engines.
+- Removed hidden widget-side `selected_filters` inference from localStorage cache when the parent view does not pass explicit filters.
+- Hardened seller alias detection on both SQLite and Supabase connectors so temporal phrases like `hien tai` no longer false-match seller names such as `Hien`.
+- Hardened follow-up logic so standalone analytical asks such as:
+  - `lap bang ...`
+  - `theo thang`
+  - `tu ... den ...`
+  - `... den hien tai`
+  are re-parsed as fresh asks instead of being patched into the previous seller/topic.
+- Added regression coverage for:
+  - alias false-positive on `hien tai`
+  - prior seller history not hijacking a standalone monthly seller-table ask
+
+## Current phase assessment
+
+- Project status remains `V1.5 local hardening`, not yet ready to claim full production-grade multi-turn robustness.
+- V3 semantic/policy foundations are in place:
+  - semantic frame
+  - route policy
+  - skill capability metadata
+  - skill output validator
+- Family-aware scoring exists, but the runtime still does not have a full `family router -> within-family skill selector` split.
+
+## Immediate next steps
+
+1. Add a widget-parity regression set
+- Reproduce real production-style conversations instead of only isolated Chat Lab cases.
+- Priority conversation types:
+  - seller ask -> standalone analytical ask
+  - KPI ask -> source/team drilldown
+  - view A while asking domain B
+  - overwrite / correction / reset follow-up turns
+
+2. Split routing into two explicit layers
+- `family router`
+- `within-family skill selector`
+
+3. Freeze the future skill creation contract
+- Any new skill must declare:
+  - family
+  - supported semantic intents
+  - supported metrics/entities/time types
+  - required slots
+  - certified backends
+- Runtime/LLM should never "guess" the family at execution time.
+
+4. Continue fallback hardening for `custom_analytical_query`
+- Many broader business asks still end up in fallback.
+- Before deeper agentic or retrieval work, the next practical path is:
+  - widget parity
+  - family router
+  - family-specific skill selection
+
+## Validation snapshot
+
+- `npm run test --workspace @crm/ai-chat-module` passed with `76/76`
+- `npm run check` passed

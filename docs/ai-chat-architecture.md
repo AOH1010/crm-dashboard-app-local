@@ -1,18 +1,26 @@
-# AI Chat V1 Architecture
+# AI Chat V3 Architecture
 
 ## Muc tieu
 
-Tai lieu nay mo ta runtime AI chat da duoc nang cap trong Round 1:
+Tai lieu nay mo ta runtime AI chat da duoc nang cap tu Round 1 den V3 semantic-policy-execution:
 
-- van giu luong `frontend -> backend -> modules/ai-chat -> SQLite`
+- van giu luong `frontend -> backend -> modules/ai-chat -> DataConnector`
 - them lop `Intent Classifier` de hieu prompt truoc khi route
+- them `Semantic Frame V3` de chuan hoa classifier output thanh topic/metric/entity/time/broadness/follow-up
+- them `Route Policy V3` de cham capability truoc khi chon skill, thay vi `intent -> skill id` truc tiep
+- them `Skill Capability Metadata V3` cho tung skill/family/backend
+- them `Skill Output Validator V3` de chan skill reply sai metric/entity truoc khi tra user
+- da tach them family `seller_activity` de phan biet ro:
+  - cau hoi dinh nghia seller active
+  - cau hoi list ten seller active
+  - aggregate operations/account active
 - them route `clarify_required` cho prompt mo ho
 - giu deterministic skill execution cho query business pho bien
 - them `SkillResponseFormatter` de skill path khong con bypass answer style
 - giu `llm_fallback` cho intent chua co skill hoac query phuc tap
 - runtime active hien tai la `modules/ai-chat/src/runtime/chat-runtime-v2.js`
-- connector seam hien tai la `DataConnector -> SQLiteConnector`; `SupabaseConnector` de sang V2.0
-- V1.5 da co controlled conversation state cho follow-up carry-over, nhung chua phai V3 planner/agentic runtime
+- connector seam hien tai la `DataConnector -> SQLiteConnector | SupabaseConnector`
+- tren may nay `.env` dang duoc set `CRM_DATA_CONNECTOR="supabase"` de test runtime online
 
 ## So do tong the
 
@@ -51,16 +59,19 @@ chatWithCrmAgent()
   |
   +--> Intent Router / SkillRegistry
   |      |
-  |      +--> skill
-  |      +--> clarify_required
-  |      +--> llm_fallback
+  |      +--> Semantic Frame V3
+  |      +--> Route Policy V3
+  |      +--> Skill Capability Metadata V3
+  |      +--> skill | clarify_required | llm_fallback | validation
   |
   +--> neu route = skill
   |      |
   |      +--> Skill Handler.run()
   |      |      |
-  |      |      +--> deterministic SQL via SQLiteConnector
+  |      |      +--> deterministic SQL via DataConnector
   |      |      +--> structured facts
+  |      |
+  |      +--> Skill Output Validator V3
   |      |
   |      +--> SkillResponseFormatter
   |             |
@@ -75,7 +86,7 @@ chatWithCrmAgent()
          |
          +--> buildFallbackPrompt()
          +--> query_crm_data tool
-         +--> SQLiteConnector.runReadQuery()
+         +--> DataConnector.runReadQueryAsync()
          +--> model summary
          |
          v
@@ -96,6 +107,7 @@ Telemetry + API Response
   - `use_intent_classifier`
   - `use_skill_formatter`
 - Frontend co them route `chat-lab` de test testcase va xem debug chain day du
+- Production widget hien tai khong con tu infer `selected_filters` an tu localStorage cache neu parent khong truyen filter that su. Dieu nay giup widget gan input cua Chat Lab hon va giam tinh trang "view dang mo khoa chat mot cach ngam".
 
 Vai tro cua frontend:
 
@@ -141,6 +153,16 @@ Context hien tai chua:
 - `ambiguityFlag`
 - `clarificationQuestion`
 
+Luu y van hanh:
+
+- `viewId` la soft hint, khong phai hard boundary
+- `selectedFilters` chi nen duoc truyen khi do la bo filter ma view dang ap dung that
+- neu widget va Chat Lab cho ket qua lech nhau, phai so sanh truoc tien:
+  - `messages`
+  - `view_id`
+  - `selected_filters`
+  - `session_id`
+
 ### 4. Intent Classifier
 
 Day la lop "hieu" prompt chinh trong Round 1.
@@ -168,13 +190,15 @@ Neu classifier fail, timeout, hoac output invalid:
 
 ### 5. Intent Router va SkillRegistry
 
-Runtime khong con uu tien regex-first.
+Runtime khong con uu tien regex-first va cung khong route truc tiep bang `primary_intent -> skill` nua.
 
-No route theo thu tu:
+V3 route theo thu tu:
 
 1. doc `intent`
-2. xet `ambiguity_flag` + `confidence`
-3. map `primary_intent` sang skill neu co
+2. build `semantic_frame`
+3. cham diem skill candidate bang capability metadata
+4. quyet dinh `skill | clarify_required | llm_fallback | validation`
+5. neu vao skill thi output phai qua validator truoc khi formatter/final reply
 
 Route hien tai:
 
@@ -186,10 +210,25 @@ Route hien tai:
 Nguong route hien tai:
 
 - `ambiguity_flag = true` -> `clarify_required`
-- `confidence >= 0.85` + co skill map -> `skill`
-- `0.50 <= confidence < 0.85` -> `clarify_required`
+- semantic confidence `>= 0.75` + top candidate score `>= 0.80` + capability hop le -> `skill`
+- `0.50 <= confidence < 0.75` -> `clarify_required`
 - `confidence < 0.50` -> `llm_fallback`
 - `custom_analytical_query` -> `llm_fallback`
+- direct certified skill duoc uu tien khi top candidate ro rang, nhung van bi chan neu metric/entity output validator phat hien mismatch
+
+Cap nhat 2026-04-13:
+
+- follow-up carry-over khong duoc phep de cau hoi cu keo mot "standalone analytical ask" moi ve skill cu
+- cac cau dang:
+  - `lap bang ...`
+  - `theo thang`
+  - `tu ... den ...`
+  - `... den hien tai`
+  neu du la yeu cau phan tich doc lap thi phai duoc semantic parse lai tu dau, khong patch theo seller/topic cua turn truoc
+- entity resolution da duoc siet lai de tranh false-positive seller alias tu cum thoi gian nhu `hien tai`
+- nhom prompt `seller active` khong con duoc collapse ve `operations_summary`; runtime da co route rieng cho:
+  - `seller_activity_definition`
+  - `active_sellers_list`
 
 ### 6. Skills
 
@@ -229,18 +268,48 @@ Y nghia:
 
 `buildSystemPrompt()` khong con la trung tam cua moi route; no chu yeu con gia tri compatibility va fallback support.
 
-### 8. SQLiteConnector
+### 8. DataConnector
 
-Connector van la lop trung tam cho truy van read-only:
+Connector la lop trung tam cho truy van read-only va che khac biet SQLite/Supabase:
 
-- attach CRM DB + dashboard marts + operations DB
+- SQLiteConnector attach CRM DB + dashboard marts + operations DB
+- SupabaseConnector query schema `crm_agent` qua pooler read-only
 - map canonical table names
 - validate SQL an toan
 - execute query read-only
 
 Ca skill path va fallback path deu di qua connector nay.
 
+Cap nhat 2026-04-13:
+
+- ca `SQLiteConnector` va `SupabaseConnector` da duoc hardening them cho seller alias detection
+- cac cum thoi gian va cum cau truc analytics nhu `hien tai`, `lap`, `bang`, `theo`, `tu`, `den` khong con duoc phep gay false match seller alias
+
 ## Luong route thuc te
+
+Runtime thuc te hien tai trong `chat-runtime-v2.js` di theo thu tu debug timeline sau:
+
+1. `normalize_messages`
+2. `build_request_context`
+3. `intent_classifier`
+4. `semantic_frame_v3`
+5. `route_policy_v3`
+6. `intent_router`
+7. `conversation_topic_state`
+8. mot trong 4 nhanh:
+   - `validation`
+   - `clarify_required`
+   - `skill_execute -> skill_output_validator_v3 -> skill_formatter`
+   - `llm_fallback`
+
+Neu can soi mot loi route, thu tu doc debug metadata de xac dinh root cause nen la:
+
+1. `intent`
+2. `semantic_frame`
+3. `route_policy`
+4. `conversation_state`
+5. `sql_logs`
+6. `fallback_reason`
 
 ### A. Cau hoi ro rang, co skill
 
@@ -337,7 +406,7 @@ Day la lop hieu sau nhat cho:
 ## Gioi han hien tai
 
 - Khong co persistent server-side memory; follow-up chi dua vao `messages` request hien tai
-- Khong phai tat ca skills da migrate sang structured facts + formatter
+- Khong phai tat ca skills da migrate sau vao family/variant executor dung nghia; hien tai V3 la policy/capability/validator layer tren skill catalog hien co
 - Nhieu intent van chua co skill rieng:
   - customer lookup
   - lead geography
@@ -348,6 +417,8 @@ Day la lop hieu sau nhat cho:
 ## Ket luan ngan
 
 - Round 1 da dua he thong tu `regex-first` sang `intent-first`
+- V3 hien tai them lop `semantic frame -> route policy -> capability check -> output validator`
+- Supabase runtime da co the chay qua `DataConnector` va duoc test parity voi SQLite
 - Skill van la deterministic shortcut cho query business on dinh
 - Clarify duoc nang len thanh route rieng
 - Prompt layer khong con chi phuc vu fallback; no con duoc dung de format skill reply

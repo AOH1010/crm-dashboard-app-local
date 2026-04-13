@@ -72,6 +72,34 @@ function extractRankingLimit(question) {
   return 5;
 }
 
+function normalizeQuestion(question) {
+  return String(question || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function resolveRankingMetric(context) {
+  const normalized = normalizeQuestion(context.routingQuestion || context.latestQuestion);
+  if (context.intent?.metric === "orders"
+    || /(so luong don|so don|don hang thanh cong|don khong huy|order count|number of orders)/.test(normalized)) {
+    return "orders";
+  }
+  return "revenue";
+}
+
+function wantsAllSellerRows(context) {
+  const normalized = normalizeQuestion(context.routingQuestion || context.latestQuestion);
+  return /(moi seller|tung seller|theo seller|cac seller|all seller|each seller)/.test(normalized);
+}
+
+function resolveRankingLimit(context) {
+  if (wantsAllSellerRows(context)) {
+    return 50;
+  }
+  return extractRankingLimit(context.routingQuestion || context.latestQuestion);
+}
+
 function extractRequestedMonthPeriods(question, connector) {
   const normalized = String(question || "")
     .normalize("NFKD")
@@ -104,7 +132,10 @@ function extractRequestedMonthPeriods(question, connector) {
   return periods;
 }
 
-async function queryRankingForPeriod(connector, period, rankingLimit) {
+async function queryRankingForPeriod(connector, period, rankingLimit, rankingMetric) {
+  const orderBy = rankingMetric === "orders"
+    ? "order_count DESC, revenue_amount DESC, seller_name ASC"
+    : "revenue_amount DESC, order_count DESC, seller_name ASC";
   const result = await connector.runReadQueryAsync({
     sql: `
       SELECT
@@ -117,7 +148,7 @@ async function queryRankingForPeriod(connector, period, rankingLimit) {
       ), '__never_match__')
         AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?
       GROUP BY seller_name
-      ORDER BY revenue_amount DESC, seller_name ASC
+      ORDER BY ${orderBy}
     `,
     params: [period.from, period.to],
     allowPlaceholders: true,
@@ -137,7 +168,7 @@ async function queryRankingForPeriod(connector, period, rankingLimit) {
   };
 }
 
-function buildReplyBlock(period, leader, rows) {
+function buildReplyBlock(period, leader, rows, rankingMetric) {
   if (!leader) {
     return `Không tìm thấy dữ liệu xếp hạng seller trong ${period.label}.`;
   }
@@ -153,6 +184,14 @@ function buildReplyBlock(period, leader, rows) {
   );
 
   const assumptionText = period.inferred_year ? " Tôi đang mặc định năm mới nhất trong dữ liệu." : "";
+  if (rankingMetric === "orders") {
+    return [
+      `Seller có số đơn không hủy cao nhất trong ${period.label} là ${leader.seller_name} với ${leader.order_count.toLocaleString("vi-VN")} đơn, doanh thu ${formatCurrency(leader.revenue_amount)}.${assumptionText}`,
+      `Bảng seller theo số đơn ${period.label}:`,
+      table
+    ].join("\n\n");
+  }
+
   return [
     `Người dẫn đầu doanh thu trong ${period.label} là ${leader.seller_name} với ${formatCurrency(leader.revenue_amount)} từ ${leader.order_count.toLocaleString("vi-VN")} đơn.${assumptionText}`,
     `Top ${rows.length.toLocaleString("vi-VN")} seller ${period.label}:`,
@@ -168,16 +207,17 @@ export const topSellersPeriodSkill = {
       && /(seller|sale|nhan vien|nguoi ban)/.test(foldedQuestion);
   },
   async run(context, connector) {
-    const rankingLimit = extractRankingLimit(context.routingQuestion || context.latestQuestion);
+    const rankingLimit = resolveRankingLimit(context);
+    const rankingMetric = resolveRankingMetric(context);
     const requestedPeriods = extractRequestedMonthPeriods(context.routingQuestion || context.latestQuestion, connector);
     if (requestedPeriods.length > 1) {
       const periodResults = await Promise.all(requestedPeriods.map(async (period) => ({
         period,
-        ...(await queryRankingForPeriod(connector, period, rankingLimit))
+        ...(await queryRankingForPeriod(connector, period, rankingLimit, rankingMetric))
       })));
       const primaryResult = periodResults[0];
       const reply = periodResults
-        .map((item) => buildReplyBlock(item.period, item.leader, item.rows))
+        .map((item) => buildReplyBlock(item.period, item.leader, item.rows, rankingMetric))
         .join("\n\n");
 
       return {
@@ -189,6 +229,7 @@ export const topSellersPeriodSkill = {
           period_from: primaryResult.period.from,
           period_to: primaryResult.period.to,
           leader: primaryResult.leader,
+          ranking_metric: rankingMetric,
           ranking_limit: rankingLimit,
           requested_periods: periodResults.map((item) => item.period.label)
         } : {
@@ -196,6 +237,7 @@ export const topSellersPeriodSkill = {
           period_from: primaryResult.period.from,
           period_to: primaryResult.period.to,
           leader: null,
+          ranking_metric: rankingMetric,
           ranking_limit: rankingLimit,
           requested_periods: periodResults.map((item) => item.period.label)
         },
@@ -217,6 +259,9 @@ export const topSellersPeriodSkill = {
     }
 
     const period = resolveRankingPeriod(context, connector);
+    const orderBy = rankingMetric === "orders"
+      ? "order_count DESC, revenue_amount DESC, seller_name ASC"
+      : "revenue_amount DESC, order_count DESC, seller_name ASC";
     const result = await connector.runReadQueryAsync({
       sql: `
         SELECT
@@ -229,7 +274,7 @@ export const topSellersPeriodSkill = {
         ), '__never_match__')
           AND SUBSTR(COALESCE(NULLIF(TRIM(order_date), ''), SUBSTR(NULLIF(TRIM(created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?
         GROUP BY seller_name
-        ORDER BY revenue_amount DESC, seller_name ASC
+        ORDER BY ${orderBy}
       `,
       params: [period.from, period.to],
       allowPlaceholders: true,
@@ -257,11 +302,19 @@ export const topSellersPeriodSkill = {
       reply = `Không tìm thấy dữ liệu xếp hạng seller trong ${period.label}.`;
     } else {
       const assumptionText = period.inferred_year ? " Tôi đang mặc định năm mới nhất trong dữ liệu." : "";
-      reply = [
-        `Người dẫn đầu doanh thu trong ${period.label} là ${leader.seller_name} với ${formatCurrency(leader.revenue_amount)} từ ${leader.order_count.toLocaleString("vi-VN")} đơn.${assumptionText}`,
-        `Top ${rows.length.toLocaleString("vi-VN")} seller:`,
-        table
-      ].join("\n\n");
+      if (rankingMetric === "orders") {
+        reply = [
+          `Seller có số đơn không hủy cao nhất trong ${period.label} là ${leader.seller_name} với ${leader.order_count.toLocaleString("vi-VN")} đơn, doanh thu ${formatCurrency(leader.revenue_amount)}.${assumptionText}`,
+          "Bảng seller theo số đơn:",
+          table
+        ].join("\n\n");
+      } else {
+        reply = [
+          `Người dẫn đầu doanh thu trong ${period.label} là ${leader.seller_name} với ${formatCurrency(leader.revenue_amount)} từ ${leader.order_count.toLocaleString("vi-VN")} đơn.${assumptionText}`,
+          `Top ${rows.length.toLocaleString("vi-VN")} seller:`,
+          table
+        ].join("\n\n");
+      }
     }
 
     return {
@@ -273,12 +326,14 @@ export const topSellersPeriodSkill = {
         period_from: period.from,
         period_to: period.to,
         leader: leader,
+        ranking_metric: rankingMetric,
         ranking_limit: rankingLimit
       } : {
         period_label: period.label,
         period_from: period.from,
         period_to: period.to,
         leader: null,
+        ranking_metric: rankingMetric,
         ranking_limit: rankingLimit
       },
       data: {

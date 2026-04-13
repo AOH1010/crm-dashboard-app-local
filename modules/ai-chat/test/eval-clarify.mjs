@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { closeSupabasePools } from "../src/connectors/index.js";
 import { chatWithCrmAgent } from "../src/runtime/chat-runtime-v2.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,3 +30,9 @@ for (const question of questions) {
 
 console.log("\n## clarify-eval");
 console.table(outputs);
+
+await closeSupabasePools();
+
+if (!outputs.every((item) => item.ok)) {
+  process.exitCode = 1;
+}

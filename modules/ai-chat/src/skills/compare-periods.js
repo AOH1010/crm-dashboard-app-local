@@ -108,6 +108,27 @@ export const comparePeriodsSkill = {
     return {
       reply,
       fallback_reply: reply,
+      format_hint: "comparison",
+      summary_facts: {
+        current_period: currentPeriod,
+        previous_period: previousPeriod,
+        current: {
+          total_revenue: Number(currentRow.total_revenue || 0),
+          new_leads: Number(currentRow.new_leads || 0),
+          new_customers: Number(currentRow.new_customers || 0),
+          conversion_rate: currentConversion
+        },
+        previous: {
+          total_revenue: Number(previousRow.total_revenue || 0),
+          new_leads: Number(previousRow.new_leads || 0),
+          new_customers: Number(previousRow.new_customers || 0),
+          conversion_rate: previousConversion
+        }
+      },
+      data: {
+        current: currentRow,
+        previous: previousRow
+      },
       sqlLogs: [
         {
           name: `${this.id}_current`,

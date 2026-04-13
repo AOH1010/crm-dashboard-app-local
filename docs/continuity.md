@@ -416,3 +416,185 @@ pm run v2:supabase-parity-smoke passed against the Singapore project: orders/cus
   - Temporary raw seed artifacts were cleaned again after the migration (rtifacts/v2-supabase/seed-export, rtifacts/v2-supabase/supabase-seed.sql).
   - The project is now ready for the next V2 step: quick widget + Chat Lab replay on the Singapore-backed Supabase runtime, then MCP surface work and wider parity replay.
   - Current .env still contains placeholder/unsafe password strings; before long-term use, replace YOUR_READONLY_PASSWORD with the real Singapore read-only password and prefer a URL-safe seed/admin password string even if the current seed URL happened to work in this setup.
+- 2026-04-13 Supabase connector local replay on the current machine:
+  - Correct Singapore pooler host for the current project was validated as `aws-1-ap-southeast-1.pooler.supabase.com`; `aws-ap-southeast-1.pooler.supabase.com` does not resolve, and `aws-0-ap-southeast-1.pooler.supabase.com` resolves but returns `Tenant or user not found` for this tenant.
+  - `npm run v2:supabase-smoke` passed with `crm_agent_readonly`, 15 expected tables, and read-only write blocking.
+  - `npm run v2:supabase-parity-smoke` passed: `orders=1569`, `customers=50891`, `kpis_daily=706`, latest order day `2026-04-06`.
+  - Running the full AI chat test suite with `.env` loaded and `CRM_DATA_CONNECTOR=supabase` initially surfaced two Postgres alias/HAVING compatibility issues:
+    - `customer-revenue-ranking-v2` used `customer_id` alias in `HAVING`.
+    - `source-revenue-drilldown-v2` used `source_group` alias in `HAVING`.
+  - Both queries were rewritten with CTEs so they work on SQLite and Postgres/Supabase.
+  - `npm run test --workspace @crm/ai-chat-module` passed with `72/72` under `CRM_DATA_CONNECTOR=supabase` after the CTE fix.
+  - `npm run test --workspace @crm/ai-chat-module` also passed with `72/72` under the default SQLite connector after the same fix.
+
+- 2026-04-13 V3 semantic-policy-execution routing pass:
+  - Reviewed `crm_chat_routing_architecture_spec.md` and implemented the core V3 control layer in the existing runtime rather than adding more one-off route patches:
+    - `semantic-frame-v3`: converts classifier output into a semantic frame with topic, metric, entity, time, broadness, follow-up, and candidate families.
+    - `skill-capabilities-v3`: declares certified skill capability metadata per skill/family/backend.
+    - `route-policy-v3`: chooses `skill | clarify_required | llm_fallback | validation` from semantic + capability scores and logs reason codes.
+    - `skill-output-validator-v3`: validates skill result metric/entity shape before formatter/final reply.
+  - Runtime telemetry now exposes `semantic_frame` and `route_policy` for Chat Lab/debug inspection.
+  - `top-sellers-period` now supports `metric=orders` so prompts like "so luong don hang thanh cong cua moi seller thang 3" route to seller ranking by order count instead of being trapped in seller revenue follow-up.
+  - Intent prompt now explicitly says current-turn metric overrides prior conversation metric; fallback SQL prompt/tool text now says connector-portable read-only SQL instead of SQLite-only SQL.
+  - `compare-periods` now returns structured summary facts/data so the V3 output validator can validate revenue comparisons.
+  - Supabase/Postgres compatibility CTE fixes remain in:
+    - `customer-revenue-ranking-v2`
+    - `source-revenue-drilldown-v2`
+  - `.env` on this machine was switched to `CRM_DATA_CONNECTOR="supabase"` for local Supabase runtime testing.
+  - Test results after this pass:
+    - `npm run test --workspace @crm/ai-chat-module` passed locally with `74/74`.
+    - `npm run v2:supabase-smoke` passed against Singapore Supabase with 15/15 tables and read-only write blocked.
+    - `npm run v2:supabase-parity-smoke` passed: orders/customers/kpis counts and latest order day matched SQLite.
+    - Full AI chat test suite with `.env` loaded and `CRM_DATA_CONNECTOR=supabase` passed with `74/74`.
+    - `npm run eval:clarify --workspace @crm/ai-chat-module` passed after updating the clarify dataset to match the current V3 policy.
+    - `npm run eval:intent --workspace @crm/ai-chat-module` initially printed `4/4` pass but did not exit before timeout because it unnecessarily called the full chat runtime/SQLite connector for intent-only checks. This was fixed by changing `eval-intent.mjs` to call the deterministic intent classifier directly with a lightweight fake connector; it now exits normally and passes `4/4` in ~0.6s.
+    - `eval-clarify.mjs` now closes Supabase pools after running, and `SupabaseConnector` exposes `closeSupabasePools()` for script shutdown hygiene.
+
+- 2026-04-13 Widget-vs-Chat-Lab follow-up regression fix:
+  - Root cause of the widget mismatch was not "Chat Lab and widget use different backends". They hit the same `/api/agent/chat` runtime, but widget conversations carry real multi-turn history plus hidden view-derived filter state, so bad carry-over logic surfaced there first.
+  - The concrete failure reproduced from the widget was:
+    - first turn: seller revenue ask like `Hoang Van Huy ban duoc bao nhieu`
+    - next turn: `Lap bang doanh so theo sale theo thang tu thang 1 2026 den hien tai`
+    - buggy behavior before fix: deterministic intent read `hien tai` as seller `Hiên`, inherited the prior seller-follow-up topic, and forced the ask into `seller_revenue_month`.
+  - Fixes applied:
+    - `sqlite-connector` and `supabase-connector` seller alias detection now normalize away temporal phrases like `hien tai` and add query stopwords such as `lap`, `bang`, `theo`, `tu`, `den`, so generic analytical phrasing no longer false-matches a seller name.
+    - `intent-classifier-v2` now detects standalone structured analytical asks like monthly table/range requests and does not apply follow-up carry-over to them.
+    - That class of ask is now classified as `custom_analytical_query` with `output_mode=table`, which correctly routes to `llm_fallback` instead of forcing a seller skill.
+    - `intent-classifier-v2` also drops accidental source-group entities when the prompt does not actually mention `nguon/source/kenh`, which prevents `sale` in `theo sale` from polluting the intent with source metadata.
+    - `CrmAgentWidget` no longer auto-infers hidden `selected_filters` from localStorage view cache when the parent did not pass explicit filters. This makes widget input much closer to Chat Lab/default API behavior and reduces "view is secretly constraining the chat" behavior.
+  - Regression coverage added:
+    - seller alias detection no longer maps `hien tai` to seller `Hiên`
+    - standalone monthly seller-table ask with prior seller history no longer inherits `seller_revenue_month`
+  - Validation after the fix:
+    - `npm run test --workspace @crm/ai-chat-module` passed with `76/76`
+    - `npm run check` passed
+
+- 2026-04-13 Seller-activity routing hardening:
+  - Root cause: prompts containing `seller active` / `ten cua sellers active` were collapsing into the wrong route family because the runtime mostly recognized the keyword `active` and forced nearby aggregate skills such as:
+    - `operations-status-summary`
+    - `team-performance-summary`
+  - This created answer-shape mismatch:
+    - user asked for definition -> runtime returned aggregate snapshot
+    - user asked for names/list -> runtime returned operations totals or team table
+  - Fixes applied:
+    - added two new deterministic intents:
+      - `seller_activity_definition`
+      - `active_sellers_list`
+    - added two new deterministic skills:
+      - `seller-activity-definition`
+      - `active-sellers-list`
+    - updated `skill-capabilities-v3` so both skills live in family `seller_activity`
+    - updated classifier rules so seller-activity asks are separated from:
+      - operations/account-status asks
+      - team comparison asks that merely mention `seller active` as one metric column
+    - updated `operations-status-summary.canHandle()` so it no longer steals seller-activity definition/list asks
+    - updated `skill-output-validator-v3` with action-shape checks:
+      - `define` expects definition facts
+      - `active_sellers_list` expects seller rows
+  - Grounded business definition now used by runtime:
+    - `seller active` = seller có ít nhất 1 đơn không hủy trong kỳ đang xét
+  - New regression coverage:
+    - `seller active la nhung gi` routes to `seller-activity-definition`
+    - `toi hoi ten cua sellers active` routes to `active-sellers-list`
+    - existing account/team tests still pass, so the new family does not hijack broader operations/team asks
+  - Validation after this pass:
+    - `npm run test --workspace @crm/ai-chat-module` passed with `78/78`
+    - `npm run check` passed
+
+- 2026-04-13 Seller activity root-fix completion:
+  - The seller-activity work was extended from keyword-level routing into shape-aware execution:
+    - `semantic-frame-v3` now carries `action`, `subject`, `state`, and `output_shape`
+    - `route-policy-v3` blocks aggregate skills from swallowing `define` / `list` asks unless the candidate explicitly supports the requested shape
+    - `skill-capabilities-v3` now scores subject/state/output-shape fit instead of only metric/entity overlap
+  - Added and wired dedicated skills:
+    - `seller-activity-definition`
+    - `active-sellers-list`
+  - Hardened existing skills so neighboring families stop stealing the prompt:
+    - `operations-status-summary` rejects seller definition/list asks
+    - `team-performance-summary` handles team-level `seller active` aggregation explicitly instead of colliding with seller list asks
+    - `inactive-sellers-summary` now returns list/count/summary output based on the ask shape, with a grounded proxy definition instead of a generic summary blob
+  - Output validation also moved from route-name checks to shape checks:
+    - `define` requires definition facts
+    - `entity_list` requires seller rows
+  - Regression status after the completion pass:
+    - `npm run test --workspace @crm/ai-chat-module` passed with `81/81`
+    - `npm run check` passed
+
+- 2026-04-13 V3 scope clarification after seller-activity pass:
+  - Important architectural status:
+    - V3 runtime is now global, not seller-activity-only.
+    - The shared control layer already applies to the full deterministic catalog:
+      - `semantic-frame-v3`
+      - `route-policy-v3`
+      - `skill-capabilities-v3`
+      - `skill-output-validator-v3`
+    - All registered deterministic skills are already inside that routing/validation frame.
+  - But migration depth is not yet uniform across families:
+    - `seller_activity` is the first family that has been migrated deeply enough to distinguish:
+      - definition asks
+      - entity-list asks
+      - aggregate/team-level asks
+      - inactive proxy logic
+    - Other families are currently protected by the V3 wrapper, but many of their skills are still broader and less shape-specific internally.
+  - Practical interpretation:
+    - The system is no longer "legacy everywhere except active".
+    - However, the catalog is not yet fully refactored family-by-family to the same precision level as `seller_activity`.
+  - Suggested next migration order:
+    - `team_metrics`
+      - split team revenue / team orders / team active sellers / team compare / team ranking more explicitly
+    - `operations_metrics`
+      - split definition/list/aggregate behavior and prevent operations summary from swallowing nearby asks
+    - `source_metrics`
+      - separate source summary / source ranking / revenue drilldown / source-group resolve
+    - `order_metrics`
+      - separate recent orders / filtered orders / status-specific order lists / tabular order asks
+    - `seller_metrics`
+      - further separate one-seller lookup / many-seller ranking / seller tables / seller compare
+  - Working rule for the next passes:
+    - keep the shared V3 policy layer stable
+    - migrate one family at a time until each family has:
+      - clear action semantics
+      - clear output-shape semantics
+      - non-overlapping skill boundaries
+      - regression tests for define/list/aggregate/follow-up collisions
+
+- 2026-04-13 Chat Lab session-review upgrade:
+  - Chat Lab conversation mode now supports session-level triage instead of only final-turn inspection:
+    - compact turn navigator
+    - per-turn manual review state (`ok` / `drift` / `fail`)
+    - issue taxonomy for drift root cause:
+      - carry-over drift
+      - entity stickiness
+      - metric drift
+      - family switch failure
+      - clarify/fallback misfire
+      - view-context leak
+      - reply quality
+    - explicit `first drift turn` marking
+  - Conversation CSV export now includes per-turn review metadata.
+  - Backend now supports JSON artifact export for full session traces via Chat Lab.
+  - JSON session artifact includes:
+    - selected scenario
+    - run config (`use_intent_classifier`, `use_skill_formatter`)
+    - full turns with response/debug state
+    - per-turn manual reviews
+    - scenario-draft block for later replay/handoff
+  - This makes long-session failures debuggable without rerunning the same 5-10 turn conversation from memory.
+
+- 2026-04-13 Chat Lab stress-session UX pass:
+  - Added `auto-generate` stress session controls directly inside the `Conversation` tab.
+  - Stress generation is currently guided by a small set of explicit modes, not random free generation:
+    - keep context
+    - metric switch
+    - family switch
+    - topic reset
+    - mixed stress
+  - Generated stress turns can now be:
+    - created as a visible stress plan
+    - run one-by-one
+    - replayed as a whole session
+  - `Turn Review` was moved to a top-right panel so the reviewer no longer has to scroll to the bottom of the session controls before marking drift/fail.
+  - Conversation empty-state now explicitly explains the three entry points:
+    - replay scripted testcase
+    - seed transcript and ask more
+    - auto-generate stress turns

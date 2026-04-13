@@ -24,6 +24,11 @@ export const operationsStatusSummarySkill = {
   id: "operations-status-summary",
   canHandle(context) {
     const foldedQuestion = context.routingFoldedQuestion || context.foldedQuestion;
+    if (/(seller|sale|nhan vien sale|nguoi ban)/.test(foldedQuestion)
+      && /(active|inactive|hoat dong|khong hoat dong)/.test(foldedQuestion)
+      && /(la gi|la nhung gi|nghia la gi|ten|danh sach|liet ke|nhung ai|gom ai|seller nao|ai dang)/.test(foldedQuestion)) {
+      return false;
+    }
     if (
       /(team|nhom|doi)/.test(foldedQuestion)
       && /(seller active|sale active)/.test(foldedQuestion)

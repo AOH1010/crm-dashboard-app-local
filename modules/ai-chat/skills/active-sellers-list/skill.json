@@ -1,0 +1,10 @@
+{
+  "id": "active-sellers-list",
+  "description": "List sellers considered active in the requested period, using non-cancelled orders as the grounded criterion.",
+  "priority": 89,
+  "triggers": ["seller active", "sellers active", "sale active", "ten seller active", "danh sach seller active"],
+  "supported_views": ["dashboard", "team"],
+  "required_entities": [],
+  "output_mode": "table",
+  "fallback_policy": "prefer_skill_over_operations_summary_when_user_asks_for_active_seller_names"
+}

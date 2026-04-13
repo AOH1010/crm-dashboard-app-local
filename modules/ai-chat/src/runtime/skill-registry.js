@@ -3,6 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { sellerMonthRevenueSkillV3 } from "../skills/seller-month-revenue-v3.js";
 import { topSellersPeriodSkill } from "../skills/top-sellers-period.js";
+import { sellerActivityDefinitionSkill } from "../skills/seller-activity-definition.js";
+import { activeSellersListSkill } from "../skills/active-sellers-list.js";
 import { kpiOverviewSkill } from "../skills/kpi-overview.js";
 import { comparePeriodsSkill } from "../skills/compare-periods.js";
 import { renewDueSummarySkill } from "../skills/renew-due-summary.js";
@@ -27,6 +29,8 @@ const skillsDir = path.join(moduleRoot, "skills");
 const handlers = new Map([
   [sellerMonthRevenueSkillV3.id, sellerMonthRevenueSkillV3],
   [topSellersPeriodSkill.id, topSellersPeriodSkill],
+  [sellerActivityDefinitionSkill.id, sellerActivityDefinitionSkill],
+  [activeSellersListSkill.id, activeSellersListSkill],
   [kpiOverviewSkill.id, kpiOverviewSkill],
   [comparePeriodsSkill.id, comparePeriodsSkill],
   [renewDueSummarySkill.id, renewDueSummarySkill],

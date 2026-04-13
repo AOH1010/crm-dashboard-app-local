@@ -97,7 +97,7 @@ export const teamPerformanceSummarySkill = {
   canHandle(context) {
     const foldedQuestion = context.routingFoldedQuestion || context.foldedQuestion;
     return /(team|nhom|doi)/.test(foldedQuestion)
-      && /(doanh thu|doanh so|\bdt\b|revenue|dan dau|xep hang|so sanh|\bss\b)/.test(foldedQuestion);
+      && /(doanh thu|doanh so|\bdt\b|revenue|dan dau|xep hang|so sanh|\bss\b|seller active|sale active|active seller|active sellers|seller hoat dong)/.test(foldedQuestion);
   },
   async run(context, connector) {
     const period = resolveTeamPeriod(context, connector);
@@ -105,6 +105,7 @@ export const teamPerformanceSummarySkill = {
     const requestedTeam = requestedTeams[0] || null;
     const questionText = foldText(context.latestQuestion || "");
     const isComparisonAsk = /so sanh/.test(questionText) || requestedTeams.length >= 2;
+    const rankingMetric = context.intent?.metric === "active_rate" ? "active_rate" : context.intent?.metric || "revenue";
 
     const result = await connector.runReadQueryAsync({
       sql: `
@@ -145,6 +146,10 @@ export const teamPerformanceSummarySkill = {
       }))
       .filter((row) => requestedTeams.length === 0 || requestedTeams.includes(row.team_label));
 
+    if (rankingMetric === "active_rate") {
+      rows.sort((left, right) => right.seller_count - left.seller_count || right.revenue_amount - left.revenue_amount || left.team_label.localeCompare(right.team_label));
+    }
+
     const topTeam = rows[0] || null;
     const table = formatMarkdownTable(
       ["Team", "Doanh thu", "Số đơn", "Seller active"],
@@ -179,16 +184,29 @@ export const teamPerformanceSummarySkill = {
       ].join("\n\n");
     } else if (requestedTeam) {
       const selectedTeam = rows[0];
-      reply = [
-        `Trong ${period.label}, team ${selectedTeam.team_label} đạt doanh thu ${formatCurrency(selectedTeam.revenue_amount)}.`,
-        `- Số đơn: ${selectedTeam.order_count.toLocaleString("vi-VN")}.`,
-        `- Seller active: ${selectedTeam.seller_count.toLocaleString("vi-VN")}.`
-      ].join("\n");
+      if (rankingMetric === "active_rate") {
+        reply = [
+          `Trong ${period.label}, team ${selectedTeam.team_label} có ${selectedTeam.seller_count.toLocaleString("vi-VN")} seller active.`,
+          `- Doanh thu: ${formatCurrency(selectedTeam.revenue_amount)}.`,
+          `- Số đơn: ${selectedTeam.order_count.toLocaleString("vi-VN")}.`
+        ].join("\n");
+      } else {
+        reply = [
+          `Trong ${period.label}, team ${selectedTeam.team_label} đạt doanh thu ${formatCurrency(selectedTeam.revenue_amount)}.`,
+          `- Số đơn: ${selectedTeam.order_count.toLocaleString("vi-VN")}.`,
+          `- Seller active: ${selectedTeam.seller_count.toLocaleString("vi-VN")}.`
+        ].join("\n");
+      }
     } else {
-      reply = [
-        `Team dẫn đầu doanh thu trong ${period.label} là ${topTeam.team_label} với ${formatCurrency(topTeam.revenue_amount)}.`,
-        table
-      ].join("\n\n");
+      reply = rankingMetric === "active_rate"
+        ? [
+          `Team có nhiều seller active nhất trong ${period.label} là ${topTeam.team_label} với ${topTeam.seller_count.toLocaleString("vi-VN")} seller active.`,
+          table
+        ].join("\n\n")
+        : [
+          `Team dẫn đầu doanh thu trong ${period.label} là ${topTeam.team_label} với ${formatCurrency(topTeam.revenue_amount)}.`,
+          table
+        ].join("\n\n");
     }
 
     return {

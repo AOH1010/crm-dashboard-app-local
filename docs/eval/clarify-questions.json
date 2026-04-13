@@ -5,7 +5,7 @@
     "messages": [
       {
         "role": "user",
-        "content": "Cho toi biet tinh hinh chung"
+        "content": "Tom tat cho toi"
       }
     ],
     "expected_route": "clarify_required",
@@ -17,10 +17,10 @@
     "messages": [
       {
         "role": "user",
-        "content": "Team nao dang dan dau doanh thu va nhom nguon nao co conversion cao nhat?"
+        "content": "Doanh thu nhu the nao?"
       }
     ],
     "expected_route": "clarify_required",
-    "expected_clarification_pattern": "team|nguon|conversion"
+    "expected_clarification_pattern": "seller|team|nguon|KPI"
   }
 ]

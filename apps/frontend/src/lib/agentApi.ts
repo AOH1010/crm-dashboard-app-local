@@ -152,3 +152,25 @@ export async function exportChatLabCsvArtifact(params: {
 
   return response.json();
 }
+
+export async function exportChatLabJsonArtifact(params: {
+  filename: string;
+  payload: Record<string, unknown>;
+}): Promise<ChatLabExportResponse> {
+  const response = await fetch(buildApiUrl("/api/agent/chat-lab/export-json"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      filename: params.filename,
+      payload: params.payload,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Khong the luu JSON Chat Lab vao artifact.");
+  }
+
+  return response.json();
+}

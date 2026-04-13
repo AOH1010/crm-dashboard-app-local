@@ -1,0 +1,10 @@
+{
+  "id": "seller-activity-definition",
+  "description": "Explain how the runtime defines an active seller and ground the definition with the current period count.",
+  "priority": 90,
+  "triggers": ["seller active la gi", "seller active la nhung gi", "tieu chi seller active"],
+  "supported_views": ["dashboard", "team"],
+  "required_entities": [],
+  "output_mode": "summary",
+  "fallback_policy": "prefer_skill_over_operations_summary_when_user_asks_for_definition"
+}

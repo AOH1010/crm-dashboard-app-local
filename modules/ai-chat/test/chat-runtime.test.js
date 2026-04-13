@@ -195,6 +195,86 @@ test("operations summary without explicit period defaults to the system current 
   assert.match(payload.reply, /04\/2026/i);
 });
 
+test("seller active definition routes to dedicated seller activity definition skill", async () => {
+  const payload = await chatWithDeterministicRouting({
+    viewId: "dashboard",
+    messages: [{
+      role: "user",
+      content: `seller active la nhung gi thang ${latestMonthNumber}/${latestYear}`
+    }]
+  });
+
+  assert.equal(payload.route, "skill");
+  assert.equal(payload.skill_id, "seller-activity-definition");
+  assert.equal(payload.intent?.primary_intent, "seller_activity_definition");
+  assert.match(foldText(payload.reply), /it nhat 1 don khong huy/i);
+});
+
+test("active seller names route to dedicated list skill instead of operations summary", async () => {
+  const payload = await chatWithDeterministicRouting({
+    viewId: "dashboard",
+    messages: [{
+      role: "user",
+      content: `Toi hoi ten cua sellers active thang ${latestMonthNumber}/${latestYear}`
+    }]
+  });
+
+  assert.equal(payload.route, "skill");
+  assert.equal(payload.skill_id, "active-sellers-list");
+  assert.equal(payload.intent?.primary_intent, "active_sellers_list");
+  assert.ok(Array.isArray(payload.sql_logs) && payload.sql_logs.length > 0);
+  assert.doesNotMatch(foldText(payload.reply), /tong hop operations|account tracked|best \/ value \/ noise/i);
+  assert.match(payload.reply, /\| Seller \| Team \|/);
+});
+
+test("active seller count stays on seller activity family instead of operations summary", async () => {
+  const payload = await chatWithDeterministicRouting({
+    viewId: "dashboard",
+    messages: [{
+      role: "user",
+      content: `Bao nhieu seller active trong thang ${latestMonthNumber}/${latestYear}?`
+    }]
+  });
+
+  assert.equal(payload.route, "skill");
+  assert.equal(payload.skill_id, "active-sellers-list");
+  assert.equal(payload.intent?.primary_intent, "active_sellers_list");
+  assert.match(foldText(payload.reply), /co \d+ seller active|seller active/i);
+  assert.doesNotMatch(foldText(payload.reply), /account tracked|best \/ value \/ noise/i);
+});
+
+test("team with most active sellers stays on team family instead of seller activity list", async () => {
+  const payload = await chatWithDeterministicRouting({
+    viewId: "team",
+    messages: [{
+      role: "user",
+      content: `Team nao co nhieu seller active nhat trong thang ${latestMonthNumber}/${latestYear}?`
+    }]
+  });
+
+  assert.equal(payload.route, "skill");
+  assert.equal(payload.skill_id, "team-performance-summary");
+  assert.equal(payload.intent?.primary_intent, "team_revenue_summary");
+  assert.match(foldText(payload.reply), /team co nhieu seller active nhat|seller active/i);
+});
+
+test("inactive seller names stay on seller activity family", async () => {
+  const payload = await chatWithDeterministicRouting({
+    viewId: "team",
+    messages: [{
+      role: "user",
+      content: "Seller inactive la ai?"
+    }]
+  });
+
+  assert.equal(payload.route, "skill");
+  assert.equal(payload.skill_id, "inactive-sellers-summary");
+  assert.equal(payload.intent?.primary_intent, "inactive_sellers_recent");
+  assert.equal(payload.semantic_frame?.output_shape, "entity_list");
+  assert.match(foldText(payload.reply), /danh sach seller inactive|seller inactive theo quy uoc/i);
+  assert.doesNotMatch(foldText(payload.reply), /tong hop operations|account tracked/i);
+});
+
 test("cross-view revenue ask does not get trapped by operations view context", async () => {
   const payload = await chatWithDeterministicRouting({
     viewId: "user-map",
@@ -252,6 +332,51 @@ test("natural top seller query routes to top sellers skill", async () => {
   assert.equal(payload.route, "skill");
   assert.equal(payload.skill_id, "top-sellers-period");
   assert.equal(payload.intent?.primary_intent, "top_sellers_period");
+});
+
+test("seller order-count ask routes to top sellers by order metric", async () => {
+  const payload = await chatWithDeterministicRouting({
+    viewId: "team",
+    messages: [{
+      role: "user",
+      content: "So luong don hang thanh cong cua moi seller thang 3/2026 la bao nhieu?"
+    }]
+  });
+
+  assert.equal(payload.route, "skill");
+  assert.equal(payload.skill_id, "top-sellers-period");
+  assert.equal(payload.intent?.primary_intent, "top_sellers_period");
+  assert.equal(payload.intent?.metric, "orders");
+  assert.equal(payload.semantic_frame?.slots?.metric, "orders");
+  assert.equal(payload.route_policy?.reason_code, "matched_direct_intent_skill");
+  assert.match(foldText(payload.reply), /so don|don khong huy/i);
+});
+
+test("seller revenue follow-up can switch metric to per-seller order count", async () => {
+  const payload = await chatWithDeterministicRouting({
+    viewId: "team",
+    messages: [
+      {
+        role: "user",
+        content: "Doanh thu Hien thang 3/2026"
+      },
+      {
+        role: "assistant",
+        content: "Nguyen Thi Hien dat doanh so 149,488,000d trong thang 03/2026."
+      },
+      {
+        role: "user",
+        content: "Y toi la so luong don hang thanh cong cua moi seller thang 3"
+      }
+    ]
+  });
+
+  assert.equal(payload.route, "skill");
+  assert.equal(payload.skill_id, "top-sellers-period");
+  assert.equal(payload.intent?.primary_intent, "top_sellers_period");
+  assert.equal(payload.intent?.metric, "orders");
+  assert.match(foldText(payload.reply), /bang seller theo so don|so don khong huy/i);
+  assert.doesNotMatch(foldText(payload.reply), /nguyen thi hien dat doanh so/i);
 });
 
 test("generic overview in renew view now asks for clarification instead of binding to the view", async () => {
@@ -539,6 +664,73 @@ test("follow-up seller can change both entity and month without falling out of s
   assert.equal(payload.intent?.primary_intent, "seller_revenue_month");
   assert.match(payload.reply, /04\/2026/i);
   assert.match(foldText(payload.reply), /nguyen thi hien/i);
+});
+
+test("seller alias detection does not read 'hien tai' as seller Hien", () => {
+  const detectedSeller = connector.detectSellerName("Lap bang doanh so theo sale theo thang tu thang 1 2026 den hien tai");
+  assert.equal(detectedSeller, null);
+});
+
+test("standalone monthly seller-table ask does not inherit prior seller follow-up intent", () => {
+  const intentResult = classifyIntentLegacy({
+    routingQuestion: "Lap bang doanh so theo sale theo thang tu thang 1 2026 den hien tai",
+    latestQuestion: "Lap bang doanh so theo sale theo thang tu thang 1 2026 den hien tai",
+    latestUserMessage: {
+      role: "user",
+      content: "Lap bang doanh so theo sale theo thang tu thang 1 2026 den hien tai"
+    },
+    recentTurnsForIntent: [
+      {
+        role: "user",
+        content: "Hoang Van Huy ban duoc bao nhieu"
+      },
+      {
+        role: "assistant",
+        content: "Trong 04/2026, Hoang Van Huy dat doanh so 14.099.000 VND tu 1 don khong huy."
+      },
+      {
+        role: "user",
+        content: "Lap bang doanh so theo sale theo thang tu thang 1 2026 den hien tai"
+      }
+    ],
+    fullConversationMessages: [
+      {
+        role: "user",
+        content: "Hoang Van Huy ban duoc bao nhieu"
+      },
+      {
+        role: "assistant",
+        content: "Trong 04/2026, Hoang Van Huy dat doanh so 14.099.000 VND tu 1 don khong huy."
+      },
+      {
+        role: "user",
+        content: "Lap bang doanh so theo sale theo thang tu thang 1 2026 den hien tai"
+      }
+    ],
+    normalizedMessages: [
+      {
+        role: "user",
+        content: "Hoang Van Huy ban duoc bao nhieu"
+      },
+      {
+        role: "assistant",
+        content: "Trong 04/2026, Hoang Van Huy dat doanh so 14.099.000 VND tu 1 don khong huy."
+      },
+      {
+        role: "user",
+        content: "Lap bang doanh so theo sale theo thang tu thang 1 2026 den hien tai"
+      }
+    ],
+    viewId: "dashboard",
+    selectedFilters: null,
+    connector
+  });
+
+  assert.equal(intentResult.intent.primary_intent, "custom_analytical_query");
+  assert.equal(intentResult.intent.dimension, "seller");
+  assert.equal(intentResult.intent.output_mode, "table");
+  assert.deepEqual(intentResult.intent.entities, []);
+  assert.equal(resolveRouteFromIntent(intentResult.intent), "llm_fallback");
 });
 
 test("conversation state marks seller follow-up as a patch with anchor intent", async () => {

@@ -35,9 +35,14 @@ const CUSTOMER_PATTERN = /(khach hang|customer)/;
 const LEAD_GEO_PATTERN = /(tinh|thanh pho|province|dia ly)/;
 const COHORT_PATTERN = /(cohort)/;
 const RECENT_ORDERS_PATTERN = /((\d+\s+)?don hang moi nhat|recent orders?|order moi nhat)/;
+const ORDER_COUNT_PATTERN = /(so luong don|so don|don hang thanh cong|don khong huy|order count|number of orders)/;
+const PER_SELLER_PATTERN = /(moi seller|tung seller|theo seller|cac seller|seller nao|seller|sale|nhan vien sale|nguoi ban)/;
 const CUSTOMER_RANKING_PATTERN = /(mua nhieu nhat|chi nhieu nhat|top customer|customer nao.*(nhieu nhat|cao nhat|lon nhat))/;
 const ORDER_FILTER_PATTERN = /(liet ke|loc|filter|tren|duoi|it nhat|nho hon)/;
 const FORECAST_PATTERN = /(du bao|forecast|du phong)/;
+const SELLER_ACTIVITY_PATTERN = /(seller\s*active|sellers\s*active|active\s*seller|active\s*sellers|sale\s*active|seller dang active|seller hoat dong|sales active|nhan vien sale active|nguoi ban active)/;
+const DEFINITION_PATTERN = /(la gi|la nhung gi|nghia la gi|duoc tinh nhu nao|tieu chi gi|criteria|co nghia la gi)/;
+const NAME_LIST_PATTERN = /(ten|danh sach|liet ke|nhung ai|gom ai|bao gom ai|seller nao|ai dang active|ten cua)/;
 const INJECTION_PATTERN = /(bo qua tat ca|ignore (all|previous)|delete\s+from|drop\s+table|update\s+\w+\s+set|insert\s+into|truncate\s+table|xoa du lieu|xoa bang|sua du lieu)/;
 const TABLE_PATTERN = /(bang|table|hien thi bang)/;
 const MULTI_PATTERN = /\b(va|dong thoi|kem theo|ngoai ra|sau do)\b/;
@@ -221,6 +226,22 @@ function shouldUseFollowUpInference(foldedQuestion, previousTopic) {
   return FOLLOW_UP_PATTERN.test(foldedQuestion) || FOLLOW_UP_DRILLDOWN_PATTERN.test(foldedQuestion);
 }
 
+function isStandaloneStructuredAnalyticsAsk(foldedQuestion) {
+  if (!foldedQuestion) {
+    return false;
+  }
+
+  const hasMetric = /(doanh thu|doanh so|\bdt\b|revenue|don hang|so don|order)/.test(foldedQuestion);
+  const hasDimension = /(seller|sale|nhan vien|nguoi ban|team|nhom|phong ban|nguon|source|kenh|khach hang|customer)/.test(foldedQuestion);
+  const hasStructuredShape = TABLE_PATTERN.test(foldedQuestion)
+    || /(theo thang|theo quy|theo nam|trend theo thang)/.test(foldedQuestion)
+    || (/\btu\b/.test(foldedQuestion) && /\bden\b/.test(foldedQuestion))
+    || /\bhien tai\b/.test(foldedQuestion)
+    || /\btu dau nam\b/.test(foldedQuestion);
+
+  return hasMetric && hasDimension && hasStructuredShape;
+}
+
 function extractMeaningfulTokens(text) {
   return foldText(text)
     .split(/\s+/)
@@ -281,6 +302,17 @@ function isExecutiveMultiDomainAsk({
   }
 
   return multiMatch || /(buc tranh toan canh|full picture|toan canh|ceo)/.test(foldedQuestion);
+}
+
+function isSellerActivityAsk(foldedQuestion) {
+  if (/(team|nhom|doi)/.test(foldedQuestion) && /(doanh thu|doanh so|so don|so sanh|hieu suat)/.test(foldedQuestion)) {
+    return false;
+  }
+  if (/\baccount\b/.test(foldedQuestion) && /(sale owner|owner|quan ly|phu trach|nhan vien sale)/.test(foldedQuestion)) {
+    return false;
+  }
+  return SELLER_ACTIVITY_PATTERN.test(foldedQuestion)
+    || (/(seller|sale|nhan vien sale|nguoi ban)/.test(foldedQuestion) && /(active|hoat dong|inactive|khong hoat dong)/.test(foldedQuestion));
 }
 
 function getSellerCandidates(question, context) {
@@ -485,6 +517,10 @@ function inferIntentFromQuestion(question, context, options = {}) {
     });
   }
 
+  if (!sourceMatch) {
+    result.entities = result.entities.filter((entity) => !["source_group", "source_group_suggestion"].includes(entity.type));
+  }
+
   if (INJECTION_PATTERN.test(foldedQuestion)) {
     result.primary_intent = "injection_attempt";
     result.confidence = 0.99;
@@ -530,6 +566,45 @@ function inferIntentFromQuestion(question, context, options = {}) {
     result.ambiguity_reason = "out_of_scope";
     result.clarification_question = "";
     result.confidence = 0.32;
+    return result;
+  }
+
+  if (teamMatch && /(seller active|sale active|active seller|active sellers|seller hoat dong)/.test(foldedQuestion)) {
+    result.primary_intent = "team_revenue_summary";
+    result.action = /top|nhieu nhat|cao nhat|dan dau|team nao/.test(foldedQuestion) ? "rank" : "summarize";
+    result.metric = "active_rate";
+    result.dimension = "team";
+    result.output_mode = /top|nhieu nhat|cao nhat|dan dau|team nao/.test(foldedQuestion) ? "ranking" : "summary";
+    result.confidence = 0.9;
+    return result;
+  }
+
+  if (isSellerActivityAsk(foldedQuestion)) {
+    result.metric = "active_rate";
+    result.dimension = "seller";
+    result.entities = result.entities.filter((entity) => entity.type !== "seller");
+    const inactiveAsk = /(inactive|khong hoat dong|khong active)/.test(foldedQuestion);
+
+    if (DEFINITION_PATTERN.test(foldedQuestion)) {
+      result.primary_intent = inactiveAsk ? "inactive_sellers_recent" : "seller_activity_definition";
+      result.action = "define";
+      result.output_mode = "summary";
+      result.confidence = inactiveAsk ? 0.72 : 0.93;
+      return result;
+    }
+
+    if (NAME_LIST_PATTERN.test(foldedQuestion)) {
+      result.primary_intent = inactiveAsk ? "inactive_sellers_recent" : "active_sellers_list";
+      result.action = "list";
+      result.output_mode = "table";
+      result.confidence = 0.94;
+      return result;
+    }
+
+    result.primary_intent = inactiveAsk ? "inactive_sellers_recent" : "active_sellers_list";
+    result.action = /(bao nhieu|tong so|co may)/.test(foldedQuestion) ? "summarize" : "list";
+    result.output_mode = "table";
+    result.confidence = 0.88;
     return result;
   }
 
@@ -677,6 +752,32 @@ function inferIntentFromQuestion(question, context, options = {}) {
     return result;
   }
 
+  if (ORDER_COUNT_PATTERN.test(foldedQuestion) && PER_SELLER_PATTERN.test(foldedQuestion)) {
+    result.primary_intent = "top_sellers_period";
+    result.action = /moi seller|tung seller|theo seller|cac seller/.test(foldedQuestion) ? "list" : "rank";
+    result.metric = "orders";
+    result.dimension = "seller";
+    result.output_mode = "table";
+    result.confidence = 0.91;
+    result.entities = result.entities.filter((entity) => entity.type !== "seller");
+    return result;
+  }
+
+  if (isStandaloneStructuredAnalyticsAsk(foldedQuestion)
+    && /(seller|sale|nhan vien|nguoi ban)/.test(foldedQuestion)
+    && /(theo thang|theo quy|theo nam|\btu\b.*\bden\b|\bhien tai\b)/.test(foldedQuestion)
+    && !TOP_PATTERN.test(foldedQuestion)
+    && !COMPARE_PATTERN.test(foldedQuestion)) {
+    result.primary_intent = "custom_analytical_query";
+    result.action = "analyze";
+    result.metric = ORDER_COUNT_PATTERN.test(foldedQuestion) ? "orders" : "revenue";
+    result.dimension = "seller";
+    result.output_mode = "table";
+    result.entities = result.entities.filter((entity) => entity.type !== "seller");
+    result.confidence = 0.72;
+    return result;
+  }
+
   const followUpSellerCandidates = getSellerCandidates(question, context);
   const allowEntityOnlyFollowUp = Boolean(sellerEntityValue)
     || (followUpSellerCandidates.length > 0)
@@ -686,7 +787,10 @@ function inferIntentFromQuestion(question, context, options = {}) {
     && foldedQuestion.length <= 120
     && hasAnalyticalFocusCue(foldedQuestion);
 
-  if (previousTopic && !options.skipFollowUpInference && (shouldUseFollowUpInference(foldedQuestion, previousTopic) || allowEntityOnlyFollowUp || allowKpiFocusFollowUp)) {
+  if (previousTopic
+    && !options.skipFollowUpInference
+    && !isStandaloneStructuredAnalyticsAsk(foldedQuestion)
+    && (shouldUseFollowUpInference(foldedQuestion, previousTopic) || allowEntityOnlyFollowUp || allowKpiFocusFollowUp)) {
     const inferred = followUpAnchor?.intent || inferIntentFromQuestion(previousTopic.content, {
       ...context,
       recentTurnsForIntent: context.recentTurnsForIntent.slice(0, -1)
@@ -944,6 +1048,9 @@ export async function classifyIntent({
   useIntentClassifier = true
 }) {
   const deterministicIntent = classifyIntentLegacy(context);
+  if (["seller_activity_definition", "active_sellers_list"].includes(deterministicIntent.intent.primary_intent)) {
+    return deterministicIntent;
+  }
   if (deterministicIntent.intent.primary_intent === "injection_attempt") {
     return deterministicIntent;
   }

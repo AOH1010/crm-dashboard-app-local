@@ -356,8 +356,7 @@ export default function CrmAgentWidget({ viewId, selectedFilters = null }: CrmAg
   ]);
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  const inferredSelectedFilters = useMemo(() => inferSelectedFiltersFromViewCache(viewId), [viewId]);
-  const effectiveSelectedFilters = selectedFilters ?? inferredSelectedFilters;
+  const effectiveSelectedFilters = selectedFilters ?? null;
   const sessionId = useMemo(() => getStableSessionId(), []);
 
   useEffect(() => {

@@ -3,6 +3,7 @@ import { Bot, FlaskConical, Play, Rows4, Search, Send, SplitSquareHorizontal, Ti
 import { CHAT_LAB_FALLBACK_SCENARIOS, type ChatLabScenario } from "@/src/lib/chatLabScenarios";
 import {
   exportChatLabCsvArtifact,
+  exportChatLabJsonArtifact,
   fetchChatLabScenarios,
   sendAgentMessage,
   type AgentChatResponse,
@@ -17,13 +18,37 @@ type ManualReviewDecision = { status: ManualReviewStatus; reason: string; update
 type SessionTurnRecord = { id: string; scriptedIndex: number | null; userMessage: string; referenceAssistant: string | null; response: AgentChatResponse | null; error: string | null; startedAt: string };
 type ScriptedUserTurn = { index: number; userMessage: string; referenceAssistant: string | null; isFinal: boolean };
 type TurnAssessment = { tone: "ok" | "bad" | "neutral"; label: string; detail: string };
+type SessionReviewStatus = "pending" | "ok" | "drift" | "fail";
+type SessionIssueType = "carry_over_drift" | "entity_stickiness" | "metric_drift" | "family_switch_failure" | "clarify_misfire" | "fallback_misfire" | "view_context_leak" | "reply_quality" | "other";
+type SessionTurnReview = { status: SessionReviewStatus; issueType: SessionIssueType; note: string; isFirstDrift: boolean; updatedAt: string };
+type StressMode = "carry_over" | "metric_switch" | "family_switch" | "topic_reset" | "mixed";
+type GeneratedStressTurn = { id: string; label: string; userMessage: string };
 
 const STORAGE_KEYS = {
   currentResult: "chat-lab-current-result",
   batchResults: "chat-lab-batch-results",
   manualReviews: "chat-lab-manual-reviews",
+  sessionTurnReviews: "chat-lab-session-turn-reviews",
 } as const;
 const CHAT_LAB_ARTIFACT_DIR = "artifacts/chat-lab-exports";
+const SESSION_ISSUE_OPTIONS: Array<{ value: SessionIssueType; label: string }> = [
+  { value: "carry_over_drift", label: "Trôi ngữ cảnh" },
+  { value: "entity_stickiness", label: "Bám entity cũ" },
+  { value: "metric_drift", label: "Bám metric cũ" },
+  { value: "family_switch_failure", label: "Không chuyển family" },
+  { value: "clarify_misfire", label: "Clarify sai" },
+  { value: "fallback_misfire", label: "Fallback sai" },
+  { value: "view_context_leak", label: "Leak context view/filter" },
+  { value: "reply_quality", label: "Reply chưa đạt" },
+  { value: "other", label: "Khác" },
+];
+const STRESS_MODE_OPTIONS: Array<{ value: StressMode; label: string; detail: string }> = [
+  { value: "carry_over", label: "Giữ ngữ cảnh", detail: "Đổi tháng, giữ entity/topic để thử carry-over." },
+  { value: "metric_switch", label: "Đổi metric", detail: "Giữ topic nhưng đổi doanh thu -> số đơn hoặc ngược lại." },
+  { value: "family_switch", label: "Đổi family", detail: "Từ seller/team chuyển sang source/KPI để thử family switch." },
+  { value: "topic_reset", label: "Reset topic", detail: "Chèn câu ngoài lề rồi quay lại chủ đề chính." },
+  { value: "mixed", label: "Stress hỗn hợp", detail: "Trộn carry-over, metric switch, family switch và reset." },
+];
 
 function getScoreSummary(
   scenario: ChatLabScenario,
@@ -62,6 +87,124 @@ const prettyJson = (value: unknown) => JSON.stringify(value, null, 2);
 
 function createChatLabSessionId() {
   return `chat-lab-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function createEmptySessionTurnReview(): SessionTurnReview {
+  return {
+    status: "pending",
+    issueType: "other",
+    note: "",
+    isFirstDrift: false,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function getSessionReviewTone(status?: SessionReviewStatus | null): "ok" | "bad" | "neutral" {
+  switch (status) {
+    case "ok":
+      return "ok";
+    case "drift":
+    case "fail":
+      return "bad";
+    default:
+      return "neutral";
+  }
+}
+
+function formatSessionReviewLabel(status?: SessionReviewStatus | null) {
+  switch (status) {
+    case "ok":
+      return "Ổn";
+    case "drift":
+      return "Bắt đầu lệch";
+    case "fail":
+      return "Fail";
+    default:
+      return "Chưa review";
+  }
+}
+
+function formatSessionIssueLabel(issueType?: SessionIssueType | null) {
+  return SESSION_ISSUE_OPTIONS.find((item) => item.value === issueType)?.label || "Khác";
+}
+
+function buildScenarioSeedMessages(scenario: ChatLabScenario | null): AgentMessage[] {
+  if (!scenario) return [];
+  return scenario.messages.map((message) => ({ role: message.role, content: message.content }));
+}
+
+function buildGeneratedStressTurns(scenario: ChatLabScenario | null, mode: StressMode): GeneratedStressTurn[] {
+  if (!scenario) return [];
+  const expectedIntent = scenario.expectedIntent;
+  const turnsByMode: Record<StressMode, GeneratedStressTurn[]> = {
+    carry_over: [
+      { id: "carry-1", label: "Đổi kỳ", userMessage: "Còn tháng trước thì sao?" },
+      { id: "carry-2", label: "Đổi kỳ nữa", userMessage: "Thế còn tháng 2 thì sao?" },
+      { id: "carry-3", label: "Quay lại kỳ gốc", userMessage: "Quay lại tháng ban đầu và nhắc ngắn gọn cho tôi." },
+    ],
+    metric_switch: [
+      { id: "metric-1", label: "Đổi sang số đơn", userMessage: "Ý tôi là số lượng đơn hàng thành công chứ không phải doanh thu." },
+      { id: "metric-2", label: "Giữ entity, đổi output", userMessage: "Trình bày lại dưới dạng bảng ngắn nhé." },
+      { id: "metric-3", label: "Quay lại metric cũ", userMessage: "Rồi quay lại doanh thu giúp tôi." },
+    ],
+    family_switch: [
+      { id: "family-1", label: "Nhảy sang nguồn", userMessage: "Các đơn đó đến từ nguồn nào?" },
+      { id: "family-2", label: "Nhảy sang KPI", userMessage: "Nếu nhìn rộng hơn thì KPI toàn hệ thống tháng đó ra sao?" },
+      { id: "family-3", label: "Quay lại chủ đề cũ", userMessage: "Quay lại đúng chủ đề ban đầu của tôi nhé." },
+    ],
+    topic_reset: [
+      { id: "reset-1", label: "Chèn ngoài lề", userMessage: "À mà thời tiết hôm nay thế nào?" },
+      { id: "reset-2", label: "Quay lại business", userMessage: "Bỏ câu vừa rồi đi, quay lại đúng bài toán CRM trước đó." },
+      { id: "reset-3", label: "Nhờ tóm tắt", userMessage: "Tóm tắt lại trạng thái hiện tại của session này giúp tôi." },
+    ],
+    mixed: [
+      { id: "mixed-1", label: "Đổi kỳ", userMessage: "Còn tháng trước thì sao?" },
+      { id: "mixed-2", label: "Đổi metric", userMessage: "Ý tôi là số lượng đơn hàng thành công chứ không phải doanh thu." },
+      { id: "mixed-3", label: "Đổi family", userMessage: "Các đơn đó đến từ nguồn nào?" },
+      { id: "mixed-4", label: "Reset", userMessage: "Bỏ chủ đề đó đi, cho tôi tổng quan KPI toàn hệ thống tháng này." },
+      { id: "mixed-5", label: "Quay lại", userMessage: "Giờ quay lại đúng câu hỏi ban đầu của tôi." },
+    ],
+  };
+
+  const turns = turnsByMode[mode].map((turn, index) => ({
+    ...turn,
+    id: `${mode}-${expectedIntent}-${index + 1}`,
+  }));
+
+  if (expectedIntent === "seller_revenue_month") {
+    return turns.map((turn, index) => {
+      if (mode === "family_switch" && index === 0) {
+        return { ...turn, userMessage: "Đơn của seller đó đến từ nguồn nào?" };
+      }
+      if ((mode === "carry_over" || mode === "mixed") && index === 0) {
+        return { ...turn, userMessage: "Còn tháng 4 thì sao?" };
+      }
+      return turn;
+    });
+  }
+
+  if (expectedIntent === "team_revenue_summary") {
+    return turns.map((turn, index) => {
+      if (mode === "metric_switch" && index === 0) {
+        return { ...turn, userMessage: "Ý tôi là số seller active chứ không phải doanh thu." };
+      }
+      if (mode === "family_switch" && index === 0) {
+        return { ...turn, userMessage: "Nguồn nào đóng góp nhiều nhất cho team đó?" };
+      }
+      return turn;
+    });
+  }
+
+  if (expectedIntent === "conversion_source_summary" || expectedIntent === "source_revenue_drilldown") {
+    return turns.map((turn, index) => {
+      if (mode === "family_switch" && index === 0) {
+        return { ...turn, userMessage: "Nếu nhìn theo seller thì ai đang kéo nguồn này mạnh nhất?" };
+      }
+      return turn;
+    });
+  }
+
+  return turns;
 }
 
 function buildScriptedTurns(scenario: ChatLabScenario | null): ScriptedUserTurn[] {
@@ -260,6 +403,11 @@ export default function ChatLabView() {
   const [sessionCursor, setSessionCursor] = useState(0);
   const [sessionDraft, setSessionDraft] = useState("");
   const [sessionFeedback, setSessionFeedback] = useState<string | null>(null);
+  const [selectedTurnId, setSelectedTurnId] = useState<string | null>(null);
+  const [sessionTurnReviews, setSessionTurnReviews] = useState<Record<string, SessionTurnReview>>({});
+  const [stressMode, setStressMode] = useState<StressMode>("mixed");
+  const [generatedStressTurns, setGeneratedStressTurns] = useState<GeneratedStressTurn[]>([]);
+  const [generatedStressCursor, setGeneratedStressCursor] = useState(0);
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
   useEffect(() => {
@@ -276,10 +424,15 @@ export default function ChatLabView() {
       if (storedManualReviews) {
         setManualReviews(JSON.parse(storedManualReviews));
       }
+      const storedSessionTurnReviews = localStorage.getItem(STORAGE_KEYS.sessionTurnReviews);
+      if (storedSessionTurnReviews) {
+        setSessionTurnReviews(JSON.parse(storedSessionTurnReviews));
+      }
     } catch {
       localStorage.removeItem(STORAGE_KEYS.currentResult);
       localStorage.removeItem(STORAGE_KEYS.batchResults);
       localStorage.removeItem(STORAGE_KEYS.manualReviews);
+      localStorage.removeItem(STORAGE_KEYS.sessionTurnReviews);
     }
   }, []);
 
@@ -327,6 +480,14 @@ export default function ChatLabView() {
     localStorage.removeItem(STORAGE_KEYS.manualReviews);
   }, [manualReviews]);
 
+  useEffect(() => {
+    if (Object.keys(sessionTurnReviews).length > 0) {
+      localStorage.setItem(STORAGE_KEYS.sessionTurnReviews, JSON.stringify(sessionTurnReviews));
+      return;
+    }
+    localStorage.removeItem(STORAGE_KEYS.sessionTurnReviews);
+  }, [sessionTurnReviews]);
+
   const groups = useMemo(() => ["all", ...Array.from(new Set(scenarios.map((scenario) => scenario.group))).sort()], [scenarios]);
 
   const filteredScenarios = useMemo(() => {
@@ -351,6 +512,10 @@ export default function ChatLabView() {
     setSessionCursor(0);
     setSessionDraft("");
     setSessionFeedback(null);
+    setSelectedTurnId(null);
+    setSessionTurnReviews({});
+    setGeneratedStressTurns([]);
+    setGeneratedStressCursor(0);
   }, [selectedScenarioId]);
   const selectedManualReview = useMemo(() => selectedScenario ? manualReviews[selectedScenario.id] || null : null, [manualReviews, selectedScenario]);
   const currentScore = useMemo(() => selectedScenario && currentResult?.response ? getScoreSummary(selectedScenario, currentResult.response, selectedManualReview) : null, [currentResult, selectedManualReview, selectedScenario]);
@@ -373,9 +538,50 @@ export default function ChatLabView() {
   const sessionTokenTotal = useMemo(() => sessionTurns.reduce((sum, turn) => sum + Number(turn.response?.usage?.total_tokens || 0), 0), [sessionTurns]);
   const finalScriptedTurn = useMemo(() => [...sessionTurns].reverse().find((turn) => turn.scriptedIndex === scriptedTurns.length - 1) || null, [sessionTurns, scriptedTurns.length]);
   const latestConversationState = useMemo(() => sessionTurns.length > 0 ? sessionTurns[sessionTurns.length - 1].response?.conversation_state || null : null, [sessionTurns]);
+  const selectedSessionTurn = useMemo(() => sessionTurns.find((turn) => turn.id === selectedTurnId) || null, [selectedTurnId, sessionTurns]);
+  const selectedSessionTurnReview = useMemo(() => selectedSessionTurn ? sessionTurnReviews[selectedSessionTurn.id] || null : null, [selectedSessionTurn, sessionTurnReviews]);
+  const sessionSummary = useMemo(() => {
+    const reviewedTurns = sessionTurns.filter((turn) => sessionTurnReviews[turn.id] && sessionTurnReviews[turn.id].status !== "pending");
+    const okCount = reviewedTurns.filter((turn) => sessionTurnReviews[turn.id]?.status === "ok").length;
+    const driftCount = reviewedTurns.filter((turn) => sessionTurnReviews[turn.id]?.status === "drift").length;
+    const failCount = reviewedTurns.filter((turn) => sessionTurnReviews[turn.id]?.status === "fail").length;
+    const firstReviewedDrift = sessionTurns.find((turn) => {
+      const review = sessionTurnReviews[turn.id];
+      return Boolean(review?.isFirstDrift) || review?.status === "drift" || review?.status === "fail";
+    }) || null;
+    const firstAutoConcern = sessionTurns.find((turn) => {
+      const assessment = getConversationTurnAssessment({
+        turn,
+        scenario: selectedScenario,
+        scriptedTurnCount: scriptedTurns.length,
+        manualDecision: selectedManualReview,
+      });
+      return assessment.tone === "bad";
+    }) || null;
+    return {
+      reviewedCount: reviewedTurns.length,
+      okCount,
+      driftCount,
+      failCount,
+      firstReviewedDrift,
+      firstAutoConcern,
+    };
+  }, [scriptedTurns.length, selectedManualReview, selectedScenario, sessionTurnReviews, sessionTurns]);
   const canExportConversation = activeTab === "conversation" && sessionTurns.length > 0;
   const canExportResults = batchResults.length > 0 || Boolean(currentResult);
   const canExportCsv = canExportConversation || canExportResults;
+  const canExportSessionJson = sessionTurns.length > 0;
+  const remainingGeneratedStressTurns = generatedStressTurns.slice(generatedStressCursor);
+
+  useEffect(() => {
+    if (sessionTurns.length === 0) {
+      setSelectedTurnId(null);
+      return;
+    }
+    if (!selectedTurnId || !sessionTurns.some((turn) => turn.id === selectedTurnId)) {
+      setSelectedTurnId(sessionTurns[sessionTurns.length - 1].id);
+    }
+  }, [selectedTurnId, sessionTurns]);
 
   const upsertManualReview = (scenarioId: string, status: ManualReviewStatus, reason: string) => {
     setManualReviews((current) => ({
@@ -394,6 +600,44 @@ export default function ChatLabView() {
       delete next[scenarioId];
       return next;
     });
+  };
+
+  const upsertSessionTurnReview = (turnId: string, patch: Partial<SessionTurnReview>) => {
+    setSessionTurnReviews((current) => {
+      const existing = current[turnId] || createEmptySessionTurnReview();
+      const nextReview: SessionTurnReview = {
+        ...existing,
+        ...patch,
+        updatedAt: new Date().toISOString(),
+      };
+      const next = { ...current, [turnId]: nextReview };
+      if (patch.isFirstDrift) {
+        for (const key of Object.keys(next)) {
+          if (key !== turnId) {
+            next[key] = { ...next[key], isFirstDrift: false };
+          }
+        }
+      }
+      return next;
+    });
+  };
+
+  const clearSessionTurnReview = (turnId: string) => {
+    setSessionTurnReviews((current) => {
+      const next = { ...current };
+      delete next[turnId];
+      return next;
+    });
+  };
+
+  const focusSessionTurn = (turnId: string) => {
+    setSelectedTurnId(turnId);
+    if (typeof document !== "undefined") {
+      document.getElementById(`session-turn-${turnId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
   };
 
   const getManualReviewButtonClass = (variant: "pass" | "fail" | "clear", active: boolean) => cn(
@@ -429,6 +673,9 @@ export default function ChatLabView() {
     setSessionCursor(0);
     setSessionDraft("");
     setSessionFeedback(message || null);
+    setSelectedTurnId(null);
+    setSessionTurnReviews({});
+    setGeneratedStressCursor(0);
   };
 
   const seedConversationFromScenarioTranscript = () => {
@@ -439,6 +686,9 @@ export default function ChatLabView() {
     setSessionCursor(scriptedTurns.length);
     setSessionDraft("");
     setSessionFeedback("Đã nạp transcript gốc. Bạn có thể hỏi tiếp trong cùng session để stress-test carry-over.");
+    setSelectedTurnId(null);
+    setSessionTurnReviews({});
+    setGeneratedStressCursor(0);
     setActiveTab("conversation");
   };
 
@@ -509,6 +759,7 @@ export default function ChatLabView() {
       setSessionMessages(nextMessages);
       setSessionTurns((current) => [...current, turnRecord]);
       setSessionCursor((current) => current + 1);
+      setSelectedTurnId(turnRecord.id);
       setActiveTab("conversation");
     });
     setSessionFeedback(nextTurn.isFinal ? "Đã chạy xong turn cuối của testcase trong cùng session." : `Đã chạy turn ${nextTurn.index + 1}/${scriptedTurns.length}.`);
@@ -538,6 +789,7 @@ export default function ChatLabView() {
       setSessionMessages(workingMessages);
       setSessionTurns(nextTurnRecords);
       setSessionCursor(cursor);
+      setSelectedTurnId(nextTurnRecords[nextTurnRecords.length - 1]?.id || null);
       setActiveTab("conversation");
     });
     setSessionFeedback(`Đã replay ${scriptedTurns.length} user turn trong cùng session.`);
@@ -559,9 +811,72 @@ export default function ChatLabView() {
       setSessionMessages(nextMessages);
       setSessionTurns((current) => [...current, turnRecord]);
       setSessionDraft("");
+      setSelectedTurnId(turnRecord.id);
       setActiveTab("conversation");
     });
     setSessionFeedback("Đã gửi thêm một turn vào cùng session để stress-test.");
+    setIsRunningSession(false);
+  };
+
+  const generateStressSession = () => {
+    if (!selectedScenario) return;
+    const turns = buildGeneratedStressTurns(selectedScenario, stressMode);
+    setGeneratedStressTurns(turns);
+    setGeneratedStressCursor(0);
+    setSessionFeedback(`Đã tạo ${turns.length} turn stress theo mode "${STRESS_MODE_OPTIONS.find((item) => item.value === stressMode)?.label || stressMode}".`);
+    setActiveTab("conversation");
+  };
+
+  const runNextGeneratedStressTurn = async () => {
+    if (!selectedScenario || isRunningSession || remainingGeneratedStressTurns.length === 0) return;
+    setIsRunningSession(true);
+    setSessionFeedback(null);
+    const nextTurn = remainingGeneratedStressTurns[0];
+    const baseMessages = sessionMessages.length > 0 ? sessionMessages : buildScenarioSeedMessages(selectedScenario);
+    const { nextMessages, turnRecord } = await executeConversationTurn({
+      baseMessages,
+      userMessage: nextTurn.userMessage,
+      scriptedIndex: null,
+      referenceAssistant: null,
+    });
+    startTransition(() => {
+      setSessionMessages(nextMessages);
+      setSessionTurns((current) => [...current, turnRecord]);
+      setGeneratedStressCursor((current) => current + 1);
+      setSelectedTurnId(turnRecord.id);
+      setActiveTab("conversation");
+    });
+    setSessionFeedback(`Đã chạy stress turn ${generatedStressCursor + 1}/${generatedStressTurns.length}: ${nextTurn.label}.`);
+    setIsRunningSession(false);
+  };
+
+  const runAllGeneratedStressTurns = async () => {
+    if (!selectedScenario || isRunningSession || remainingGeneratedStressTurns.length === 0) return;
+    setIsRunningSession(true);
+    setSessionFeedback("Đang replay toàn bộ stress session tự sinh...");
+    let workingMessages = sessionMessages.length > 0 ? [...sessionMessages] : buildScenarioSeedMessages(selectedScenario);
+    const nextTurnRecords = [...sessionTurns];
+    let cursor = generatedStressCursor;
+    while (cursor < generatedStressTurns.length) {
+      const turn = generatedStressTurns[cursor];
+      const { nextMessages, turnRecord } = await executeConversationTurn({
+        baseMessages: workingMessages,
+        userMessage: turn.userMessage,
+        scriptedIndex: null,
+        referenceAssistant: null,
+      });
+      workingMessages = nextMessages;
+      nextTurnRecords.push(turnRecord);
+      cursor += 1;
+    }
+    startTransition(() => {
+      setSessionMessages(workingMessages);
+      setSessionTurns(nextTurnRecords);
+      setGeneratedStressCursor(cursor);
+      setSelectedTurnId(nextTurnRecords[nextTurnRecords.length - 1]?.id || null);
+      setActiveTab("conversation");
+    });
+    setSessionFeedback(`Đã replay ${generatedStressTurns.length} stress turn tự sinh trong cùng session.`);
     setIsRunningSession(false);
   };
 
@@ -572,6 +887,7 @@ export default function ChatLabView() {
     if (canExportConversation && selectedScenario) {
       rows = sessionTurns.map((turn, index) => {
         const response = turn.response;
+        const sessionReview = sessionTurnReviews[turn.id] || null;
         const turnAssessment = getConversationTurnAssessment({
           turn,
           scenario: selectedScenario,
@@ -611,6 +927,12 @@ export default function ChatLabView() {
           clarification_question: response?.clarification_question || "",
           turn_health: turnAssessment.label,
           turn_health_detail: turnAssessment.detail,
+          session_review_status: sessionReview?.status || "",
+          session_review_issue_type: sessionReview?.issueType || "",
+          session_review_issue_label: formatSessionIssueLabel(sessionReview?.issueType || null),
+          session_review_note: sessionReview?.note || "",
+          session_review_is_first_drift: sessionReview ? String(Boolean(sessionReview.isFirstDrift)) : "",
+          session_review_updated_at: sessionReview?.updatedAt || "",
           conversation_topic_id: response?.conversation_state?.active_topic_id || "",
           conversation_label: response?.conversation_state?.label || "",
           conversation_continuity_mode: response?.conversation_state?.continuity_mode || "",
@@ -709,6 +1031,77 @@ export default function ChatLabView() {
       setExportFeedback(`Đã lưu ${result.row_count} dòng vào ${result.relative_path}`);
     } catch (error) {
       setExportFeedback(error instanceof Error ? error.message : "Không thể lưu CSV Chat Lab.");
+    }
+  };
+
+  const exportSessionToJson = async () => {
+    if (!selectedScenario || sessionTurns.length === 0) return;
+    const generatedAt = new Date().toISOString();
+    const payload = {
+      export_scope: "conversation_session",
+      generated_at: generatedAt,
+      session_id: sessionId,
+      scenario: selectedScenario,
+      run_config: {
+        use_intent_classifier: useIntentClassifier,
+        use_skill_formatter: useSkillFormatter,
+        stress_mode: stressMode,
+      },
+      session_summary: {
+        reviewed_count: sessionSummary.reviewedCount,
+        ok_count: sessionSummary.okCount,
+        drift_count: sessionSummary.driftCount,
+        fail_count: sessionSummary.failCount,
+        first_reviewed_drift_turn: sessionSummary.firstReviewedDrift ? sessionTurns.findIndex((turn) => turn.id === sessionSummary.firstReviewedDrift?.id) + 1 : null,
+        first_auto_concern_turn: sessionSummary.firstAutoConcern ? sessionTurns.findIndex((turn) => turn.id === sessionSummary.firstAutoConcern?.id) + 1 : null,
+      },
+      turns: sessionTurns.map((turn, index) => ({
+        turn_number: index + 1,
+        scripted_index: turn.scriptedIndex === null ? null : turn.scriptedIndex + 1,
+        user_message: turn.userMessage,
+        reference_assistant: turn.referenceAssistant,
+        response: turn.response,
+        error: turn.error,
+        started_at: turn.startedAt,
+        assessment: getConversationTurnAssessment({
+          turn,
+          scenario: selectedScenario,
+          scriptedTurnCount: scriptedTurns.length,
+          manualDecision: manualReviews[selectedScenario.id] || null,
+        }),
+        review: sessionTurnReviews[turn.id] || null,
+      })),
+      scenario_draft: {
+        id: `draft-${selectedScenario.id}-${generatedAt.replace(/[:.]/g, "-")}`,
+        title: `Session draft · ${selectedScenario.title}`,
+        viewId: selectedScenario.viewId,
+        selectedFilters: selectedScenario.selectedFilters ?? null,
+        sourceScenarioId: selectedScenario.id,
+        seedMessages: selectedScenario.messages,
+        generatedStressTurns,
+        sessionMessages,
+        turnCheckpoints: sessionTurns.map((turn, index) => ({
+          turn_number: index + 1,
+          user_message: turn.userMessage,
+          expected_from_review: sessionTurnReviews[turn.id] || null,
+          actual_route: turn.response?.route || null,
+          actual_intent: turn.response?.intent?.primary_intent || null,
+          actual_skill_id: turn.response?.skill_id || null,
+          continuity_mode: turn.response?.conversation_state?.continuity_mode || null,
+        })),
+      },
+    };
+
+    const filename = `chat-lab-session-${selectedScenario.id}-${generatedAt.replace(/[:.]/g, "-")}.json`;
+    setExportFeedback(`Đang lưu JSON session vào ${CHAT_LAB_ARTIFACT_DIR}...`);
+    try {
+      const result = await exportChatLabJsonArtifact({
+        filename,
+        payload,
+      });
+      setExportFeedback(`Đã lưu session JSON vào ${result.relative_path}`);
+    } catch (error) {
+      setExportFeedback(error instanceof Error ? error.message : "Không thể lưu JSON session.");
     }
   };
 
@@ -852,6 +1245,31 @@ export default function ChatLabView() {
                     <div className="mt-2">History messages: <strong>{sessionMessages.length}</strong></div>
                     <div className="mt-2">Tổng token session: <strong>{sessionTokenTotal}</strong></div>
                   </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-2xl bg-[hsl(var(--card))] p-3">
+                      <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Turn đã review</div>
+                      <div className="mt-1.5 text-sm font-bold text-foreground">{sessionSummary.reviewedCount}/{sessionTurns.length}</div>
+                    </div>
+                    <div className="rounded-2xl bg-[hsl(var(--card))] p-3">
+                      <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Turn lệch/fail</div>
+                      <div className="mt-1.5 text-sm font-bold text-foreground">{sessionSummary.driftCount + sessionSummary.failCount}</div>
+                    </div>
+                  </div>
+                  {(sessionSummary.firstReviewedDrift || sessionSummary.firstAutoConcern) ? (
+                    <div className="rounded-2xl border border-[hsl(var(--primary) / 0.2)] bg-[#F7FAEF] p-4 text-sm leading-6 text-foreground">
+                      <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Điểm bắt đầu cần soi</div>
+                      {sessionSummary.firstReviewedDrift ? (
+                        <div className="mt-2">
+                          Review tay đang coi <strong>turn {sessionTurns.findIndex((turn) => turn.id === sessionSummary.firstReviewedDrift?.id) + 1}</strong> là điểm bắt đầu lệch.
+                        </div>
+                      ) : null}
+                      {!sessionSummary.firstReviewedDrift && sessionSummary.firstAutoConcern ? (
+                        <div className="mt-2">
+                          Gợi ý tự động: bắt đầu soi từ <strong>turn {sessionTurns.findIndex((turn) => turn.id === sessionSummary.firstAutoConcern?.id) + 1}</strong>.
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {finalScriptedTurn ? (
                     <div className="rounded-2xl border border-[hsl(var(--primary) / 0.2)] bg-[#F7FAEF] p-4">
                       <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Final scripted turn</div>
@@ -893,6 +1311,37 @@ export default function ChatLabView() {
                     <button type="button" onClick={runAllScriptedTurns} disabled={!selectedScenario || sessionCursor >= scriptedTurns.length || isRunningSession} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"><Rows4 className="h-4 w-4" />Replay hết testcase theo turn</button>
                     <button type="button" onClick={seedConversationFromScenarioTranscript} disabled={!selectedScenario || isRunningSession} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60">Dùng transcript gốc làm seed</button>
                     <button type="button" onClick={() => resetConversationSession("Đã reset session stress-test.")} disabled={isRunningSession} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"><TimerReset className="h-4 w-4" />Reset session</button>
+                    <button type="button" onClick={exportSessionToJson} disabled={isRunning || isRunningSession || !canExportSessionJson} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60">Xuất JSON session</button>
+                  </div>
+                  <div className="rounded-2xl border border-border bg-[#FCFCFE] p-4">
+                    <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Tạo session stress tự động</div>
+                    <label className="block space-y-1.5">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Mode</span>
+                      <select value={stressMode} onChange={(event) => setStressMode(event.target.value as StressMode)} className="w-full rounded-2xl border border-border bg-card px-3.5 py-2.5 text-sm font-medium outline-none transition-colors focus:border-primary">
+                        {STRESS_MODE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="mt-2 text-xs leading-5 text-muted-foreground">{STRESS_MODE_OPTIONS.find((option) => option.value === stressMode)?.detail}</div>
+                    <div className="mt-3 grid gap-2">
+                      <button type="button" onClick={generateStressSession} disabled={!selectedScenario || isRunningSession} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60">Tạo session stress</button>
+                      <button type="button" onClick={runNextGeneratedStressTurn} disabled={!selectedScenario || isRunningSession || remainingGeneratedStressTurns.length === 0} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60">Chạy stress turn kế tiếp</button>
+                      <button type="button" onClick={runAllGeneratedStressTurns} disabled={!selectedScenario || isRunningSession || remainingGeneratedStressTurns.length === 0} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60">Replay stress session</button>
+                    </div>
+                    {generatedStressTurns.length > 0 ? (
+                      <div className="mt-3 rounded-2xl border border-dashed border-border bg-card p-3">
+                        <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Stress plan</div>
+                        <div className="space-y-2">
+                          {generatedStressTurns.map((turn, index) => (
+                            <div key={turn.id} className={cn("rounded-xl px-3 py-2 text-sm leading-6", index < generatedStressCursor ? "bg-[hsl(var(--primary) / 0.08)] text-muted-foreground" : "bg-muted text-foreground")}>
+                              <div className="font-bold">{index + 1}. {turn.label}</div>
+                              <div>{turn.userMessage}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                   <div className="rounded-2xl border border-border bg-[#FCFCFE] p-4">
                     <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Thêm turn mới vào cùng session</div>
@@ -902,10 +1351,58 @@ export default function ChatLabView() {
                   {sessionFeedback ? <div className="rounded-2xl border border-[hsl(var(--primary) / 0.2)] bg-[#F7FAEF] px-4 py-3 text-sm text-foreground">{sessionFeedback}</div> : null}
                 </div>
               </Panel>
+              <div className="space-y-5 xl:sticky xl:top-5 xl:self-start">
+              <Panel title="Turn Review" className="h-fit">
+                {selectedSessionTurn ? (
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border border-border bg-[#FCFCFE] p-4">
+                      <div className="text-sm font-bold text-foreground">Turn {sessionTurns.findIndex((turn) => turn.id === selectedSessionTurn.id) + 1}</div>
+                      <div className="mt-1 text-sm text-muted-foreground">{selectedSessionTurn.response?.route || (selectedSessionTurn.error ? "error" : "no route")} · {selectedSessionTurn.response?.intent?.primary_intent || "unknown"}</div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => upsertSessionTurnReview(selectedSessionTurn.id, { status: "ok" })} className={getManualReviewButtonClass("pass", selectedSessionTurnReview?.status === "ok")}>Turn ổn</button>
+                      <button type="button" onClick={() => upsertSessionTurnReview(selectedSessionTurn.id, { status: "drift" })} className={getManualReviewButtonClass("fail", selectedSessionTurnReview?.status === "drift")}>Bắt đầu lệch</button>
+                      <button type="button" onClick={() => upsertSessionTurnReview(selectedSessionTurn.id, { status: "fail" })} className={getManualReviewButtonClass("fail", selectedSessionTurnReview?.status === "fail")}>Fail rõ</button>
+                      <button type="button" onClick={() => clearSessionTurnReview(selectedSessionTurn.id)} className={getManualReviewButtonClass("clear", !selectedSessionTurnReview)}>Bỏ review</button>
+                    </div>
+                    <label className="block space-y-1.5">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Loại lỗi</span>
+                      <select value={selectedSessionTurnReview?.issueType || "other"} onChange={(event) => upsertSessionTurnReview(selectedSessionTurn.id, { issueType: event.target.value as SessionIssueType })} className="w-full rounded-2xl border border-border bg-card px-3.5 py-2.5 text-sm font-medium outline-none transition-colors focus:border-primary">
+                        {SESSION_ISSUE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block space-y-1.5">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Ghi chú turn</span>
+                      <textarea value={selectedSessionTurnReview?.note || ""} onChange={(event) => upsertSessionTurnReview(selectedSessionTurn.id, { note: event.target.value })} placeholder="Ví dụ: turn này đáng ra phải switch sang source family, nhưng vẫn bị bám seller revenue." className="min-h-28 w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm leading-6 outline-none transition-colors focus:border-primary" />
+                    </label>
+                    <button type="button" onClick={() => upsertSessionTurnReview(selectedSessionTurn.id, { status: selectedSessionTurnReview?.status === "pending" ? "drift" : selectedSessionTurnReview?.status || "drift", isFirstDrift: true })} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-gray-50">
+                      Đánh dấu là turn bắt đầu lệch
+                    </button>
+                    {selectedSessionTurnReview?.updatedAt ? <div className="text-xs text-muted-foreground">Cập nhật: {selectedSessionTurnReview.updatedAt}</div> : null}
+                    {(sessionSummary.firstReviewedDrift || sessionSummary.firstAutoConcern) ? (
+                      <div className="rounded-2xl border border-[hsl(var(--primary) / 0.2)] bg-[#F7FAEF] p-3 text-sm leading-6 text-foreground">
+                        {sessionSummary.firstReviewedDrift ? (
+                          <div>Review tay đang coi <strong>turn {sessionTurns.findIndex((turn) => turn.id === sessionSummary.firstReviewedDrift?.id) + 1}</strong> là điểm bắt đầu lệch.</div>
+                        ) : null}
+                        {!sessionSummary.firstReviewedDrift && sessionSummary.firstAutoConcern ? (
+                          <div>Gợi ý tự động: bắt đầu soi từ <strong>turn {sessionTurns.findIndex((turn) => turn.id === sessionSummary.firstAutoConcern?.id) + 1}</strong>.</div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border bg-[#FCFCFE] p-4 text-sm leading-6 text-muted-foreground">
+                    Chọn một turn trong timeline để review ngay ở đây. Bạn không cần kéo xuống cuối panel trái nữa.
+                  </div>
+                )}
+              </Panel>
               <Panel title="Session Timeline">
                 {sessionTurns.length > 0 ? (
                   <div className="max-h-[42rem] space-y-4 overflow-y-auto pr-1">
                     {sessionTurns.map((turn, index) => {
+                      const sessionReview = sessionTurnReviews[turn.id] || null;
                       const turnAssessment = getConversationTurnAssessment({
                         turn,
                         scenario: selectedScenario,
@@ -922,7 +1419,17 @@ export default function ChatLabView() {
                             : "neutral";
 
                       return (
-                        <div key={turn.id} className="rounded-2xl border border-border bg-[hsl(var(--card))] p-4">
+                        <div
+                          key={turn.id}
+                          id={`session-turn-${turn.id}`}
+                          onClick={() => setSelectedTurnId(turn.id)}
+                          className={cn(
+                            "rounded-2xl border bg-[hsl(var(--card))] p-4 transition-colors",
+                            selectedTurnId === turn.id
+                              ? "border-primary/45 shadow-[inset_3px_0_0_0_hsl(var(--primary))]"
+                              : "border-border",
+                          )}
+                        >
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
                               <div className="text-sm font-bold text-foreground">
@@ -931,14 +1438,23 @@ export default function ChatLabView() {
                               <div className="mt-1 text-xs leading-5 text-muted-foreground">{turnAssessment.detail}</div>
                             </div>
                             <div className="flex flex-wrap gap-2">
+                              <Badge tone={getSessionReviewTone(sessionReview?.status || null)} label={formatSessionReviewLabel(sessionReview?.status || null)} />
                               <Badge tone={turnAssessment.tone} label={turnAssessment.label} />
                               <Badge tone={routeTone} label={turn.response?.route || (turn.error ? "Error" : "No route")} />
                               <Badge tone="neutral" label={turn.response?.intent?.primary_intent || "unknown"} />
                               {continuityMode ? (
                                 <Badge tone={getConversationModeTone(continuityMode)} label={formatConversationModeLabel(continuityMode)} />
                               ) : null}
+                              {sessionReview?.isFirstDrift ? <Badge tone="bad" label="Turn lệch đầu" /> : null}
                             </div>
                           </div>
+                          {sessionReview?.note ? (
+                            <div className="mt-3 rounded-2xl border border-dashed border-border bg-[#FCFCFE] px-3 py-2.5 text-sm leading-6 text-foreground">
+                              <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Ghi chú review</div>
+                              <div><strong>{formatSessionIssueLabel(sessionReview.issueType)}</strong></div>
+                              <div className="mt-1 whitespace-pre-wrap">{sessionReview.note}</div>
+                            </div>
+                          ) : null}
 
                           <div className="mt-3 grid gap-3 lg:grid-cols-2">
                             <div className="rounded-2xl border border-border bg-card p-3">
@@ -990,15 +1506,26 @@ export default function ChatLabView() {
                       );
                     })}
                   </div>
-                ) : <p className="text-sm text-muted-foreground">Chưa có turn nào trong session hiện tại.</p>}
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border bg-[#FCFCFE] p-6 text-sm leading-7 text-muted-foreground">
+                    <div className="font-bold text-foreground">Chưa có turn nào trong session hiện tại.</div>
+                    <div className="mt-2">Bắt đầu theo một trong ba cách:</div>
+                    <div className="mt-2 space-y-1">
+                      <div>1. Bấm <strong>Replay hết testcase theo turn</strong>.</div>
+                      <div>2. Bấm <strong>Dùng transcript gốc làm seed</strong> rồi hỏi tiếp.</div>
+                      <div>3. Bấm <strong>Tạo session stress</strong> để auto-generate follow-up.</div>
+                    </div>
+                  </div>
+                )}
               </Panel>
+              </div>
             </div>
           ) : null}
           {activeTab !== "overview" ? batchResultsPanel : null}
         </div>
       </div>
 
-      {isRunning ? <div className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full bg-card text-card-foreground px-4 py-3 text-sm font-bold text-primary shadow-xl"><Bot className="h-4 w-4" />Đang chạy test case...</div> : <button type="button" onClick={() => { setCurrentResult(null); setBatchResults([]); setManualReviews({}); setExportFeedback(null); resetConversationSession(); localStorage.removeItem(STORAGE_KEYS.currentResult); localStorage.removeItem(STORAGE_KEYS.batchResults); localStorage.removeItem(STORAGE_KEYS.manualReviews); }} className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-3 text-sm font-bold text-foreground shadow-sm"><TimerReset className="h-4 w-4" />Làm mới lab</button>}
+      {isRunning ? <div className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full bg-card text-card-foreground px-4 py-3 text-sm font-bold text-primary shadow-xl"><Bot className="h-4 w-4" />Đang chạy test case...</div> : <button type="button" onClick={() => { setCurrentResult(null); setBatchResults([]); setManualReviews({}); setSessionTurnReviews({}); setGeneratedStressTurns([]); setGeneratedStressCursor(0); setExportFeedback(null); resetConversationSession(); localStorage.removeItem(STORAGE_KEYS.currentResult); localStorage.removeItem(STORAGE_KEYS.batchResults); localStorage.removeItem(STORAGE_KEYS.manualReviews); localStorage.removeItem(STORAGE_KEYS.sessionTurnReviews); }} className="fixed bottom-6 right-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-3 text-sm font-bold text-foreground shadow-sm"><TimerReset className="h-4 w-4" />Làm mới lab</button>}
       {isRunningSession ? <div className="fixed bottom-24 right-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-3 text-sm font-bold text-foreground shadow-sm"><Bot className="h-4 w-4" />Đang chạy conversation stress-test...</div> : null}
       {isLoadingScenarios ? <div className="fixed bottom-40 right-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-3 text-sm font-bold text-foreground shadow-sm"><Bot className="h-4 w-4" />Đang tải eval-50 scenarios...</div> : null}
     </div>

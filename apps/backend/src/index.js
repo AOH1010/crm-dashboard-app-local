@@ -94,11 +94,12 @@ function buildCsvContent(rows) {
   return `\ufeff${lines.join("\n")}`;
 }
 
-function sanitizeArtifactFilename(filename) {
+function sanitizeArtifactFilename(filename, extension = ".csv") {
   const normalized = String(filename || "").trim();
-  const basename = path.basename(normalized || "chat-lab-results.csv");
+  const fallbackName = extension === ".json" ? "chat-lab-results.json" : "chat-lab-results.csv";
+  const basename = path.basename(normalized || fallbackName);
   const safeName = basename.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/-+/g, "-");
-  return safeName.toLowerCase().endsWith(".csv") ? safeName : `${safeName}.csv`;
+  return safeName.toLowerCase().endsWith(extension) ? safeName : `${safeName}${extension}`;
 }
 
 function resolveUniqueArtifactFilename(filename) {
@@ -127,7 +128,7 @@ app.post("/api/agent/chat-lab/export", (req, res) => {
       return;
     }
 
-    const requestedFilename = sanitizeArtifactFilename(req.body?.filename);
+    const requestedFilename = sanitizeArtifactFilename(req.body?.filename, ".csv");
     fs.mkdirSync(chatLabArtifactsDir, { recursive: true });
     const filename = resolveUniqueArtifactFilename(requestedFilename);
     const absolutePath = path.join(chatLabArtifactsDir, filename);
@@ -144,6 +145,37 @@ app.post("/api/agent/chat-lab/export", (req, res) => {
     console.error("[chat-lab-api] failed to export csv", error instanceof Error ? error.stack : error);
     res.status(500).json({
       error: "Failed to export Chat Lab CSV artifact.",
+    });
+  }
+});
+
+app.post("/api/agent/chat-lab/export-json", (req, res) => {
+  try {
+    const payload = req.body?.payload;
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      res.status(400).json({
+        error: "Chat Lab JSON export requires an object payload.",
+      });
+      return;
+    }
+
+    const requestedFilename = sanitizeArtifactFilename(req.body?.filename, ".json");
+    fs.mkdirSync(chatLabArtifactsDir, { recursive: true });
+    const filename = resolveUniqueArtifactFilename(requestedFilename);
+    const absolutePath = path.join(chatLabArtifactsDir, filename);
+    fs.writeFileSync(absolutePath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+
+    res.status(200).json({
+      ok: true,
+      filename,
+      relative_path: path.posix.join("artifacts", "chat-lab-exports", filename),
+      absolute_path: absolutePath,
+      row_count: 1,
+    });
+  } catch (error) {
+    console.error("[chat-lab-api] failed to export json", error instanceof Error ? error.stack : error);
+    res.status(500).json({
+      error: "Failed to export Chat Lab JSON artifact.",
     });
   }
 });

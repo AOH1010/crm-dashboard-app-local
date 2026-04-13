@@ -12,18 +12,22 @@ const sourceGroupCaseSql = buildSourceGroupCaseSql("c.account_source_full_name")
 async function fetchSourceRevenueRow(connector, period, sourceGroup) {
   const result = await connector.runReadQueryAsync({
     sql: `
-      SELECT
-        ${sourceGroupCaseSql} AS source_group,
-        ROUND(SUM(COALESCE(o.real_amount, 0)), 2) AS revenue_amount,
-        COUNT(*) AS order_count
-      FROM orders o
-      LEFT JOIN customers c ON TRIM(COALESCE(o.id_1, '')) = TRIM(COALESCE(c.id_1, ''))
-      WHERE TRIM(COALESCE(o.status_label, '')) <> COALESCE((
-        SELECT meta_value FROM dashboard_meta WHERE meta_key = 'cancelled_status_label'
-      ), '__never_match__')
-        AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?
-      GROUP BY source_group
-      HAVING source_group = ?
+      WITH source_revenue AS (
+        SELECT
+          ${sourceGroupCaseSql} AS source_group,
+          ROUND(SUM(COALESCE(o.real_amount, 0)), 2) AS revenue_amount,
+          COUNT(*) AS order_count
+        FROM orders o
+        LEFT JOIN customers c ON TRIM(COALESCE(o.id_1, '')) = TRIM(COALESCE(c.id_1, ''))
+        WHERE TRIM(COALESCE(o.status_label, '')) <> COALESCE((
+          SELECT meta_value FROM dashboard_meta WHERE meta_key = 'cancelled_status_label'
+        ), '__never_match__')
+          AND SUBSTR(COALESCE(NULLIF(TRIM(o.order_date), ''), SUBSTR(NULLIF(TRIM(o.created_at), ''), 1, 10)), 1, 10) BETWEEN ? AND ?
+        GROUP BY ${sourceGroupCaseSql}
+      )
+      SELECT source_group, revenue_amount, order_count
+      FROM source_revenue
+      WHERE source_group = ?
     `,
     params: [period.from, period.to, sourceGroup],
     allowPlaceholders: true,
